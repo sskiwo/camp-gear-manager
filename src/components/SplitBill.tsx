@@ -1,199 +1,261 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState, useMemo } from 'react';
 
-type Member = {
-  id: string;
+type Participant = {
   name: string;
-  paidAmount: number; // 立て替えた金額
+  weight: number; // 割り勘の重み（例: 大人2, 子供1など）
 };
 
-type Transfer = {
-  from: string;
-  to: string;
+type Expense = {
+  description: string;
   amount: number;
+  paidBy: string; // 支払った人の名前
 };
 
 export default function SplitBill() {
-  const [members, setMembers] = useState<Member[]>([
-    { id: "1", name: "自分 (A君)", paidAmount: 12000 },
-    { id: "2", name: "B君", paidAmount: 4000 },
-    { id: "3", name: "C君", paidAmount: 0 },
-  ]);
+  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
 
-  const [newName, setNewName] = useState("");
-  const [newAmount, setNewAmount] = useState("");
+  const [newName, setNewName] = useState('');
+  const [newWeight, setNewWeight] = useState('1');
+  const [newDesc, setNewDesc] = useState('');
+  const [newAmount, setNewAmount] = useState('');
+  const [paidBy, setPaidBy] = useState('');
 
-  // メンバー追加
-  const handleAddMember = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newName.trim()) return;
-
-    setMembers([
-      ...members,
-      {
-        id: Date.now().toString(),
-        name: newName,
-        paidAmount: Number(newAmount) || 0,
-      },
-    ]);
-
-    setNewName("");
-    setNewAmount("");
+  // 1. 参加者追加
+  const addParticipant = () => {
+    if (newName && !participants.some((p) => p.name === newName)) {
+      setParticipants([...participants, { name: newName, weight: Number(newWeight) || 1 }]);
+      setNewName('');
+      setNewWeight('1');
+      if (participants.length === 0) setPaidBy(newName);
+    }
   };
 
-  // メンバー削除
-  const handleDeleteMember = (id: string) => {
-    setMembers(members.filter((m) => m.id !== id));
+  // 2. 出費追加
+  const addExpense = () => {
+    const amount = Number(newAmount);
+    if (newDesc && amount > 0 && paidBy) {
+      setExpenses([...expenses, { description: newDesc, amount, paidBy }]);
+      setNewDesc('');
+      setNewAmount('');
+    }
   };
 
-  // 1人あたりの合計・平均計算
-  const totalPaid = members.reduce((sum, m) => sum + m.paidAmount, 0);
-  const perPerson = members.length > 0 ? Math.round(totalPaid / members.length) : 0;
+  // 3. 割り勘計算
+  const settlement = useMemo(() => {
+    if (participants.length < 2 || expenses.length === 0) return null;
 
-  // 🔄 最少送金アルゴリズムの計算
-  const calculateTransfers = (): Transfer[] => {
-    if (members.length === 0 || totalPaid === 0) return [];
+    const totalAmount = expenses.reduce((sum, e) => sum + e.amount, 0);
+    const totalWeight = participants.reduce((sum, p) => sum + p.weight, 0);
+    const weightUnit = totalAmount / totalWeight;
 
-    // 各メンバーの損益（＋なら貰う人、ーなら払う人）
-    const balances = members.map((m) => ({
-      name: m.name,
-      amount: m.paidAmount - perPerson,
-    }));
-
-    const debtors = balances.filter((b) => b.amount < 0).sort((a, b) => a.amount - b.amount); // 払う人（マイナスが大きい順）
-    const creditors = balances.filter((b) => b.amount > 0).sort((a, b) => b.amount - a.amount); // 貰う人（プラスが大きい順）
-
-    const transfers: Transfer[] = [];
-
-    let i = 0; // debtor index
-    let j = 0; // creditor index
-
-    while (i < debtors.length && j < creditors.length) {
-      const debtor = debtors[i];
-      const creditor = creditors[j];
-
-      // 相殺できる金額
-      const amount = Math.min(-debtor.amount, creditor.amount);
-
-      if (amount > 0) {
-        transfers.push({
-          from: debtor.name,
-          to: creditor.name,
-          amount: Math.round(amount),
-        });
+    const balances: { [key: string]: number } = {};
+    participants.forEach((p) => {
+      balances[p.name] = -(p.weight * weightUnit);
+    });
+    expenses.forEach((e) => {
+      if (balances[e.paidBy] !== undefined) {
+        balances[e.paidBy] += e.amount;
       }
+    });
 
-      debtor.amount += amount;
-      creditor.amount -= amount;
+    const debtors: { name: string; amount: number }[] = [];
+    const creditors: { name: string; amount: number }[] = [];
+    participants.forEach((p) => {
+      const bal = balances[p.name];
+      if (bal < -0.1) {
+        debtors.push({ name: p.name, amount: -bal });
+      } else if (bal > 0.1) {
+        creditors.push({ name: p.name, amount: bal });
+      }
+    });
 
-      if (Math.abs(debtor.amount) < 1) i++;
-      if (Math.abs(creditor.amount) < 1) j++;
+    const transactions: { from: string; to: string; amount: number }[] = [];
+    let dIdx = 0;
+    let cIdx = 0;
+
+    while (dIdx < debtors.length && cIdx < creditors.length) {
+      const debtor = debtors[dIdx];
+      const creditor = creditors[cIdx];
+      const transferAmount = Math.min(debtor.amount, creditor.amount);
+
+      transactions.push({
+        from: debtor.name,
+        to: creditor.name,
+        amount: Math.round(transferAmount),
+      });
+
+      debtor.amount -= transferAmount;
+      creditor.amount -= transferAmount;
+
+      if (debtor.amount < 0.1) dIdx++;
+      if (creditor.amount < 0.1) cIdx++;
     }
 
-    return transfers;
-  };
-
-  const transfers = calculateTransfers();
+    return { totalAmount, weightUnit, transactions, balances };
+  }, [participants, expenses]);
 
   return (
-    <div className="bg-slate-800 text-white rounded-2xl p-6 shadow-xl border border-slate-700 mb-8">
-      <h2 className="text-xl font-bold mb-2 flex items-center gap-2">
-        <span>💰</span> グループスマート割り勘 (最少送金ルート)
-      </h2>
-      <p className="text-slate-400 text-xs mb-6">
-        誰がいくら立て替えたか入力するだけで、最も少ない送金回数で清算できます！
-      </p>
+    <section className="bg-white p-8 rounded-3xl shadow-xl border border-[#E0DED3]/50 space-y-8 transition-all duration-300">
+      <header className="flex items-center gap-3 border-b border-[#E0DED3]/50 pb-5">
+        <h2 className="text-xl font-bold text-[#384F41] flex items-center gap-3 tracking-wide">
+          💰 スマート割り勘 (重み付け対応)
+        </h2>
+        <span className="text-xs bg-[#F6F5EF] text-[#666666] px-4 py-1.5 rounded-full font-medium border border-[#E0DED3]/50 shadow-inner">
+          例: 大人1, 子供0.5
+        </span>
+      </header>
 
-      {/* メンバー＆立て替え額の入力フォーム */}
-      <form onSubmit={handleAddMember} className="flex flex-col sm:flex-row gap-3 mb-6">
-        <input
-          type="text"
-          placeholder="メンバー名 (例: D君)"
-          value={newName}
-          onChange={(e) => setNewName(e.target.value)}
-          className="bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-amber-500 flex-1"
-        />
-        <input
-          type="number"
-          placeholder="立て替え支払額 (円)"
-          value={newAmount}
-          onChange={(e) => setNewAmount(e.target.value)}
-          className="bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-amber-500 flex-1"
-        />
-        <button
-          type="submit"
-          className="bg-amber-500 hover:bg-amber-600 font-bold px-5 py-2 rounded-xl text-sm transition"
-        >
-          メンバー追加
-        </button>
-      </form>
-
-      {/* メンバー一覧 */}
-      <div className="space-y-2 mb-6">
-        {members.map((m) => (
-          <div
-            key={m.id}
-            className="flex justify-between items-center bg-slate-900/60 border border-slate-700/50 rounded-xl px-4 py-2.5 text-sm"
-          >
-            <span className="font-semibold text-slate-200">{m.name}</span>
-            <div className="flex items-center gap-4">
-              <span className="text-slate-400">
-                立て替え: <span className="font-bold text-amber-400">¥{m.paidAmount.toLocaleString()}</span>
-              </span>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+        {/* 左側: 入力フォーム */}
+        <div className="space-y-7">
+          {/* 参加者登録 */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-bold text-[#888888] uppercase tracking-wider pl-1">👥 1. 参加者を追加</h3>
+            <div className="flex gap-3">
+              <input
+                type="text"
+                placeholder="名前 (例: タナカ)"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                className="flex-1 px-5 py-3 border rounded-xl text-sm bg-white focus:ring-1 focus:ring-[#384F41] outline-none transition"
+              />
+              <input
+                type="number"
+                placeholder="重み"
+                value={newWeight}
+                step="0.1"
+                min="0.1"
+                onChange={(e) => setNewWeight(e.target.value)}
+                className="w-16 px-3 py-3 border rounded-xl text-sm bg-white text-center focus:ring-1 focus:ring-[#384F41] outline-none transition"
+              />
               <button
-                onClick={() => handleDeleteMember(m.id)}
-                className="text-slate-500 hover:text-red-400 text-xs"
+                onClick={addParticipant}
+                className="bg-gradient-to-r from-[#384F41] to-[#6B8272] text-white px-6 py-3 rounded-xl text-xs font-bold shadow-md hover:shadow-lg transition transform hover:-translate-y-0.5"
               >
-                ✕ 削除
+                追加
+              </button>
+            </div>
+            {participants.length > 0 && (
+              <div className="flex flex-wrap gap-2 pt-1.5 pl-1">
+                {participants.map((p) => (
+                  <span
+                    key={p.name}
+                    className="text-xs bg-[#384F41]/08 text-[#384F41] px-3 py-1.5 rounded-full font-bold border border-[#384F41]/10 shadow-inner"
+                  >
+                    {p.name} <span className="font-medium text-[#666666]">({p.weight})</span>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* 出費登録 */}
+          <div className="space-y-4 pt-4 border-t border-[#E0DED3]/50">
+            <h3 className="text-sm font-bold text-[#888888] uppercase tracking-wider pl-1">💴 2. 出費を入力</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <input
+                type="text"
+                placeholder="内容 (例: 食材費)"
+                value={newDesc}
+                onChange={(e) => setNewDesc(e.target.value)}
+                className="px-5 py-3 border rounded-xl text-sm focus:ring-1 focus:ring-[#384F41] outline-none transition"
+              />
+              <input
+                type="number"
+                placeholder="金額 (円)"
+                value={newAmount}
+                onChange={(e) => setNewAmount(e.target.value)}
+                className="px-5 py-3 border rounded-xl text-sm focus:ring-1 focus:ring-[#384F41] outline-none transition"
+              />
+              <select
+                value={paidBy}
+                onChange={(e) => setPaidBy(e.target.value)}
+                className="px-5 py-3 border rounded-xl text-sm bg-white font-medium focus:ring-1 focus:ring-[#384F41] text-[#384F41] outline-none transition"
+              >
+                <option value="">支払者を選択...</option>
+                {participants.map((p) => (
+                  <option key={p.name} value={p.name}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={addExpense}
+                className="bg-gradient-to-r from-[#BFA58A] to-[#D6A97A] text-white px-6 py-3 rounded-xl text-xs font-bold shadow-md hover:shadow-lg transition transform hover:-translate-y-0.5"
+              >
+                出費を追加
               </button>
             </div>
           </div>
-        ))}
-      </div>
-
-      {/* サマリー（総額＆1人あたり） */}
-      <div className="grid grid-cols-2 gap-4 bg-slate-900 p-4 rounded-xl text-center mb-6">
-        <div>
-          <p className="text-xs text-slate-400 mb-1">キャンプ合計費用</p>
-          <p className="text-xl font-bold text-slate-100">¥{totalPaid.toLocaleString()}</p>
         </div>
-        <div>
-          <p className="text-xs text-slate-400 mb-1">1人あたりの支払額</p>
-          <p className="text-xl font-bold text-emerald-400">¥{perPerson.toLocaleString()}</p>
-        </div>
-      </div>
 
-      {/* 最少送金ルートの表示 */}
-      <div className="border-t border-slate-700 pt-5">
-        <h3 className="font-bold text-sm text-slate-300 mb-3 flex items-center gap-1.5">
-          <span>🚀</span> 送金おすすめルート (これだけで精算完了！)
-        </h3>
+        {/* 右側: 登録内容と計算結果 */}
+        <div className="space-y-7">
+          {/* 出費一覧 */}
+          <div className="space-y-3.5">
+            <h3 className="text-xs font-bold text-[#888888] uppercase tracking-wider pl-1">📋 3. 登録された出費</h3>
+            <div className="bg-[#F6F5EF] border border-[#E0DED3]/50 rounded-3xl p-4 max-h-48 overflow-y-auto space-y-2 shadow-inner">
+              {expenses.length === 0 ? (
+                <p className="text-xs text-center text-[#AAAAAA] py-6 font-medium">出費がまだ登録されていません。</p>
+              ) : (
+                expenses.map((e, idx) => (
+                  <div key={idx} className="flex justify-between items-center text-xs bg-white p-3 rounded-xl border border-[#E0DED3]/50 shadow">
+                    <span className="font-medium text-[#333333] flex-1 tracking-tight">{e.description}</span>
+                    <span className="font-extrabold text-[#A88869] w-28 text-right text-sm">¥{e.amount.toLocaleString()}</span>
+                    <span className="text-[#666666] font-bold w-20 text-right bg-[#E0DED3]/90 px-2.5 py-0.5 rounded ml-3">{e.paidBy}</span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
 
-        {transfers.length === 0 ? (
-          <p className="text-xs text-slate-500 text-center py-2">
-            全員の支払いが均等、またはメンバーがいません。
-          </p>
-        ) : (
-          <div className="space-y-2">
-            {transfers.map((t, idx) => (
-              <div
-                key={idx}
-                className="bg-emerald-950/40 border border-emerald-500/30 rounded-xl p-3 flex items-center justify-between text-sm"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-slate-200">{t.from}</span>
-                  <span className="text-emerald-400 text-xs">➔</span>
-                  <span className="font-bold text-slate-200">{t.to}</span>
+          {/* 計算結果 */}
+          <div className="space-y-4 pt-4 border-t border-[#E0DED3]/50">
+            <h3 className="text-sm font-bold text-[#888888] uppercase tracking-wider pl-1">🎯 4. 清算方法</h3>
+            {settlement ? (
+              <div className="space-y-5">
+                <div className="flex gap-4">
+                  <div className="bg-[#384F41]/08 p-4 rounded-xl border border-[#384F41]/10 flex-1 text-center shadow">
+                    <p className="text-xs text-[#384F41] font-bold">総額</p>
+                    <p className="text-2xl font-bold text-[#384F41] mt-2">¥{settlement.totalAmount.toLocaleString()}</p>
+                  </div>
+                  <div className="bg-[#F6F5EF] p-4 rounded-xl border border-[#E0DED3]/50 flex-1 text-center shadow">
+                    <p className="text-xs text-[#666666] font-bold">基本単位 (1あたり)</p>
+                    <p className="text-xl font-bold text-[#666666] mt-2">¥{Math.round(settlement.weightUnit).toLocaleString()}</p>
+                  </div>
                 </div>
-                <div className="font-extrabold text-emerald-300 text-base">
-                  ¥{t.amount.toLocaleString()} 送金
+
+                <div className="bg-gradient-to-r from-[#BFA58A]/08 to-[#D6A97A]/08 p-5 rounded-3xl border border-[#BFA58A]/10 space-y-3.5 shadow-md">
+                  <p className="text-sm font-bold text-[#A88869] border-b border-[#A88869]/20 pb-2 flex items-center gap-1.5 tracking-tight">
+                    👉 送金リスト
+                  </p>
+                  {settlement.transactions.length === 0 ? (
+                    <p className="text-sm text-center text-[#384F41] font-bold py-3">🎉 清算は不要です！</p>
+                  ) : (
+                    settlement.transactions.map((t, idx) => (
+                      <div key={idx} className="flex items-center justify-between text-sm bg-white px-4 py-2.5 rounded-lg border border-[#D6A97A]/10 shadow">
+                        <div className="flex items-center gap-2 font-bold tracking-tight">
+                          <span className="text-xs bg-[#AF8074]/08 text-[#AF8074] px-3 py-1 rounded border border-[#AF8074]/20">{t.from}</span>
+                          <span className="text-[#CCCCCC]">➔</span>
+                          <span className="text-xs bg-[#384F41]/08 text-[#384F41] px-3 py-1 rounded border border-[#384F41]/20">{t.to}</span>
+                        </div>
+                        <span className="font-extrabold text-[#A88869] text-base">¥{t.amount.toLocaleString()}</span>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
-            ))}
+            ) : (
+              <p className="text-xs text-center text-[#AAAAAA] py-8 font-medium bg-[#F6F5EF] rounded-2xl border border-[#E0DED3]/50 shadow-inner">
+                参加者2名以上、出費1件以上で計算します。
+              </p>
+            )}
           </div>
-        )}
+        </div>
       </div>
-    </div>
+    </section>
   );
 }
