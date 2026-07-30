@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import GearItemCard from './GearItemCard';
 
 type GearItem = {
   id: string;
@@ -54,54 +55,8 @@ export default function GearList({
   onDeleteGear,
   onReorderGears,
 }: Props) {
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editBrand, setEditBrand] = useState('');
-  const [editModelNumber, setEditModelNumber] = useState('');
-  const [editProductName, setEditProductName] = useState('');
-  const [editCategory, setEditCategory] = useState('ベースギア');
-  const [editWeight, setEditWeight] = useState('');
-  const [editPrice, setEditPrice] = useState('');
-  const [editQuantity, setEditQuantity] = useState('1');
-  const [editIsConsumable, setEditIsConsumable] = useState(false);
-  const [editProductUrl, setEditProductUrl] = useState('');
-
-  // ドラッグ＆ドロップ用のステート
   const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
 
-  const startEdit = (item: GearItem) => {
-    setEditingId(item.id);
-    setEditBrand(item.brand || '');
-    setEditModelNumber(item.model_number || '');
-    setEditProductName(item.product_name || item.name || '');
-    setEditCategory(item.category || 'ベースギア');
-    setEditWeight(String(item.weight || 0));
-    setEditPrice(String(item.price || 0));
-    setEditQuantity(String(item.quantity || 1));
-    setEditIsConsumable(item.is_consumable);
-    setEditProductUrl(item.product_url || '');
-  };
-
-  const handleSave = async (id: string) => {
-    const fullName = `${editBrand} ${editProductName} ${editModelNumber}`.trim();
-    const defaultSearchUrl = `https://www.amazon.co.jp/s?k=${encodeURIComponent(fullName || editProductName)}`;
-    const finalUrl = editProductUrl.trim() ? editProductUrl.trim() : defaultSearchUrl;
-
-    await onUpdateGear(id, {
-      name: fullName || editProductName,
-      brand: editBrand,
-      model_number: editModelNumber,
-      product_name: editProductName,
-      category: editCategory,
-      weight: Number(editWeight) || 0,
-      price: Number(editPrice) || 0,
-      quantity: Math.max(1, Number(editQuantity) || 1),
-      is_consumable: editIsConsumable,
-      product_url: finalUrl,
-    });
-    setEditingId(null);
-  };
-
-  // --- ドラッグ＆ドロップのイベントハンドラー ---
   const handleDragStart = (e: React.DragEvent, id: string) => {
     setDraggedItemId(id);
     e.dataTransfer.effectAllowed = 'move';
@@ -120,12 +75,10 @@ export default function GearList({
 
     if (dragIndex === -1 || dropIndex === -1) return;
 
-    // カテゴリー内での並び替え
     const newCatGears = [...categoryGears];
     const [removed] = newCatGears.splice(dragIndex, 1);
     newCatGears.splice(dropIndex, 0, removed);
 
-    // 全体リストへの反映
     const otherGears = gears.filter((g) => !categoryGears.some((cg) => cg.id === g.id));
     const reorderedAll = [...otherGears, ...newCatGears];
 
@@ -137,10 +90,7 @@ export default function GearList({
 
   return (
     <section className="bg-[#18181B] p-5 md:p-6 rounded-2xl border border-zinc-800 space-y-4 shadow-xl">
-      <h2 className="text-lg font-extrabold text-white flex items-center justify-between">
-        <span>🎒 積載パッキングリスト</span>
-        <span className="text-xs text-zinc-400 font-normal">💡「⋮⋮」を掴んで並び替えできます</span>
-      </h2>
+      <h2 className="text-lg font-extrabold text-white">🎒 積載パッキングリスト</h2>
 
       {gears.length === 0 ? (
         <p className="text-center text-zinc-500 py-6 font-medium bg-[#27272A]/50 rounded-xl border border-zinc-800 text-xs">
@@ -182,116 +132,21 @@ export default function GearList({
 
               {isOpen && (
                 <div className="p-2 space-y-2 bg-[#121215]">
-                  {categoryGears.map((item) => {
-                    const qty = item.quantity || 1;
-                    const totalWeight = (item.weight || 0) * qty;
-                    const totalPrice = (item.price || 0) * qty;
-                    const isDragging = draggedItemId === item.id;
-
-                    return (
-                      <div
-                        key={item.id}
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, item.id)}
-                        onDragOver={handleDragOver}
-                        onDrop={() => handleDrop(item.id, categoryGears)}
-                        className={`p-2.5 rounded-lg border text-xs transition select-none ${
-                          isDragging ? 'opacity-30 border-[#FF5500] bg-zinc-800' : ''
-                        } ${
-                          item.is_packed
-                            ? 'bg-[#27272A] border-zinc-700/80 hover:border-zinc-500'
-                            : 'bg-zinc-900/50 opacity-40 border-transparent'
-                        }`}
-                      >
-                        {editingId === item.id ? (
-                          /* ✏️ 編集モード */
-                          <div className="space-y-2">
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
-                              <input type="text" value={editBrand} onChange={(e) => setEditBrand(e.target.value)} className="px-2 py-1 border border-zinc-700 rounded bg-[#18181B] text-white text-xs" placeholder="メーカー名" />
-                              <input type="text" value={editModelNumber} onChange={(e) => setEditModelNumber(e.target.value)} className="px-2 py-1 border border-zinc-700 rounded bg-[#18181B] text-white text-xs" placeholder="型番" />
-                              <input type="text" value={editProductName} onChange={(e) => setEditProductName(e.target.value)} className="px-2 py-1 border border-zinc-700 rounded bg-[#18181B] text-white text-xs" placeholder="商品名" />
-                            </div>
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-                              <select value={editCategory} onChange={(e) => setEditCategory(e.target.value)} className="px-2 py-1 border border-zinc-700 rounded bg-[#18181B] text-white text-xs font-bold">
-                                {CATEGORIES.map((c) => (<option key={c} value={c}>{c}</option>))}
-                              </select>
-                              <input type="number" value={editWeight} onChange={(e) => setEditWeight(e.target.value)} className="px-2 py-1 border border-zinc-700 rounded bg-[#18181B] text-white text-xs" placeholder="重量(g)" />
-                              <input type="number" value={editPrice} onChange={(e) => setEditPrice(e.target.value)} className="px-2 py-1 border border-zinc-700 rounded bg-[#18181B] text-white text-xs" placeholder="価格(円)" />
-                              <input type="number" value={editQuantity} onChange={(e) => setEditQuantity(e.target.value)} className="px-2 py-1 border border-zinc-700 rounded bg-[#18181B] text-white text-xs" placeholder="数量" />
-                            </div>
-                            <div>
-                              <input
-                                type="text"
-                                value={editProductUrl}
-                                onChange={(e) => setEditProductUrl(e.target.value)}
-                                className="w-full px-2 py-1 border border-zinc-700 rounded bg-[#18181B] text-white text-xs font-mono"
-                                placeholder="Amazon特定商品URL（空欄なら自動検索リンクになります）"
-                              />
-                            </div>
-                            <div className="flex items-center justify-between pt-1">
-                              <label className="flex items-center gap-1 text-[11px] text-zinc-300 cursor-pointer">
-                                <input type="checkbox" checked={editIsConsumable} onChange={(e) => setEditIsConsumable(e.target.checked)} className="w-3 h-3 accent-[#FF5500]" /> 🔥 消費物
-                              </label>
-                              <div className="flex gap-2">
-                                <button onClick={() => handleSave(item.id)} className="bg-[#FF5500] text-white px-3 py-1 rounded text-[11px] font-bold hover:bg-[#E04B00]">保存</button>
-                                <button onClick={() => setEditingId(null)} className="bg-zinc-700 text-zinc-300 px-3 py-1 rounded text-[11px] font-bold">キャンセル</button>
-                              </div>
-                            </div>
-                          </div>
-                        ) : (
-                          /* 📋 コンパクト表示 (ドラッグハンドル追加) */
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
-                            <div className="flex items-start sm:items-center gap-2 flex-1 min-w-0">
-                              {/* 🖐️ ドラッググリップアイコン */}
-                              <span
-                                className="text-zinc-500 hover:text-zinc-300 cursor-grab active:cursor-grabbing font-bold text-sm tracking-tighter shrink-0 px-0.5"
-                                title="ドラッグして並び替え"
-                              >
-                                ⋮⋮
-                              </span>
-
-                              <input
-                                type="checkbox"
-                                checked={item.is_packed}
-                                onChange={() => onTogglePacked(item.id, item.is_packed)}
-                                className="w-4 h-4 mt-0.5 sm:mt-0 accent-[#FF5500] cursor-pointer"
-                              />
-                              <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-                                {item.brand && (
-                                  <span style={{ color: catColor, borderColor: `${catColor}60`, backgroundColor: `${catColor}20` }} className="text-[10px] px-1.5 py-0.2 rounded font-bold border shrink-0">
-                                    {item.brand}
-                                  </span>
-                                )}
-                                <span className="font-bold text-xs text-white truncate">{item.product_name || item.name}</span>
-                                {item.model_number && (
-                                  <span className="text-[10px] bg-zinc-800 text-zinc-300 border border-zinc-700 px-1 py-0.2 rounded font-mono shrink-0">[{item.model_number}]</span>
-                                )}
-                                {item.is_consumable && (
-                                  <span className="text-[9px] bg-[#00E676] text-black px-1.5 py-0.2 rounded-full font-black shrink-0">消費物</span>
-                                )}
-                              </div>
-                            </div>
-
-                            <div className="flex items-center justify-between sm:justify-end gap-2 text-[11px] pl-8 sm:pl-0">
-                              <span className="font-semibold text-zinc-300 bg-zinc-800/80 px-2 py-0.5 rounded border border-zinc-700/50">
-                                {totalWeight.toLocaleString()}g / ¥{totalPrice.toLocaleString()}
-                              </span>
-                              <div className="flex items-center bg-zinc-800 border border-zinc-700 rounded">
-                                <button onClick={() => onUpdateQuantity(item.id, qty, -1)} className="px-1.5 text-xs font-bold text-zinc-300 hover:bg-zinc-700">-</button>
-                                <span className="px-1.5 font-bold text-[#FF5500] text-[10px]">{qty}</span>
-                                <button onClick={() => onUpdateQuantity(item.id, qty, 1)} className="px-1.5 text-xs font-bold text-zinc-300 hover:bg-zinc-700">+</button>
-                              </div>
-                              {item.product_url && (
-                                <a href={item.product_url} target="_blank" rel="noopener noreferrer" className="text-[#FFB800] hover:underline font-bold" title="Amazonで購入・詳細を見る">🛒</a>
-                              )}
-                              <button onClick={() => startEdit(item)} className="text-zinc-400 hover:text-white" title="編集">✏️</button>
-                              <button onClick={() => onDeleteGear(item.id)} className="text-zinc-400 hover:text-[#FF5500]" title="削除">🗑️</button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                  {categoryGears.map((item) => (
+                    <GearItemCard
+                      key={item.id}
+                      item={item}
+                      catColor={catColor}
+                      isDragging={draggedItemId === item.id}
+                      onDragStart={handleDragStart}
+                      onDragOver={handleDragOver}
+                      onDrop={(targetId) => handleDrop(targetId, categoryGears)}
+                      onTogglePacked={onTogglePacked}
+                      onUpdateQuantity={onUpdateQuantity}
+                      onUpdateGear={onUpdateGear}
+                      onDeleteGear={onDeleteGear}
+                    />
+                  ))}
                 </div>
               )}
             </div>

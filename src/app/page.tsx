@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import WeightsSummary from '@/components/WeightsSummary';
 import GearSearch from '@/components/GearSearch';
 import GearList from '@/components/GearList';
+import CsvManager from '@/components/CsvManager';
 
 export default function Home() {
   const [gears, setGears] = useState<any[]>([]);
@@ -67,7 +68,6 @@ export default function Home() {
     fetchGears();
   };
 
-  // ドラッグ＆ドロップ並び替え後のローカル保持
   const handleReorderGears = (reorderedGears: any[]) => {
     setGears(reorderedGears);
   };
@@ -84,6 +84,7 @@ export default function Home() {
 
         <WeightsSummary gears={gears} onCategoryClick={scrollToCategory} />
         <GearSearch onAddGear={handleAddGear} />
+        <CsvManager gears={gears} onGearsUpdated={fetchGears} />
         <GearList
           gears={gears} openCategories={openCategories} onToggleCategoryOpen={toggleCategoryOpen}
           onTogglePacked={togglePacked} onUpdateQuantity={updateQuantity} onUpdateGear={updateGear} onDeleteGear={deleteGear}
