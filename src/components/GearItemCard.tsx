@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import ClearableInput from './ClearableInput';
 
 type GearItem = {
   id: string;
@@ -100,69 +101,13 @@ export default function GearItemCard({
       }`}
     >
       {isEditing ? (
-        /* ✏️ 編集モード */
+        /* ✏️ 編集モード (共通コンポーネント化で超スッキリ!) */
         <div className="space-y-2">
           {/* メーカー名・型番・商品名 */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
-            {/* メーカー名 */}
-            <div className="relative">
-              <input
-                type="text"
-                value={editBrand}
-                onChange={(e) => setEditBrand(e.target.value)}
-                className="w-full pl-2 pr-6 py-1 border border-zinc-700 rounded bg-[#18181B] text-white text-xs"
-                placeholder="メーカー名"
-              />
-              {editBrand && (
-                <button
-                  type="button"
-                  onClick={() => setEditBrand('')}
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white text-[10px] font-bold p-0.5"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-
-            {/* 型番 */}
-            <div className="relative">
-              <input
-                type="text"
-                value={editModelNumber}
-                onChange={(e) => setEditModelNumber(e.target.value)}
-                className="w-full pl-2 pr-6 py-1 border border-zinc-700 rounded bg-[#18181B] text-white text-xs"
-                placeholder="型番"
-              />
-              {editModelNumber && (
-                <button
-                  type="button"
-                  onClick={() => setEditModelNumber('')}
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white text-[10px] font-bold p-0.5"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-
-            {/* 商品名 */}
-            <div className="relative">
-              <input
-                type="text"
-                value={editProductName}
-                onChange={(e) => setEditProductName(e.target.value)}
-                className="w-full pl-2 pr-6 py-1 border border-zinc-700 rounded bg-[#18181B] text-white text-xs"
-                placeholder="商品名"
-              />
-              {editProductName && (
-                <button
-                  type="button"
-                  onClick={() => setEditProductName('')}
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white text-[10px] font-bold p-0.5"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
+            <ClearableInput value={editBrand} onChange={setEditBrand} placeholder="メーカー名" />
+            <ClearableInput value={editModelNumber} onChange={setEditModelNumber} placeholder="型番" />
+            <ClearableInput value={editProductName} onChange={setEditProductName} placeholder="商品名" />
           </div>
 
           {/* カテゴリー・重量(10g単位)・価格(100円単位)・数量 */}
@@ -176,8 +121,6 @@ export default function GearItemCard({
                 <option key={c} value={c}>{c}</option>
               ))}
             </select>
-
-            {/* ⚖️ 重量 (10g単位) */}
             <input
               type="number"
               step="10"
@@ -187,8 +130,6 @@ export default function GearItemCard({
               className="px-2 py-1 border border-zinc-700 rounded bg-[#18181B] text-white text-xs"
               placeholder="重量(g)"
             />
-
-            {/* 💴 価格 (100円単位) */}
             <input
               type="number"
               step="100"
@@ -198,8 +139,6 @@ export default function GearItemCard({
               className="px-2 py-1 border border-zinc-700 rounded bg-[#18181B] text-white text-xs"
               placeholder="価格(円)"
             />
-
-            {/* 数量 */}
             <input
               type="number"
               step="1"
@@ -211,25 +150,8 @@ export default function GearItemCard({
             />
           </div>
 
-          {/* Amazon特定商品URL */}
-          <div className="relative">
-            <input
-              type="text"
-              value={editProductUrl}
-              onChange={(e) => setEditProductUrl(e.target.value)}
-              className="w-full pl-2 pr-6 py-1 border border-zinc-700 rounded bg-[#18181B] text-white text-xs font-mono"
-              placeholder="Amazon特定商品URL"
-            />
-            {editProductUrl && (
-              <button
-                type="button"
-                onClick={() => setEditProductUrl('')}
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white text-[10px] font-bold p-0.5"
-              >
-                ✕
-              </button>
-            )}
-          </div>
+          {/* Amazon URL */}
+          <ClearableInput value={editProductUrl} onChange={setEditProductUrl} placeholder="Amazon特定商品URL" fontMono />
 
           <div className="flex items-center justify-between pt-1">
             <label className="flex items-center gap-1 text-[11px] text-zinc-300 cursor-pointer">
@@ -274,4 +196,68 @@ export default function GearItemCard({
               onChange={() => onTogglePacked(item.id, item.is_packed)}
               className="w-4 h-4 mt-0.5 sm:mt-0 accent-[#FF5500] cursor-pointer"
             />
-            <div className="
+            <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+              {item.brand && (
+                <span
+                  style={{ color: catColor, borderColor: `${catColor}60`, backgroundColor: `${catColor}20` }}
+                  className="text-[10px] px-1.5 py-0.2 rounded font-bold border shrink-0"
+                >
+                  {item.brand}
+                </span>
+              )}
+              <span className="font-bold text-xs text-white truncate">{item.product_name || item.name}</span>
+              {item.model_number && (
+                <span className="text-[10px] bg-zinc-800 text-zinc-300 border border-zinc-700 px-1 py-0.2 rounded font-mono shrink-0">
+                  [{item.model_number}]
+                </span>
+              )}
+              {item.is_consumable && (
+                <span className="text-[9px] bg-[#00E676] text-black px-1.5 py-0.2 rounded-full font-black shrink-0">
+                  消費物
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between sm:justify-end gap-2 text-[11px] pl-8 sm:pl-0">
+            <span className="font-semibold text-zinc-300 bg-zinc-800/80 px-2 py-0.5 rounded border border-zinc-700/50">
+              {totalWeight.toLocaleString()}g / ¥{totalPrice.toLocaleString()}
+            </span>
+            <div className="flex items-center bg-zinc-800 border border-zinc-700 rounded">
+              <button
+                onClick={() => onUpdateQuantity(item.id, qty, -1)}
+                className="px-1.5 text-xs font-bold text-zinc-300 hover:bg-zinc-700"
+              >
+                -
+              </button>
+              <span className="px-1.5 font-bold text-[#FF5500] text-[10px]">{qty}</span>
+              <button
+                onClick={() => onUpdateQuantity(item.id, qty, 1)}
+                className="px-1.5 text-xs font-bold text-zinc-300 hover:bg-zinc-700"
+              >
+                +
+              </button>
+            </div>
+            {item.product_url && (
+              <a
+                href={item.product_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#FFB800] hover:underline font-bold"
+                title="Amazonで購入・詳細を見る"
+              >
+                🛒
+              </a>
+            )}
+            <button onClick={() => setIsEditing(true)} className="text-zinc-400 hover:text-white" title="編集">
+              ✏️
+            </button>
+            <button onClick={() => onDeleteGear(item.id)} className="text-zinc-400 hover:text-[#FF5500]" title="削除">
+              🗑️
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
