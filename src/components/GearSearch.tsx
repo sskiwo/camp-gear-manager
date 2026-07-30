@@ -96,7 +96,7 @@ export default function GearSearch({ onAddGear }: Props) {
         🔍 AI型番・キーワード自動検索
       </h2>
       <form onSubmit={handleAiSearch} className="flex gap-2">
-        {/* 文字入力欄＆一括クリアボタン（✕） */}
+        {/* 文字入力欄 ＆ 右端の一括クリアボタン (✕) */}
         <div className="relative flex-1">
           <input
             type="text"
