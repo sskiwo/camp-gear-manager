@@ -82,15 +82,23 @@ export default function Home() {
           <p className="text-xs text-zinc-400 mt-1">重量シミュレーション＆5カテゴリーパッキング</p>
         </header>
 
+        {/* 1. パッキング重量・金額サマリー */}
         <WeightsSummary gears={gears} onCategoryClick={scrollToCategory} />
+
+        {/* 2. AIキーワード・型番自動検索 */}
         <GearSearch onAddGear={handleAddGear} />
-        <CsvManager gears={gears} onGearsUpdated={fetchGears} />
+
+        {/* 3. 🎒 積載パッキングリスト */}
         <GearList
           gears={gears} openCategories={openCategories} onToggleCategoryOpen={toggleCategoryOpen}
           onTogglePacked={togglePacked} onUpdateQuantity={updateQuantity} onUpdateGear={updateGear} onDeleteGear={deleteGear}
           onReorderGears={handleReorderGears}
         />
 
+        {/* 4. 📂 CSVバックアップ・一括登録 (パッキングリスト直下へ移動) */}
+        <CsvManager gears={gears} onGearsUpdated={fetchGears} />
+
+        {/* 5. フッター */}
         <footer className="pt-8 pb-10 text-center border-t border-zinc-800 space-y-3">
           <Link href="/split-bill" className="inline-flex items-center justify-center gap-2 bg-[#FF5500] hover:bg-[#E04B00] text-white px-6 py-3.5 rounded-2xl text-xs font-black transition shadow-lg active:scale-98">
             💰 スマート割り勘計算機ページへ進む →
