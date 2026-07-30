@@ -54,7 +54,7 @@ export default function Home() {
   const [isSearching, setIsSearching] = useState(false);
   const [candidates, setCandidates] = useState<CandidateItem[]>([]);
 
-  // カテゴリーごとの開閉ステート（初期値はすべて開く）
+  // カテゴリーごとの開閉ステート
   const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({
     ベースギア: true,
     '調理ギア・燃料': true,
@@ -89,6 +89,19 @@ export default function Home() {
 
   const toggleCategoryOpen = (catName: string) => {
     setOpenCategories((prev) => ({ ...prev, [catName]: !prev[catName] }));
+  };
+
+  // カテゴリーボタンタップ時の該当場所への自動スクロール＆展開
+  const scrollToCategory = (catName: string) => {
+    // 閉じている場合は自動で開く
+    setOpenCategories((prev) => ({ ...prev, [catName]: true }));
+    // 位置へスムーズスクロール
+    setTimeout(() => {
+      const element = document.getElementById(`category-${catName}`);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 50);
   };
 
   const handleAiSearch = async (e: React.FormEvent) => {
@@ -228,26 +241,16 @@ export default function Home() {
     <main className="min-h-screen bg-[#F6F5EF] text-[#333333] p-4 md:p-8 font-sans">
       <div className="max-w-5xl mx-auto space-y-6">
         
-        {/* ヘッダー＆サブナビゲーション */}
-        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b-2 border-[#E0DED3]/70 pb-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-extrabold text-[#384F41] tracking-tight">
-              🏕️ Camp Gear Manager
-            </h1>
-            <p className="text-xs text-[#666666] mt-0.5">重量シミュレーション＆5カテゴリーパッキング</p>
-          </div>
-
-          {/* 割り勘ページへの誘導リンク */}
-          <Link
-            href="/split-bill"
-            className="inline-flex items-center justify-center gap-1.5 bg-[#BFA58A] hover:bg-[#A88869] text-white px-4 py-2 rounded-xl text-xs font-bold transition shadow-sm"
-          >
-            💰 スマート割り勘ページへ →
-          </Link>
+        {/* ヘッダー */}
+        <header className="border-b-2 border-[#E0DED3]/70 pb-4">
+          <h1 className="text-2xl md:text-3xl font-extrabold text-[#384F41] tracking-tight">
+            🏕️ Camp Gear Manager
+          </h1>
+          <p className="text-xs text-[#666666] mt-0.5">重量シミュレーション＆5カテゴリーパッキング</p>
         </header>
 
-        {/* 重量サマリー */}
-        <WeightsSummary gears={gears} />
+        {/* 重量サマリー（カテゴリータップイベント接続） */}
+        <WeightsSummary gears={gears} onCategoryClick={scrollToCategory} />
 
         {/* 🔍 AI検索 */}
         <section className="bg-white p-5 md:p-6 rounded-2xl shadow-md border border-[#E0DED3]/50 space-y-4">
@@ -341,7 +344,7 @@ export default function Home() {
           )}
         </section>
 
-        {/* 🎒 5カテゴリー別 積載ギアリスト（アコーディオン＆スリム表示） */}
+        {/* 🎒 5カテゴリー別 積載ギアリスト（ジャンプ先ID設定済み） */}
         <section className="bg-white p-5 md:p-6 rounded-2xl shadow-md border border-[#E0DED3]/50 space-y-4">
           <h2 className="text-lg font-bold text-[#384F41]">🎒 積載パッキングリスト</h2>
 
@@ -369,12 +372,12 @@ export default function Home() {
                   : '📦';
 
               return (
-                <div key={catName} className="border border-[#E0DED3]/60 rounded-xl overflow-hidden shadow-sm">
+                <div key={catName} id={`category-${catName}`} className="border border-[#E0DED3]/60 rounded-xl overflow-hidden shadow-sm scroll-mt-6">
                   {/* カテゴリーアコーディオンヘッダー */}
                   <button
                     onClick={() => toggleCategoryOpen(catName)}
                     style={{ backgroundColor: `${catColor}10`, borderColor: `${catColor}30` }}
-                    className="w-full flex items-center justify-between px-4 py-2.5 text-left transition hover:opacity-90 border-b"
+                    className="w-full flex items-center justify-between px-4 py-2.5 text-left transition hover:opacity-90 border-b cursor-pointer"
                   >
                     <div className="flex items-center gap-2">
                       <span className="text-base">{catIcon}</span>
@@ -430,14 +433,13 @@ export default function Home() {
                                   </label>
                                   <div className="flex gap-2">
                                     <button onClick={() => handleUpdateGear(item.id)} className="bg-[#384F41] text-white px-3 py-1 rounded text-[11px] font-bold">保存</button>
-                                    <button onClick={cancelEdit} className="bg-[#CCCCCC] text-[#333333] px-3 py-1 rounded text-[11px] font-bold">解</button>
+                                    <button onClick={cancelEdit} className="bg-[#CCCCCC] text-[#333333] px-3 py-1 rounded text-[11px] font-bold">キャンセル</button>
                                   </div>
                                 </div>
                               </div>
                             ) : (
                               /* 📋 スリム・スッキリコンパクト表示 */
                               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
-                                {/* 左側: チェック＋商品基本情報 */}
                                 <div className="flex items-start sm:items-center gap-2 flex-1 min-w-0">
                                   <input
                                     type="checkbox"
@@ -467,7 +469,6 @@ export default function Home() {
                                   </div>
                                 </div>
 
-                                {/* 右側: 小計＋数量＋ボタン */}
                                 <div className="flex items-center justify-between sm:justify-end gap-2 text-[11px] pl-6 sm:pl-0">
                                   <span className="font-semibold text-[#555555] bg-[#E0DED3]/40 px-2 py-0.5 rounded">
                                     {totalWeight.toLocaleString()}g / ¥{totalPrice.toLocaleString()}
@@ -500,6 +501,21 @@ export default function Home() {
             })
           )}
         </section>
+
+        {/* 🔻 フッター（一番下の割り勘リンク） */}
+        <footer className="pt-8 pb-10 text-center border-t border-[#E0DED3]/70 space-y-3">
+          <div>
+            <Link
+              href="/split-bill"
+              className="inline-flex items-center justify-center gap-2 bg-[#BFA58A] hover:bg-[#A88869] text-white px-6 py-3.5 rounded-2xl text-xs font-bold transition shadow-md hover:shadow-lg active:scale-98"
+            >
+              💰 スマート割り勘計算機ページへ進む →
+            </Link>
+          </div>
+          <p className="text-[11px] text-[#888888] font-medium">
+            🏕️ Camp Gear Manager & Packing Tool
+          </p>
+        </footer>
 
       </div>
     </main>
