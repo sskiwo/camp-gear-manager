@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server';
 import Groq from 'groq-sdk';
 
-// 試行するGroqモデルのリスト（万が一404になっても上から順に自動切替！）
+// レート制限が最もゆるく高速なモデル
 const MODELS = [
   'llama-3.1-8192',
-  'llama-3.3-70b-versatile',
-  'llama3-70b-8192',
+  'gemma2-9b-it',
   'mixtral-8x7b-32768',
 ];
 
@@ -21,68 +20,54 @@ export async function POST(req: Request) {
 
     if (!apiKey) {
       return NextResponse.json(
-        { error: '【エラー】GROQ_API_KEY がVercelの環境変数に設定されていません。' },
+        { error: 'GROQ_API_KEY が設定されていません。' },
         { status: 500 }
       );
     }
 
     const groq = new Groq({ apiKey });
 
-    // AIへの指示プロンプト
-    const prompt = `あなたはプロのキャンプパッキングアドバイザーです。
-ユーザーが入力したキーワード「${query}」を解析し、該当する代表的な商品（キャンプギア、食料品、飲料、燃料、日用品など）の候補を最大3件推測・特定して、指定のJSON形式のみで出力してください。
+    // トークン消費数を従来の1/10に抑えた英語の極小プロンプト
+    const prompt = `Item:"${query}"
+Output ONLY a raw JSON object with max 3 candidates for camping/outdoor item. No markdown, no conversation.
+JSON format:
+{"candidates":[{"brand":"string","model_number":"string","product_name":"string in Japanese","category":"ベースギア"|"調理ギア・燃料"|"衣類・防寒着"|"食料・飲料"|"その他・日用品","weight":number_in_grams,"price":number_in_yen}]}`;
 
-【キーワード解釈のルール】
-1. 曖昧な単語でも、メーカー名・ブランド名・正式商品名・規格（容量や型番）を自動補完してください。
-2. 重量(weight)の推測ルール: 飲料や缶詰、食料品の場合、中身の内容量だけでなく「容器・パッケージ込みの総重量(g)」を推測してください。
-3. カテゴリー(category)の判別ルール: 以下の5つのいずれかを厳密に選んで割り当ててください。
-   - "ベースギア" : テント、タープ、ペグ、シュラフ、マット、チェア、テーブル、ランタンなどの基本道具
-   - "調理ギア・燃料" : バーナー、クッカー、メスティン、焚き火台、ナイフ、クーラーボックス、CB缶/OD缶、薪、炭、着火剤など
-   - "衣類・防寒着" : ウェア、着替え、レインウェア、防寒具、帽子、シューズなど
-   - "食料・飲料" : 肉、野菜、カップ麺、缶詰、調味料、水、お茶、お酒など
-   - "その他・日用品" : ウェットティッシュ、ゴミ袋、救急セット、ポータブル電源、洗面具、雑貨など
-4. 型番(model_number)がない食品や日用品の場合は、空文字("")にしてください。
-5. 解説や挨拶など、JSON以外の文章は絶対に含めないでください。
-
-【出力フォーマット】:
-{
-  "candidates": [
-    {
-      "brand": "メーカー名またはブランド名",
-      "model_number": "型番（無ければ空文字\"\"）",
-      "product_name": "正確な商品名",
-      "category": "ベースギア" | "調理ギア・燃料" | "衣類・防寒着" | "食料・飲料" | "その他・日用品",
-      "weight": 容器を含む1個あたりの本体総重量(グラム数値のみ),
-      "price": 標準的な実売価格または定価の日本円数値のみ
-    }
-  ]
-}`;
-
-    let chatCompletion = null;
+    let text = '';
     let lastError = null;
 
-    // 使えるモデルが見つかるまで順に試す
     for (const model of MODELS) {
       try {
-        chatCompletion = await groq.chat.completions.create({
+        const chatCompletion = await groq.chat.completions.create({
           messages: [{ role: 'user', content: prompt }],
           model: model,
+          temperature: 0.1,
+          max_tokens: 350, // 無駄な長文生成を防ぐ
           response_format: { type: 'json_object' },
         });
 
-        if (chatCompletion?.choices[0]?.message?.content) {
-          break; // 成功したらループを抜ける
-        }
-      } catch (err) {
-        console.warn(`Model ${model} failed, trying next...`, err);
+        text = chatCompletion?.choices[0]?.message?.content || '';
+        if (text) break;
+      } catch (err: any) {
         lastError = err;
+        // 429エラーが発生した場合は2秒待機して次のモデルへ
+        if (err?.status === 429 || err?.message?.includes('429')) {
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+        }
       }
     }
 
-    const text = chatCompletion?.choices[0]?.message?.content;
     if (!text) {
-      throw lastError || new Error('Groq AIからの応答を取得できませんでした');
+      return NextResponse.json(
+        { error: 'AIの無料利用枠（1分あたりの制限）に達しました。10秒ほど置いてから再度お試しください。' },
+        { status: 429 }
+      );
     }
+
+    // JSONクレンジング
+    text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) text = jsonMatch[0];
 
     const gearData = JSON.parse(text);
     const candidates = (gearData.candidates || []).map((item: any) => {
@@ -107,7 +92,7 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error('Gear search error:', error);
     return NextResponse.json(
-      { error: `【AI検索エラー詳細】: ${error.message || JSON.stringify(error)}` },
+      { error: 'AIアクセスが一時的に混み合っています。10秒ほど置いてから再度お試しください。' },
       { status: 500 }
     );
   }
