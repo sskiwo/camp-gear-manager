@@ -100,7 +100,7 @@ export default function GearItemCard({
       }`}
     >
       {isEditing ? (
-        /* ✏️ 編集モード（全テキスト入力欄に ✕ クリアボタンを配置） */
+        /* ✏️ 編集モード */
         <div className="space-y-2">
           {/* メーカー名・型番・商品名 */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
@@ -165,7 +165,7 @@ export default function GearItemCard({
             </div>
           </div>
 
-          {/* カテゴリー・重量・価格・数量 */}
+          {/* カテゴリー・重量(10g単位)・価格(100円単位)・数量 */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
             <select
               value={editCategory}
@@ -176,22 +176,34 @@ export default function GearItemCard({
                 <option key={c} value={c}>{c}</option>
               ))}
             </select>
+
+            {/* ⚖️ 重量 (10g単位) */}
             <input
               type="number"
+              step="10"
+              min="0"
               value={editWeight}
               onChange={(e) => setEditWeight(e.target.value)}
               className="px-2 py-1 border border-zinc-700 rounded bg-[#18181B] text-white text-xs"
               placeholder="重量(g)"
             />
+
+            {/* 💴 価格 (100円単位) */}
             <input
               type="number"
+              step="100"
+              min="0"
               value={editPrice}
               onChange={(e) => setEditPrice(e.target.value)}
               className="px-2 py-1 border border-zinc-700 rounded bg-[#18181B] text-white text-xs"
               placeholder="価格(円)"
             />
+
+            {/* 数量 */}
             <input
               type="number"
+              step="1"
+              min="1"
               value={editQuantity}
               onChange={(e) => setEditQuantity(e.target.value)}
               className="px-2 py-1 border border-zinc-700 rounded bg-[#18181B] text-white text-xs"
@@ -262,68 +274,4 @@ export default function GearItemCard({
               onChange={() => onTogglePacked(item.id, item.is_packed)}
               className="w-4 h-4 mt-0.5 sm:mt-0 accent-[#FF5500] cursor-pointer"
             />
-            <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-              {item.brand && (
-                <span
-                  style={{ color: catColor, borderColor: `${catColor}60`, backgroundColor: `${catColor}20` }}
-                  className="text-[10px] px-1.5 py-0.2 rounded font-bold border shrink-0"
-                >
-                  {item.brand}
-                </span>
-              )}
-              <span className="font-bold text-xs text-white truncate">{item.product_name || item.name}</span>
-              {item.model_number && (
-                <span className="text-[10px] bg-zinc-800 text-zinc-300 border border-zinc-700 px-1 py-0.2 rounded font-mono shrink-0">
-                  [{item.model_number}]
-                </span>
-              )}
-              {item.is_consumable && (
-                <span className="text-[9px] bg-[#00E676] text-black px-1.5 py-0.2 rounded-full font-black shrink-0">
-                  消費物
-                </span>
-              )}
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between sm:justify-end gap-2 text-[11px] pl-8 sm:pl-0">
-            <span className="font-semibold text-zinc-300 bg-zinc-800/80 px-2 py-0.5 rounded border border-zinc-700/50">
-              {totalWeight.toLocaleString()}g / ¥{totalPrice.toLocaleString()}
-            </span>
-            <div className="flex items-center bg-zinc-800 border border-zinc-700 rounded">
-              <button
-                onClick={() => onUpdateQuantity(item.id, qty, -1)}
-                className="px-1.5 text-xs font-bold text-zinc-300 hover:bg-zinc-700"
-              >
-                -
-              </button>
-              <span className="px-1.5 font-bold text-[#FF5500] text-[10px]">{qty}</span>
-              <button
-                onClick={() => onUpdateQuantity(item.id, qty, 1)}
-                className="px-1.5 text-xs font-bold text-zinc-300 hover:bg-zinc-700"
-              >
-                +
-              </button>
-            </div>
-            {item.product_url && (
-              <a
-                href={item.product_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[#FFB800] hover:underline font-bold"
-                title="Amazonで購入・詳細を見る"
-              >
-                🛒
-              </a>
-            )}
-            <button onClick={() => setIsEditing(true)} className="text-zinc-400 hover:text-white" title="編集">
-              ✏️
-            </button>
-            <button onClick={() => onDeleteGear(item.id)} className="text-zinc-400 hover:text-[#FF5500]" title="削除">
-              🗑️
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+            <div className="
