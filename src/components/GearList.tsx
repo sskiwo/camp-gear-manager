@@ -61,6 +61,7 @@ export default function GearList({
   const [editPrice, setEditPrice] = useState('');
   const [editQuantity, setEditQuantity] = useState('1');
   const [editIsConsumable, setEditIsConsumable] = useState(false);
+  const [editProductUrl, setEditProductUrl] = useState('');
 
   const startEdit = (item: GearItem) => {
     setEditingId(item.id);
@@ -72,10 +73,16 @@ export default function GearList({
     setEditPrice(String(item.price || 0));
     setEditQuantity(String(item.quantity || 1));
     setEditIsConsumable(item.is_consumable);
+    setEditProductUrl(item.product_url || '');
   };
 
   const handleSave = async (id: string) => {
     const fullName = `${editBrand} ${editProductName} ${editModelNumber}`.trim();
+    
+    // 特定URLが入力されていればそれを優先、なければ精密検索URLを生成
+    const defaultSearchUrl = `https://www.amazon.co.jp/s?k=${encodeURIComponent(fullName || editProductName)}`;
+    const finalUrl = editProductUrl.trim() ? editProductUrl.trim() : defaultSearchUrl;
+
     await onUpdateGear(id, {
       name: fullName || editProductName,
       brand: editBrand,
@@ -86,7 +93,7 @@ export default function GearList({
       price: Number(editPrice) || 0,
       quantity: Math.max(1, Number(editQuantity) || 1),
       is_consumable: editIsConsumable,
-      product_url: `https://www.amazon.co.jp/s?k=${encodeURIComponent(fullName || editProductName)}`,
+      product_url: finalUrl,
     });
     setEditingId(null);
   };
@@ -143,6 +150,7 @@ export default function GearList({
                     return (
                       <div key={item.id} className={`p-2.5 rounded-lg border text-xs transition ${item.is_packed ? 'bg-[#27272A] border-zinc-700/80' : 'bg-zinc-900/50 opacity-40 border-transparent'}`}>
                         {editingId === item.id ? (
+                          /* ✏️ 編集モード（個別URLの設定欄を追加！） */
                           <div className="space-y-2">
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
                               <input type="text" value={editBrand} onChange={(e) => setEditBrand(e.target.value)} className="px-2 py-1 border border-zinc-700 rounded bg-[#18181B] text-white text-xs" placeholder="メーカー名" />
@@ -157,17 +165,28 @@ export default function GearList({
                               <input type="number" value={editPrice} onChange={(e) => setEditPrice(e.target.value)} className="px-2 py-1 border border-zinc-700 rounded bg-[#18181B] text-white text-xs" placeholder="価格(円)" />
                               <input type="number" value={editQuantity} onChange={(e) => setEditQuantity(e.target.value)} className="px-2 py-1 border border-zinc-700 rounded bg-[#18181B] text-white text-xs" placeholder="数量" />
                             </div>
+                            {/* 特定の商品URL入力欄 */}
+                            <div>
+                              <input
+                                type="text"
+                                value={editProductUrl}
+                                onChange={(e) => setEditProductUrl(e.target.value)}
+                                className="w-full px-2 py-1 border border-zinc-700 rounded bg-[#18181B] text-white text-xs font-mono"
+                                placeholder="Amazon特定商品URL（空欄なら自動検索リンクになります）"
+                              />
+                            </div>
                             <div className="flex items-center justify-between pt-1">
-                              <label className="flex items-center gap-1 text-[11px] text-zinc-300">
+                              <label className="flex items-center gap-1 text-[11px] text-zinc-300 cursor-pointer">
                                 <input type="checkbox" checked={editIsConsumable} onChange={(e) => setEditIsConsumable(e.target.checked)} className="w-3 h-3 accent-[#FF5500]" /> 🔥 消費物
                               </label>
                               <div className="flex gap-2">
-                                <button onClick={() => handleSave(item.id)} className="bg-[#FF5500] text-white px-3 py-1 rounded text-[11px] font-bold">保存</button>
-                                <button onClick={() => setEditingId(null)} className="bg-zinc-700 text-zinc-300 px-3 py-1 rounded text-[11px] font-bold">解</button>
+                                <button onClick={() => handleSave(item.id)} className="bg-[#FF5500] text-white px-3 py-1 rounded text-[11px] font-bold hover:bg-[#E04B00]">保存</button>
+                                <button onClick={() => setEditingId(null)} className="bg-zinc-700 text-zinc-300 px-3 py-1 rounded text-[11px] font-bold">キャンセル</button>
                               </div>
                             </div>
                           </div>
                         ) : (
+                          /* 📋 スリム・スッキリコンパクト表示 */
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
                             <div className="flex items-start sm:items-center gap-2 flex-1 min-w-0">
                               <input type="checkbox" checked={item.is_packed} onChange={() => onTogglePacked(item.id, item.is_packed)} className="w-4 h-4 mt-0.5 sm:mt-0 accent-[#FF5500] cursor-pointer" />
@@ -197,10 +216,10 @@ export default function GearList({
                                 <button onClick={() => onUpdateQuantity(item.id, qty, 1)} className="px-1.5 text-xs font-bold text-zinc-300 hover:bg-zinc-700">+</button>
                               </div>
                               {item.product_url && (
-                                <a href={item.product_url} target="_blank" rel="noopener noreferrer" className="text-[#FFB800] hover:underline font-bold">🛒</a>
+                                <a href={item.product_url} target="_blank" rel="noopener noreferrer" className="text-[#FFB800] hover:underline font-bold" title="Amazonで購入・詳細を見る">🛒</a>
                               )}
-                              <button onClick={() => startEdit(item)} className="text-zinc-400 hover:text-white">✏️</button>
-                              <button onClick={() => onDeleteGear(item.id)} className="text-zinc-400 hover:text-[#FF5500]">🗑️</button>
+                              <button onClick={() => startEdit(item)} className="text-zinc-400 hover:text-white" title="編集">✏️</button>
+                              <button onClick={() => onDeleteGear(item.id)} className="text-zinc-400 hover:text-[#FF5500]" title="削除">🗑️</button>
                             </div>
                           </div>
                         )}
