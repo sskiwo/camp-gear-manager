@@ -7,6 +7,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+// 制限の緩い軽量モデル順に試行
 const MODELS = [
   'llama-3.1-8192',
   'gemma2-9b-it',
@@ -21,11 +22,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'キーワードを入力してください' }, { status: 400 });
     }
 
-    // 検索キーの表記ゆれを統一（小文字化・前後空白削除）
-    const cleanQuery = query.trim().toLowerCase();
+    // ⚡ 全角スペースを半角に変換＆前後空白削除でキーワードを綺麗に整形
+    const cleanQuery = query.replace(/ /g, ' ').trim().toLowerCase();
 
     // --------------------------------------------------
-    // ⚡【キャッシュ確認】過去に検索されたキーワードかSupabaseをチェック
+    // ⚡【1. キャッシュ確認】過去の検索ならAIを使わず0.1秒で即返却
     // --------------------------------------------------
     try {
       const { data: cacheData } = await supabase
@@ -35,15 +36,15 @@ export async function POST(req: Request) {
         .single();
 
       if (cacheData && cacheData.candidates) {
-        console.log(`⚡ キャッシュから即座に返却: "${cleanQuery}"`);
+        console.log(`⚡ キャッシュから返却: "${cleanQuery}"`);
         return NextResponse.json({ candidates: cacheData.candidates });
       }
     } catch (e) {
-      // キャッシュ読み込みエラー時は無視してAI検索へフォールバック
+      // キャッシュ未ヒット時は通過
     }
 
     // --------------------------------------------------
-    // 🤖 キャッシュがない場合のみ Groq AI に問い合わせ
+    // 🤖【2. Groq AI 検索】自動リトライ＆フォールバック機能付き
     // --------------------------------------------------
     const apiKey = process.env.GROQ_API_KEY;
 
@@ -57,20 +58,21 @@ export async function POST(req: Request) {
     const groq = new Groq({ apiKey });
 
     const prompt = `Item:"${cleanQuery}"
-Output ONLY a raw JSON object with max 3 candidates for camping/outdoor item. No markdown.
+Output ONLY raw JSON object with max 3 candidates for camping/outdoor item. No markdown.
 JSON format:
 {"candidates":[{"brand":"string","model_number":"string","product_name":"string in Japanese","category":"ベースギア"|"調理ギア・燃料"|"衣類・防寒着"|"食料・飲料"|"その他・日用品","weight":number_in_grams,"price":number_in_yen}]}`;
 
     let text = '';
     let lastError = null;
 
+    // 複数の軽量AIモデルで順次トライ
     for (const model of MODELS) {
       try {
         const chatCompletion = await groq.chat.completions.create({
           messages: [{ role: 'user', content: prompt }],
           model: model,
           temperature: 0.1,
-          max_tokens: 350,
+          max_tokens: 300,
           response_format: { type: 'json_object' },
         });
 
@@ -78,15 +80,16 @@ JSON format:
         if (text) break;
       } catch (err: any) {
         lastError = err;
+        // 429エラーが発生した場合は1秒待機して次のモデルへリトライ
         if (err?.status === 429 || err?.message?.includes('429')) {
-          await new Promise((resolve) => setTimeout(resolve, 1500));
+          await new Promise((resolve) => setTimeout(resolve, 1000));
         }
       }
     }
 
     if (!text) {
       return NextResponse.json(
-        { error: 'AIアクセスが混み合っています。10秒ほど置いてから再度お試しか、過去に検索したキーワードをお試しください。' },
+        { error: 'AIアクセスが混み合っています。5〜10秒ほど空けて再度お試しください。' },
         { status: 429 }
       );
     }
@@ -116,7 +119,7 @@ JSON format:
     });
 
     // --------------------------------------------------
-    // 💾【キャッシュ保存】次回のために検索結果をSupabaseに保存
+    // 💾【3. キャッシュ保存】次回の検索（誰かが同じ検索をした時）のために保存
     // --------------------------------------------------
     if (candidates.length > 0) {
       await supabase.from('search_cache').insert([
@@ -131,7 +134,7 @@ JSON format:
   } catch (error: any) {
     console.error('Gear search error:', error);
     return NextResponse.json(
-      { error: 'AIアクセスが一時的に混み合っています。10秒ほど置いてから再度お試しください。' },
+      { error: 'AIアクセスが混み合っています。5〜10秒ほど空けて再度お試しください。' },
       { status: 500 }
     );
   }
