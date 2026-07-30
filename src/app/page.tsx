@@ -10,7 +10,6 @@ import GearList from '@/components/GearList';
 export default function Home() {
   const [gears, setGears] = useState<any[]>([]);
 
-  // 初期表示時は全カテゴリーを閉じている状態（false）に設定
   const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({
     ベースギア: false,
     '調理ギア・燃料': false,
@@ -68,6 +67,11 @@ export default function Home() {
     fetchGears();
   };
 
+  // ドラッグ＆ドロップ並び替え後のローカル保持
+  const handleReorderGears = (reorderedGears: any[]) => {
+    setGears(reorderedGears);
+  };
+
   return (
     <main className="min-h-screen bg-[#09090B] text-zinc-100 p-4 md:p-8 font-sans">
       <div className="max-w-5xl mx-auto space-y-6">
@@ -83,6 +87,7 @@ export default function Home() {
         <GearList
           gears={gears} openCategories={openCategories} onToggleCategoryOpen={toggleCategoryOpen}
           onTogglePacked={togglePacked} onUpdateQuantity={updateQuantity} onUpdateGear={updateGear} onDeleteGear={deleteGear}
+          onReorderGears={handleReorderGears}
         />
 
         <footer className="pt-8 pb-10 text-center border-t border-zinc-800 space-y-3">

@@ -25,6 +25,7 @@ type Props = {
   onUpdateQuantity: (id: string, currentQty: number, delta: number) => void;
   onUpdateGear: (id: string, data: any) => Promise<void>;
   onDeleteGear: (id: string) => void;
+  onReorderGears?: (reorderedGears: GearItem[]) => void;
 };
 
 const CATEGORIES = [
@@ -51,6 +52,7 @@ export default function GearList({
   onUpdateQuantity,
   onUpdateGear,
   onDeleteGear,
+  onReorderGears,
 }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editBrand, setEditBrand] = useState('');
@@ -62,6 +64,9 @@ export default function GearList({
   const [editQuantity, setEditQuantity] = useState('1');
   const [editIsConsumable, setEditIsConsumable] = useState(false);
   const [editProductUrl, setEditProductUrl] = useState('');
+
+  // ドラッグ＆ドロップ用のステート
+  const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
 
   const startEdit = (item: GearItem) => {
     setEditingId(item.id);
@@ -78,8 +83,6 @@ export default function GearList({
 
   const handleSave = async (id: string) => {
     const fullName = `${editBrand} ${editProductName} ${editModelNumber}`.trim();
-    
-    // 特定URLが入力されていればそれを優先、なければ精密検索URLを生成
     const defaultSearchUrl = `https://www.amazon.co.jp/s?k=${encodeURIComponent(fullName || editProductName)}`;
     const finalUrl = editProductUrl.trim() ? editProductUrl.trim() : defaultSearchUrl;
 
@@ -98,9 +101,46 @@ export default function GearList({
     setEditingId(null);
   };
 
+  // --- ドラッグ＆ドロップのイベントハンドラー ---
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    setDraggedItemId(id);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (targetId: string, categoryGears: GearItem[]) => {
+    if (!draggedItemId || draggedItemId === targetId) return;
+
+    const dragIndex = categoryGears.findIndex((g) => g.id === draggedItemId);
+    const dropIndex = categoryGears.findIndex((g) => g.id === targetId);
+
+    if (dragIndex === -1 || dropIndex === -1) return;
+
+    // カテゴリー内での並び替え
+    const newCatGears = [...categoryGears];
+    const [removed] = newCatGears.splice(dragIndex, 1);
+    newCatGears.splice(dropIndex, 0, removed);
+
+    // 全体リストへの反映
+    const otherGears = gears.filter((g) => !categoryGears.some((cg) => cg.id === g.id));
+    const reorderedAll = [...otherGears, ...newCatGears];
+
+    if (onReorderGears) {
+      onReorderGears(reorderedAll);
+    }
+    setDraggedItemId(null);
+  };
+
   return (
     <section className="bg-[#18181B] p-5 md:p-6 rounded-2xl border border-zinc-800 space-y-4 shadow-xl">
-      <h2 className="text-lg font-extrabold text-white">🎒 積載パッキングリスト</h2>
+      <h2 className="text-lg font-extrabold text-white flex items-center justify-between">
+        <span>🎒 積載パッキングリスト</span>
+        <span className="text-xs text-zinc-400 font-normal">💡「⋮⋮」を掴んで並び替えできます</span>
+      </h2>
 
       {gears.length === 0 ? (
         <p className="text-center text-zinc-500 py-6 font-medium bg-[#27272A]/50 rounded-xl border border-zinc-800 text-xs">
@@ -146,11 +186,25 @@ export default function GearList({
                     const qty = item.quantity || 1;
                     const totalWeight = (item.weight || 0) * qty;
                     const totalPrice = (item.price || 0) * qty;
+                    const isDragging = draggedItemId === item.id;
 
                     return (
-                      <div key={item.id} className={`p-2.5 rounded-lg border text-xs transition ${item.is_packed ? 'bg-[#27272A] border-zinc-700/80' : 'bg-zinc-900/50 opacity-40 border-transparent'}`}>
+                      <div
+                        key={item.id}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, item.id)}
+                        onDragOver={handleDragOver}
+                        onDrop={() => handleDrop(item.id, categoryGears)}
+                        className={`p-2.5 rounded-lg border text-xs transition select-none ${
+                          isDragging ? 'opacity-30 border-[#FF5500] bg-zinc-800' : ''
+                        } ${
+                          item.is_packed
+                            ? 'bg-[#27272A] border-zinc-700/80 hover:border-zinc-500'
+                            : 'bg-zinc-900/50 opacity-40 border-transparent'
+                        }`}
+                      >
                         {editingId === item.id ? (
-                          /* ✏️ 編集モード（個別URLの設定欄を追加！） */
+                          /* ✏️ 編集モード */
                           <div className="space-y-2">
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
                               <input type="text" value={editBrand} onChange={(e) => setEditBrand(e.target.value)} className="px-2 py-1 border border-zinc-700 rounded bg-[#18181B] text-white text-xs" placeholder="メーカー名" />
@@ -165,7 +219,6 @@ export default function GearList({
                               <input type="number" value={editPrice} onChange={(e) => setEditPrice(e.target.value)} className="px-2 py-1 border border-zinc-700 rounded bg-[#18181B] text-white text-xs" placeholder="価格(円)" />
                               <input type="number" value={editQuantity} onChange={(e) => setEditQuantity(e.target.value)} className="px-2 py-1 border border-zinc-700 rounded bg-[#18181B] text-white text-xs" placeholder="数量" />
                             </div>
-                            {/* 特定の商品URL入力欄 */}
                             <div>
                               <input
                                 type="text"
@@ -186,10 +239,23 @@ export default function GearList({
                             </div>
                           </div>
                         ) : (
-                          /* 📋 スリム・スッキリコンパクト表示 */
+                          /* 📋 コンパクト表示 (ドラッグハンドル追加) */
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
                             <div className="flex items-start sm:items-center gap-2 flex-1 min-w-0">
-                              <input type="checkbox" checked={item.is_packed} onChange={() => onTogglePacked(item.id, item.is_packed)} className="w-4 h-4 mt-0.5 sm:mt-0 accent-[#FF5500] cursor-pointer" />
+                              {/* 🖐️ ドラッググリップアイコン */}
+                              <span
+                                className="text-zinc-500 hover:text-zinc-300 cursor-grab active:cursor-grabbing font-bold text-sm tracking-tighter shrink-0 px-0.5"
+                                title="ドラッグして並び替え"
+                              >
+                                ⋮⋮
+                              </span>
+
+                              <input
+                                type="checkbox"
+                                checked={item.is_packed}
+                                onChange={() => onTogglePacked(item.id, item.is_packed)}
+                                className="w-4 h-4 mt-0.5 sm:mt-0 accent-[#FF5500] cursor-pointer"
+                              />
                               <div className="flex flex-wrap items-center gap-1.5 min-w-0">
                                 {item.brand && (
                                   <span style={{ color: catColor, borderColor: `${catColor}60`, backgroundColor: `${catColor}20` }} className="text-[10px] px-1.5 py-0.2 rounded font-bold border shrink-0">
@@ -206,7 +272,7 @@ export default function GearList({
                               </div>
                             </div>
 
-                            <div className="flex items-center justify-between sm:justify-end gap-2 text-[11px] pl-6 sm:pl-0">
+                            <div className="flex items-center justify-between sm:justify-end gap-2 text-[11px] pl-8 sm:pl-0">
                               <span className="font-semibold text-zinc-300 bg-zinc-800/80 px-2 py-0.5 rounded border border-zinc-700/50">
                                 {totalWeight.toLocaleString()}g / ¥{totalPrice.toLocaleString()}
                               </span>
