@@ -1,5 +1,7 @@
 'use client';
 
+import { useState } from 'react';
+
 type GearItem = {
   id: string;
   category?: string;
@@ -32,24 +34,33 @@ const CATEGORY_COLORS = {
 };
 
 export default function WeightsSummary({ gears, onCategoryClick }: Props) {
+  // 目標重量 (初期値: 15.0 kg)
+  const [targetWeightKg, setTargetWeightKg] = useState<number>(15.0);
+
   const packedGears = gears.filter((g) => g.is_packed);
 
-  // 1. 行き総重量
+  // 1. 行き総重量 (g)
   const totalOutgoingWeight = packedGears.reduce(
     (sum, g) => sum + (g.weight || 0) * (g.quantity || 1),
     0
   );
 
-  // 2. 帰り総重量 (消費物以外)
+  // 2. 帰り総重量 (消費物以外 / g)
   const totalReturnWeight = packedGears
     .filter((g) => !g.is_consumable)
     .reduce((sum, g) => sum + (g.weight || 0) * (g.quantity || 1), 0);
 
-  // 3. 💰 パッキング全体の合計金額
+  // 3. パッキング全体の合計金額
   const totalPrice = packedGears.reduce(
     (sum, g) => sum + (g.price || 0) * (g.quantity || 1),
     0
   );
+
+  // 目標重量の計算 (kg ➔ g)
+  const targetWeightG = targetWeightKg * 1000;
+  const diffWeightG = targetWeightG - totalOutgoingWeight; // 残り許容量(g)
+  const isOver = diffWeightG < 0;
+  const progressPct = targetWeightG > 0 ? Math.min(100, (totalOutgoingWeight / targetWeightG) * 100) : 0;
 
   // 4. カテゴリーごとの重量 ＆ 金額
   const categoryWeights: Record<string, number> = {};
@@ -71,12 +82,57 @@ export default function WeightsSummary({ gears, onCategoryClick }: Props) {
 
   return (
     <div className="bg-[#18181B] p-5 md:p-6 rounded-2xl border border-zinc-800 space-y-5 text-white shadow-xl">
-      <h2 className="text-base font-bold text-white flex items-center justify-between">
-        <span>📊 パッキングサマリー</span>
-        <span className="text-xs text-zinc-400 font-normal">全{packedGears.length}点パッキング中</span>
-      </h2>
+      
+      {/* ヘッダー＆目標重量設定 */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-3">
+        <h2 className="text-base font-bold text-white flex items-center gap-2">
+          📊 パッキングサマリー
+          <span className="text-xs text-zinc-400 font-normal">({packedGears.length}点)</span>
+        </h2>
 
-      {/* 👑 サマリーカード (重量比較 ＋ 総額カード) */}
+        {/* 🎯 目標重量の入力フォーム */}
+        <div className="flex items-center gap-2 bg-[#27272A] px-3 py-1.5 rounded-xl border border-zinc-700">
+          <span className="text-xs font-extrabold text-[#FFB800]">🎯 目標重量:</span>
+          <input
+            type="number"
+            step="0.5"
+            min="1"
+            value={targetWeightKg}
+            onChange={(e) => setTargetWeightKg(Math.max(0.1, Number(e.target.value) || 0))}
+            className="w-16 bg-[#18181B] border border-zinc-600 rounded px-2 py-0.5 text-xs font-black text-white text-right focus:outline-none focus:border-[#FF5500]"
+          />
+          <span className="text-xs font-bold text-zinc-300">kg</span>
+        </div>
+      </div>
+
+      {/* 🎯 目標重量プログレスバー ＆ 残り許容量表示 */}
+      <div className="bg-[#27272A] p-3.5 rounded-xl border border-zinc-700/80 space-y-2">
+        <div className="flex justify-between items-center text-xs font-bold">
+          <span className="text-zinc-300">目標達成率 ({progressPct.toFixed(1)}%)</span>
+          {isOver ? (
+            <span className="text-[#FF5500] font-black animate-pulse">
+              ⚠️ 目標を {Math.abs(diffWeightG / 1000).toFixed(2)} kg オーバー！
+            </span>
+          ) : (
+            <span className="text-[#00E676] font-black">
+              🎯 あと {(diffWeightG / 1000).toFixed(2)} kg 載せられます
+            </span>
+          )}
+        </div>
+        
+        {/* バーグラフ */}
+        <div className="h-3 w-full bg-[#18181B] rounded-full overflow-hidden p-0.5 border border-zinc-700">
+          <div
+            style={{
+              width: `${progressPct}%`,
+              backgroundColor: isOver ? '#FF5500' : '#00E676',
+            }}
+            className="h-full rounded-full transition-all duration-300"
+          />
+        </div>
+      </div>
+
+      {/* 👑 重量＆金額サマリーカード */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {/* 行き重量 */}
         <div className="bg-[#27272A] border border-[#FF5500]/50 p-3.5 rounded-xl text-center shadow-inner">
@@ -96,7 +152,7 @@ export default function WeightsSummary({ gears, onCategoryClick }: Props) {
           <span className="text-[10px] text-zinc-400 block font-mono">({totalReturnWeight.toLocaleString()} g)</span>
         </div>
 
-        {/* 💰 パッキング合計金額 (平均表記を削除してスッキリ化) */}
+        {/* 💰 パッキング合計金額 */}
         <div className="bg-[#27272A] border border-[#00E676]/50 p-3.5 rounded-xl text-center shadow-inner flex flex-col justify-center">
           <span className="text-[11px] font-extrabold text-[#00E676] block tracking-wide">💰 パッキング合計金額</span>
           <span className="text-xl md:text-2xl font-black text-[#00E676] mt-0.5">
