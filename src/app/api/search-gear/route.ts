@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server';
 import Groq from 'groq-sdk';
-import { createClient } from '@supabase/supabase-[# Supabase連携用の設定
-NEXT_PUBLIC_SUPABASE_URL=YOUR_SUPABASE_URL
-NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
-js';
+import { createClient } from '@supabase/supabase-js';
 
 // Supabase クライアント初期化
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
