@@ -32,7 +32,6 @@ const CATEGORY_COLORS = {
 };
 
 export default function WeightsSummary({ gears, onCategoryClick }: Props) {
-  // パッキング対象（チェックが入っている）のギア
   const packedGears = gears.filter((g) => g.is_packed);
 
   // 1. 行き総重量
@@ -97,14 +96,11 @@ export default function WeightsSummary({ gears, onCategoryClick }: Props) {
           <span className="text-[10px] text-zinc-400 block font-mono">({totalReturnWeight.toLocaleString()} g)</span>
         </div>
 
-        {/* 💰 パッキング合計金額 (新規追加) */}
-        <div className="bg-[#27272A] border border-[#00E676]/50 p-3.5 rounded-xl text-center shadow-inner">
+        {/* 💰 パッキング合計金額 (平均表記を削除してスッキリ化) */}
+        <div className="bg-[#27272A] border border-[#00E676]/50 p-3.5 rounded-xl text-center shadow-inner flex flex-col justify-center">
           <span className="text-[11px] font-extrabold text-[#00E676] block tracking-wide">💰 パッキング合計金額</span>
-          <span className="text-xl md:text-2xl font-black text-[#00E676]">
+          <span className="text-xl md:text-2xl font-black text-[#00E676] mt-0.5">
             ¥{totalPrice.toLocaleString()}
-          </span>
-          <span className="text-[10px] text-zinc-400 block font-mono">
-            (平均: ¥{packedGears.length > 0 ? Math.round(totalPrice / packedGears.length).toLocaleString() : 0} / 点)
           </span>
         </div>
       </div>
@@ -134,7 +130,7 @@ export default function WeightsSummary({ gears, onCategoryClick }: Props) {
         </div>
       </div>
 
-      {/* 🏷️ カテゴリー別内訳（重量 ＆ 金額併記） */}
+      {/* 🏷️ カテゴリー別内訳 */}
       <div className="pt-1">
         <span className="text-[11px] font-bold text-zinc-400 block mb-2">
           👇 タップすると下の各カテゴリーへジャンプします:
@@ -156,11 +152,9 @@ export default function WeightsSummary({ gears, onCategoryClick }: Props) {
                 </span>
 
                 <div className="space-y-0.5">
-                  {/* 重量表示 */}
                   <div className="text-xs font-black text-white block">
                     ⚖️ {weight >= 1000 ? `${(weight / 1000).toFixed(2)}kg` : `${weight}g`}
                   </div>
-                  {/* 金額表示 (新規追加) */}
                   <div className="text-[11px] font-bold text-zinc-300 block">
                     💴 ¥{price.toLocaleString()}
                   </div>

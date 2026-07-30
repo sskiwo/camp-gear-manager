@@ -9,8 +9,14 @@ import GearList from '@/components/GearList';
 
 export default function Home() {
   const [gears, setGears] = useState<any[]>([]);
+
+  // 初期表示時は全カテゴリーを閉じている状態（false）に設定
   const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({
-    ベースギア: true, '調理ギア・燃料': true, '衣類・防寒着': true, '食料・飲料': true, 'その他・日用品': true,
+    ベースギア: false,
+    '調理ギア・燃料': false,
+    '衣類・防寒着': false,
+    '食料・飲料': false,
+    'その他・日用品': false,
   });
 
   const fetchGears = async () => {
