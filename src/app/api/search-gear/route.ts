@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 import Groq from 'groq-sdk';
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY || '' });
-
 export async function POST(req: Request) {
   try {
     const { query } = await req.json();
@@ -11,7 +9,20 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'キーワードを入力してください' }, { status: 400 });
     }
 
-    // AIへの指示プロンプト（確定した厳選5カテゴリー対応）
+    // 環境変数からAPIキーを取得
+    const apiKey = process.env.GROQ_API_KEY;
+
+    // APIキーが存在しない場合の詳細エラーハンドリング
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: '【エラー】GROQ_API_KEY がVercelの環境変数に設定されていません。' },
+        { status: 500 }
+      );
+    }
+
+    const groq = new Groq({ apiKey });
+
+    // AIへの指示プロンプト
     const prompt = `あなたはプロのキャンプパッキングアドバイザーです。
 ユーザーが入力したキーワード「${query}」を解析し、該当する代表的な商品（キャンプギア、食料品、飲料、燃料、日用品など）の候補を最大3件推測・特定して、指定のJSON形式のみで出力してください。
 
@@ -49,14 +60,13 @@ export async function POST(req: Request) {
 
     const text = chatCompletion.choices[0]?.message?.content;
     if (!text) {
-      throw new Error('AIからの応答が空でした');
+      throw new Error('Groq AIからの応答テキストが空でした');
     }
 
     const gearData = JSON.parse(text);
     const candidates = (gearData.candidates || []).map((item: any) => {
       const fullSearchTerm = `${item.brand || ''} ${item.product_name || ''} ${item.model_number || ''}`.trim();
       const cat = item.category || 'ベースギア';
-      // 食料・飲料や、燃料・消耗品などは初期値として消費物フラグを判定
       const isConsumable = cat === '食料・飲料' || item.product_name?.includes('缶') || item.product_name?.includes('薪');
 
       return {
@@ -75,8 +85,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ candidates });
   } catch (error: any) {
     console.error('Gear search error:', error);
+    // 詳細なエラー内容を画面に返す
     return NextResponse.json(
-      { error: '情報の検索に失敗しました。キーワードを変えて試してください。' },
+      { error: `【AI検索エラー詳細】: ${error.message || JSON.stringify(error)}` },
       { status: 500 }
     );
   }
