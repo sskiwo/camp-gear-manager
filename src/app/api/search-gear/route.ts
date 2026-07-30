@@ -2,16 +2,17 @@ import { NextResponse } from 'next/server';
 import Groq from 'groq-sdk';
 import { createClient } from '@supabase/supabase-js';
 
-// Supabase クライアント初期化
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// 制限の緩い軽量モデル順に試行
-const MODELS = [
-  'llama-3.1-8192',
-  'gemma2-9b-it',
-  'mixtral-8x7b-32768',
+// Groq のモデルを精度の高い（賢い）順に配置
+const GROQ_MODELS = [
+  { displayName: 'Groq (llama-3.3-70b/最高精度)', modelId: 'llama-3.3-70b-versatile' },
+  { displayName: 'Groq (mixtral-8x7b/高精度)', modelId: 'mixtral-8x7b-32768' },
+  { displayName: 'Groq (llama-3.1-8192/標準)', modelId: 'llama-3.1-8192' },
+  { displayName: 'Groq (gemma2-9b/軽量)', modelId: 'gemma2-9b-it' },
+  { displayName: 'Groq (llama3-8b/高速)', modelId: 'llama3-8b-8192' },
 ];
 
 export async function POST(req: Request) {
@@ -22,11 +23,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'キーワードを入力してください' }, { status: 400 });
     }
 
-    // ⚡ 全角スペースを半角に変換＆前後空白削除でキーワードを綺麗に整形
     const cleanQuery = query.replace(/ /g, ' ').trim().toLowerCase();
 
     // --------------------------------------------------
-    // ⚡【1. キャッシュ確認】過去の検索ならAIを使わず0.1秒で即返却
+    // 1. ⚡ キャッシュ確認 (過去検索なら0.1秒で即返却)
     // --------------------------------------------------
     try {
       const { data: cacheData } = await supabase
@@ -36,62 +36,90 @@ export async function POST(req: Request) {
         .single();
 
       if (cacheData && cacheData.candidates) {
-        console.log(`⚡ キャッシュから返却: "${cleanQuery}"`);
         return NextResponse.json({ candidates: cacheData.candidates });
       }
-    } catch (e) {
-      // キャッシュ未ヒット時は通過
-    }
+    } catch (e) {}
 
-    // --------------------------------------------------
-    // 🤖【2. Groq AI 検索】自動リトライ＆フォールバック機能付き
-    // --------------------------------------------------
-    const apiKey = process.env.GROQ_API_KEY;
+    const groqKey = process.env.GROQ_API_KEY;
+    const geminiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
 
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: 'GROQ_API_KEY が設定されていません。' },
-        { status: 500 }
-      );
-    }
-
-    const groq = new Groq({ apiKey });
+    const errorLogs: string[] = [];
+    let text = '';
 
     const prompt = `Item:"${cleanQuery}"
 Output ONLY raw JSON object with max 3 candidates for camping/outdoor item. No markdown.
 JSON format:
 {"candidates":[{"brand":"string","model_number":"string","product_name":"string in Japanese","category":"ベースギア"|"調理ギア・燃料"|"衣類・防寒着"|"食料・飲料"|"その他・日用品","weight":number_in_grams,"price":number_in_yen}]}`;
 
-    let text = '';
-    let lastError = null;
-
-    // 複数の軽量AIモデルで順次トライ
-    for (const model of MODELS) {
+    // --------------------------------------------------
+    // 👑 2. 【最優先】Google Gemini (最高精度＆超大容量)
+    // --------------------------------------------------
+    if (geminiKey) {
       try {
-        const chatCompletion = await groq.chat.completions.create({
-          messages: [{ role: 'user', content: prompt }],
-          model: model,
-          temperature: 0.1,
-          max_tokens: 300,
-          response_format: { type: 'json_object' },
-        });
+        const geminiRes = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+              generationConfig: { responseMimeType: 'application/json' },
+            }),
+          }
+        );
 
-        text = chatCompletion?.choices[0]?.message?.content || '';
-        if (text) break;
-      } catch (err: any) {
-        lastError = err;
-        // 429エラーが発生した場合は1秒待機して次のモデルへリトライ
-        if (err?.status === 429 || err?.message?.includes('429')) {
-          await new Promise((resolve) => setTimeout(resolve, 1000));
+        if (geminiRes.ok) {
+          const geminiData = await geminiRes.json();
+          text = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          if (text) console.log('👑 Google Gemini (最高精度) で成功！');
+        } else {
+          errorLogs.push(`❌ Google Gemini (最高精度): ${geminiRes.status} エラー`);
         }
+      } catch (err: any) {
+        errorLogs.push(`❌ Google Gemini: ${err.message || '接続エラー'}`);
       }
     }
 
+    // --------------------------------------------------
+    // 🤖 3. 【Gemini未設定または失敗時】Groq の精度の高い順に切替
+    // --------------------------------------------------
+    if (!text && groqKey) {
+      const groq = new Groq({ apiKey: groqKey });
+
+      for (const target of GROQ_MODELS) {
+        try {
+          const chatCompletion = await groq.chat.completions.create({
+            messages: [{ role: 'user', content: prompt }],
+            model: target.modelId,
+            temperature: 0.1,
+            max_tokens: 300,
+            response_format: { type: 'json_object' },
+          });
+
+          text = chatCompletion?.choices[0]?.message?.content || '';
+          if (text) {
+            console.log(`✅ 成功モデル: ${target.displayName}`);
+            break;
+          }
+        } catch (err: any) {
+          const reason = err?.status === 429 || err?.message?.includes('429') 
+            ? '429 (1分間の利用制限オーバー)' 
+            : err?.message || '接続エラー';
+          
+          errorLogs.push(`❌ ${target.displayName}: ${reason}`);
+          await new Promise((resolve) => setTimeout(resolve, 800));
+        }
+      }
+    } else if (!text && !groqKey) {
+      errorLogs.push('❌ Groq: GROQ_API_KEY 未設定');
+    }
+
+    // --------------------------------------------------
+    // 💥 すべてのAIで失敗した場合 ➔ エラー詳細を表示
+    // --------------------------------------------------
     if (!text) {
-      return NextResponse.json(
-        { error: 'AIアクセスが混み合っています。5〜10秒ほど空けて再度お試しください。' },
-        { status: 429 }
-      );
+      const detailedErrorMessage = `【AIアクセス制限エラー】\n以下のすべてのAI試行（精度の高い順）で失敗しました:\n\n${errorLogs.join('\n')}\n\n10〜15秒ほど置いてから再度お試しください。`;
+      return NextResponse.json({ error: detailedErrorMessage }, { status: 429 });
     }
 
     // JSONクレンジング
@@ -118,23 +146,15 @@ JSON format:
       };
     });
 
-    // --------------------------------------------------
-    // 💾【3. キャッシュ保存】次回の検索（誰かが同じ検索をした時）のために保存
-    // --------------------------------------------------
+    // 4. キャッシュ保存
     if (candidates.length > 0) {
-      await supabase.from('search_cache').insert([
-        {
-          query: cleanQuery,
-          candidates: candidates,
-        },
-      ]);
+      await supabase.from('search_cache').insert([{ query: cleanQuery, candidates: candidates }]);
     }
 
     return NextResponse.json({ candidates });
   } catch (error: any) {
-    console.error('Gear search error:', error);
     return NextResponse.json(
-      { error: 'AIアクセスが混み合っています。5〜10秒ほど空けて再度お試しください。' },
+      { error: 'AI処理中にエラーが発生しました。時間を置いて再度お試しください。' },
       { status: 500 }
     );
   }
