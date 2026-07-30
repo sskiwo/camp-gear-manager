@@ -1,6 +1,14 @@
 import { NextResponse } from 'next/server';
 import Groq from 'groq-sdk';
 
+// 試行するGroqモデルのリスト（万が一404になっても上から順に自動切替！）
+const MODELS = [
+  'llama-3.1-8192',
+  'llama-3.3-70b-versatile',
+  'llama3-70b-8192',
+  'mixtral-8x7b-32768',
+];
+
 export async function POST(req: Request) {
   try {
     const { query } = await req.json();
@@ -9,10 +17,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'キーワードを入力してください' }, { status: 400 });
     }
 
-    // 環境変数からAPIキーを取得
     const apiKey = process.env.GROQ_API_KEY;
 
-    // APIキーが存在しない場合の詳細エラーハンドリング
     if (!apiKey) {
       return NextResponse.json(
         { error: '【エラー】GROQ_API_KEY がVercelの環境変数に設定されていません。' },
@@ -52,15 +58,30 @@ export async function POST(req: Request) {
   ]
 }`;
 
-    const chatCompletion = await groq.chat.completions.create({
-      messages: [{ role: 'user', content: prompt }],
-      model: 'llama-3.3-70b-versatile',
-      response_format: { type: 'json_object' },
-    });
+    let chatCompletion = null;
+    let lastError = null;
 
-    const text = chatCompletion.choices[0]?.message?.content;
+    // 使えるモデルが見つかるまで順に試す
+    for (const model of MODELS) {
+      try {
+        chatCompletion = await groq.chat.completions.create({
+          messages: [{ role: 'user', content: prompt }],
+          model: model,
+          response_format: { type: 'json_object' },
+        });
+
+        if (chatCompletion?.choices[0]?.message?.content) {
+          break; // 成功したらループを抜ける
+        }
+      } catch (err) {
+        console.warn(`Model ${model} failed, trying next...`, err);
+        lastError = err;
+      }
+    }
+
+    const text = chatCompletion?.choices[0]?.message?.content;
     if (!text) {
-      throw new Error('Groq AIからの応答テキストが空でした');
+      throw lastError || new Error('Groq AIからの応答を取得できませんでした');
     }
 
     const gearData = JSON.parse(text);
@@ -85,7 +106,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ candidates });
   } catch (error: any) {
     console.error('Gear search error:', error);
-    // 詳細なエラー内容を画面に返す
     return NextResponse.json(
       { error: `【AI検索エラー詳細】: ${error.message || JSON.stringify(error)}` },
       { status: 500 }
