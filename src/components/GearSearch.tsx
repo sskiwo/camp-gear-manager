@@ -96,17 +96,31 @@ export default function GearSearch({ onAddGear }: Props) {
         🔍 AI型番・キーワード自動検索
       </h2>
       <form onSubmit={handleAiSearch} className="flex gap-2">
-        <input
-          type="text"
-          placeholder="例: ST-310 / ノースフェイス / ほりにし / 黒ラベル"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="flex-1 px-4 py-2.5 border border-zinc-700 rounded-xl focus:outline-none focus:border-[#FF5500] bg-[#27272A] text-white text-sm transition"
-        />
+        {/* 文字入力欄＆一括クリアボタン（✕） */}
+        <div className="relative flex-1">
+          <input
+            type="text"
+            placeholder="例: ST-310 / ノースフェイス / ほりにし / 黒ラベル"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-4 pr-10 py-2.5 border border-zinc-700 rounded-xl focus:outline-none focus:border-[#FF5500] bg-[#27272A] text-white text-sm transition"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white text-sm font-bold p-1 cursor-pointer transition"
+              title="文字を消す"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+
         <button
           type="submit"
           disabled={isSearching}
-          className="bg-[#FF5500] hover:bg-[#E04B00] text-white px-5 py-2.5 rounded-xl font-black text-xs transition disabled:opacity-50 shadow-md active:scale-95"
+          className="bg-[#FF5500] hover:bg-[#E04B00] text-white px-5 py-2.5 rounded-xl font-black text-xs transition disabled:opacity-50 shadow-md active:scale-95 cursor-pointer shrink-0"
         >
           {isSearching ? '検索中...' : '検索'}
         </button>
