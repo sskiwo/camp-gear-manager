@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import WeightsSummary from '@/components/WeightsSummary';
 import GearSearch from '@/components/GearSearch';
 import GearList from '@/components/GearList';
+import CsvManager from '@/components/CsvManager';
 
 export default function Home() {
   const [gears, setGears] = useState<any[]>([]);
@@ -91,6 +92,7 @@ export default function Home() {
           onTogglePacked={togglePacked} onUpdateQuantity={updateQuantity} onUpdateGear={updateGear} onDeleteGear={deleteGear}
           onReorderGears={handleReorderGears}
         />
+        <CsvManager gears={gears} onGearsUpdated={fetchGears} />
 
         <footer className="pt-8 pb-10 text-center border-t border-zinc-800 space-y-3">
           <Link href="/split-bill" className="inline-flex items-center justify-center gap-2 bg-[#FF5500] hover:bg-[#E04B00] text-white px-6 py-3.5 rounded-2xl text-xs font-black transition shadow-lg active:scale-98">
