@@ -1,255 +1,271 @@
 'use client';
 
-import React, { useState } from 'react';
-import ClearableInput from './ClearableInput';
+import { useState } from 'react';
 
 type GearItem = {
   id: string;
   name: string;
   brand?: string;
   model_number?: string;
+  product_name?: string;
+  category?: string;
   weight: number;
   price: number;
-  quantity: number;
-  category: string;
-  amazon_url?: string;
-  source_url?: string;
+  quantity?: number;
   is_packed: boolean;
   is_consumable: boolean;
+  product_url?: string;
 };
 
 type Props = {
   item: GearItem;
-  categoryColor: string;
-  onTogglePacked: (id: string, current: boolean) => void;
-  onQuantityChange: (id: string, delta: number) => void;
-  onDelete: (id: string) => void;
-  onUpdate: (id: string, updatedData: Partial<GearItem>) => void;
+  catColor: string;
+  isDragging: boolean;
+  onDragStart: (e: React.DragEvent, id: string) => void;
+  onDragOver: (e: React.DragEvent) => void;
+  onDrop: (id: string) => void;
+  onTogglePacked: (id: string, currentStatus: boolean) => void;
+  onUpdateQuantity: (id: string, currentQty: number, delta: number) => void;
+  onUpdateGear: (id: string, data: any) => Promise<void>;
+  onDeleteGear: (id: string) => void;
 };
 
 const CATEGORIES = [
-  { id: 'base', name: 'ベースギア', icon: '⛺' },
-  { id: 'cook', name: '調理ギア・燃料', icon: '🍳' },
-  { id: 'wear', name: '衣類・防寒着', icon: '👕' },
-  { id: 'other', name: 'その他・日用品', icon: '📦' },
-  { id: 'food', name: '食料・飲料', icon: '🍱' },
+  'ベースギア',
+  '調理ギア',
+  '衣類',
+  'その他・日用品',
+  '食料・消耗品',
 ];
 
 export default function GearItemCard({
   item,
-  categoryColor,
+  catColor,
+  isDragging,
+  onDragStart,
+  onDragOver,
+  onDrop,
   onTogglePacked,
-  onQuantityChange,
-  onDelete,
-  onUpdate,
+  onUpdateQuantity,
+  onUpdateGear,
+  onDeleteGear,
 }: Props) {
   const [isEditing, setIsEditing] = useState(false);
   const [editBrand, setEditBrand] = useState(item.brand || '');
-  const [editModel, setEditModel] = useState(item.model_number || '');
-  const [editName, setEditName] = useState(item.name || '');
-  const [editWeight, setEditWeight] = useState(item.weight);
-  const [editPrice, setEditPrice] = useState(item.price);
-  const [editCategory, setEditCategory] = useState(item.category);
-  const [editConsumable, setEditConsumable] = useState(item.is_consumable || false);
-  const [editAmazonUrl, setEditAmazonUrl] = useState(item.amazon_url || '');
+  const [editModelNumber, setEditModelNumber] = useState(item.model_number || '');
+  const [editProductName, setEditProductName] = useState(item.product_name || item.name || '');
+  const [editCategory, setEditCategory] = useState(item.category || 'ベースギア');
+  const [editWeight, setEditWeight] = useState(String(item.weight || 0));
+  const [editPrice, setEditPrice] = useState(String(item.price || 0));
+  const [editQuantity, setEditQuantity] = useState(String(item.quantity || 1));
+  const [editProductUrl, setEditProductUrl] = useState(item.product_url || '');
 
-  const handleSave = () => {
-    onUpdate(item.id, {
+  const startEdit = () => {
+    setIsEditing(true);
+    setEditBrand(item.brand || '');
+    setEditModelNumber(item.model_number || '');
+    setEditProductName(item.product_name || item.name || '');
+    setEditCategory(item.category || 'ベースギア');
+    setEditWeight(String(item.weight || 0));
+    setEditPrice(String(item.price || 0));
+    setEditQuantity(String(item.quantity || 1));
+    setEditProductUrl(item.product_url || '');
+  };
+
+  const handleSave = async () => {
+    const fullName = `${editBrand} ${editProductName} ${editModelNumber}`.trim();
+    const defaultSearchUrl = `https://www.amazon.co.jp/s?k=${encodeURIComponent(fullName || editProductName)}`;
+    const finalUrl = editProductUrl.trim() ? editProductUrl.trim() : defaultSearchUrl;
+
+    await onUpdateGear(item.id, {
+      name: fullName || editProductName,
       brand: editBrand,
-      model_number: editModel,
-      name: editName,
-      weight: editWeight,
-      price: editPrice,
+      model_number: editModelNumber,
+      product_name: editProductName,
       category: editCategory,
-      is_consumable: editConsumable,
-      amazon_url: editAmazonUrl,
+      weight: Number(editWeight) || 0,
+      price: Number(editPrice) || 0,
+      quantity: Math.max(1, Number(editQuantity) || 1),
+      is_consumable: editCategory === '食料・消耗品',
+      product_url: finalUrl,
     });
     setIsEditing(false);
   };
 
+  const qty = item.quantity || 1;
+  const totalWeight = (item.weight || 0) * qty;
+  const totalPrice = (item.price || 0) * qty;
+
   return (
-    <div className="bg-[#27272A] p-3 rounded-xl border border-zinc-700/80 mb-2">
-      {!isEditing ? (
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+    <div
+      draggable
+      onDragStart={(e) => onDragStart(e, item.id)}
+      onDragOver={onDragOver}
+      onDrop={() => onDrop(item.id)}
+      className={`p-2.5 rounded-lg border text-xs transition select-none ${
+        isDragging ? 'opacity-30 border-[#FF5500] bg-zinc-800' : ''
+      } ${
+        item.is_packed
+          ? 'bg-[#27272A] border-zinc-700/80 hover:border-zinc-500'
+          : 'bg-zinc-900/50 opacity-40 border-transparent'
+      }`}
+    >
+      {isEditing ? (
+        <div className="space-y-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
             <input
-              type="checkbox"
-              checked={item.is_packed}
-              onChange={() => onTogglePacked(item.id, item.is_packed)}
-              className="w-4 h-4 rounded border-zinc-600 text-[#FF5500] focus:ring-[#FF5500] bg-[#18181B] cursor-pointer"
+              type="text"
+              value={editBrand}
+              onChange={(e) => setEditBrand(e.target.value)}
+              className="px-2 py-1 border border-zinc-700 rounded bg-[#18181B] text-white text-xs"
+              placeholder="メーカー名"
             />
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5 flex-wrap">
-                {item.brand && (
-                  <span className="text-[10px] text-zinc-400 bg-zinc-800 px-1.5 py-0.2 rounded border border-zinc-700 font-medium">
-                    {item.brand}
-                  </span>
-                )}
-                {item.model_number && (
-                  <span className="text-[10px] font-mono text-[#FFB800] bg-[#FFB800]/10 px-1.5 py-0.2 rounded border border-[#FFB800]/20">
-                    型番: {item.model_number}
-                  </span>
-                )}
-                {item.is_consumable && (
-                  <span className="text-[10px] text-[#00E676] bg-[#00E676]/10 px-1.5 py-0.2 rounded border border-[#00E676]/20 font-bold">
-                    🔥 帰りに消費
-                  </span>
-                )}
-              </div>
-              <p
-                className={`text-sm font-bold truncate ${
-                  item.is_packed ? 'text-white' : 'text-zinc-500 line-through'
-                }`}
-              >
-                {item.name}
-              </p>
-              <div className="flex items-center gap-3 text-xs text-zinc-400 font-mono mt-0.5">
-                <span>{(item.weight * item.quantity).toLocaleString()}g</span>
-                <span>¥{(item.price * item.quantity).toLocaleString()}</span>
-              </div>
-            </div>
+            <input
+              type="text"
+              value={editModelNumber}
+              onChange={(e) => setEditModelNumber(e.target.value)}
+              className="px-2 py-1 border border-zinc-700 rounded bg-[#18181B] text-white text-xs"
+              placeholder="型番"
+            />
+            <input
+              type="text"
+              value={editProductName}
+              onChange={(e) => setEditProductName(e.target.value)}
+              className="px-2 py-1 border border-zinc-700 rounded bg-[#18181B] text-white text-xs"
+              placeholder="商品名"
+            />
           </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            <div className="flex items-center bg-[#18181B] rounded-lg border border-zinc-700 px-1 py-0.5">
-              <button
-                onClick={() => onQuantityChange(item.id, -1)}
-                className="w-5 h-5 text-zinc-400 hover:text-white flex items-center justify-center font-bold text-xs"
-              >
-                -
-              </button>
-              <span className="w-5 text-center text-xs font-mono font-bold text-white">
-                {item.quantity}
-              </span>
-              <button
-                onClick={() => onQuantityChange(item.id, 1)}
-                className="w-5 h-5 text-zinc-400 hover:text-white flex items-center justify-center font-bold text-xs"
-              >
-                +
-              </button>
-            </div>
-
-            <button
-              onClick={() => setIsEditing(true)}
-              className="text-xs text-zinc-400 hover:text-white bg-zinc-800 p-1.5 rounded-lg border border-zinc-700"
-              title="編集"
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+            <select
+              value={editCategory}
+              onChange={(e) => setEditCategory(e.target.value)}
+              className="px-2 py-1 border border-zinc-700 rounded bg-[#18181B] text-white text-xs font-bold"
             >
-              ✏️
+              {CATEGORIES.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+            <input
+              type="number"
+              step="10"
+              min="0"
+              value={editWeight}
+              onChange={(e) => setEditWeight(e.target.value)}
+              className="px-2 py-1 border border-zinc-700 rounded bg-[#18181B] text-white text-xs"
+              placeholder="重量(g)"
+            />
+            <input
+              type="number"
+              step="100"
+              min="0"
+              value={editPrice}
+              onChange={(e) => setEditPrice(e.target.value)}
+              className="px-2 py-1 border border-zinc-700 rounded bg-[#18181B] text-white text-xs"
+              placeholder="価格(円)"
+            />
+            <input
+              type="number"
+              step="1"
+              min="1"
+              value={editQuantity}
+              onChange={(e) => setEditQuantity(e.target.value)}
+              className="px-2 py-1 border border-zinc-700 rounded bg-[#18181B] text-white text-xs"
+              placeholder="数量"
+            />
+          </div>
+          <div>
+            <input
+              type="text"
+              value={editProductUrl}
+              onChange={(e) => setEditProductUrl(e.target.value)}
+              className="w-full px-2 py-1 border border-zinc-700 rounded bg-[#18181B] text-white text-xs font-mono"
+              placeholder="Amazon特定商品URL"
+            />
+          </div>
+          <div className="flex items-center justify-end pt-1 gap-2">
+            <button
+              onClick={handleSave}
+              className="bg-[#FF5500] text-white px-3 py-1 rounded text-[11px] font-bold hover:bg-[#E04B00]"
+            >
+              保存
             </button>
-
             <button
-              onClick={() => onDelete(item.id)}
-              className="text-xs text-red-400 hover:text-red-300 bg-red-500/10 p-1.5 rounded-lg border border-red-500/20"
-              title="削除"
+              onClick={() => setIsEditing(false)}
+              className="bg-zinc-700 text-zinc-300 px-3 py-1 rounded text-[11px] font-bold"
             >
-              🗑️
+              キャンセル
             </button>
           </div>
         </div>
       ) : (
-        <div className="space-y-2 text-xs">
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="text-[10px] text-zinc-400">メーカー名</label>
-              <ClearableInput
-                value={editBrand}
-                onChange={setEditBrand}
-                placeholder="例: SOTO"
-              />
-            </div>
-            <div>
-              <label className="text-[10px] text-zinc-400">型番</label>
-              <ClearableInput
-                value={editModel}
-                onChange={setEditModel}
-                placeholder="例: ST-310"
-              />
-            </div>
-          </div>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+          <div className="flex items-start sm:items-center gap-2 flex-1 min-w-0">
+            <span
+              className="text-zinc-500 hover:text-zinc-300 cursor-grab active:cursor-grabbing font-bold text-sm tracking-tighter shrink-0 px-0.5"
+              title="ドラッグして並び替え"
+            >
+              ⋮⋮
+            </span>
 
-          <div>
-            <label className="text-[10px] text-zinc-400">商品名</label>
-            <ClearableInput
-              value={editName}
-              onChange={setEditName}
-              placeholder="商品名を入力"
-            />
-          </div>
-
-          <div className="grid grid-cols-3 gap-2">
-            <div>
-              <label className="text-[10px] text-zinc-400">重量 (g) [10g刻み]</label>
-              <input
-                type="number"
-                step="10"
-                value={editWeight}
-                onChange={(e) => setEditWeight(parseInt(e.target.value) || 0)}
-                className="w-full bg-[#18181B] text-white px-2 py-1 rounded border border-zinc-700 font-mono text-xs focus:outline-none focus:border-[#FF5500]"
-              />
-            </div>
-            <div>
-              <label className="text-[10px] text-zinc-400">価格 (円) [100円刻み]</label>
-              <input
-                type="number"
-                step="100"
-                value={editPrice}
-                onChange={(e) => setEditPrice(parseInt(e.target.value) || 0)}
-                className="w-full bg-[#18181B] text-white px-2 py-1 rounded border border-zinc-700 font-mono text-xs focus:outline-none focus:border-[#FF5500]"
-              />
-            </div>
-            <div>
-              <label className="text-[10px] text-zinc-400">カテゴリー</label>
-              <select
-                value={editCategory}
-                onChange={(e) => setEditCategory(e.target.value)}
-                className="w-full bg-[#18181B] text-white px-1.5 py-1 rounded border border-zinc-700 text-xs focus:outline-none focus:border-[#FF5500]"
-              >
-                {CATEGORIES.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.icon} {c.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 pt-1">
             <input
               type="checkbox"
-              id={`edit-consumable-${item.id}`}
-              checked={editConsumable}
-              onChange={(e) => setEditConsumable(e.target.checked)}
-              className="w-4 h-4 rounded border-zinc-600 text-[#00E676] focus:ring-[#00E676] bg-[#18181B] cursor-pointer"
+              checked={item.is_packed}
+              onChange={() => onTogglePacked(item.id, item.is_packed)}
+              className="w-4 h-4 mt-0.5 sm:mt-0 accent-[#FF5500] cursor-pointer"
             />
-            <label
-              htmlFor={`edit-consumable-${item.id}`}
-              className="text-xs text-[#00E676] font-bold cursor-pointer select-none"
-            >
-              🔥 帰りに消費する品 (食品・飲料・ガソリン等)
-            </label>
+            <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+              {item.brand && (
+                <span
+                  style={{ color: catColor, borderColor: `${catColor}60`, backgroundColor: `${catColor}20` }}
+                  className="text-[10px] px-1.5 py-0.2 rounded font-bold border shrink-0"
+                >
+                  {item.brand}
+                </span>
+              )}
+              <span className="font-bold text-xs text-white truncate">{item.product_name || item.name}</span>
+              {item.model_number && (
+                <span className="text-[10px] bg-zinc-800 text-zinc-300 border border-zinc-700 px-1 py-0.2 rounded font-mono shrink-0">
+                  [{item.model_number}]
+                </span>
+              )}
+            </div>
           </div>
 
-          <div>
-            <label className="text-[10px] text-zinc-400">Amazon特定商品URL</label>
-            <ClearableInput
-              value={editAmazonUrl}
-              onChange={setEditAmazonUrl}
-              placeholder="https://www.amazon.co.jp/..."
-            />
-          </div>
-
-          <div className="flex justify-end gap-2 pt-2">
-            <button
-              onClick={() => setIsEditing(false)}
-              className="bg-zinc-700 hover:bg-zinc-600 text-white px-3 py-1 rounded text-xs font-bold"
-            >
-              キャンセル
+          <div className="flex items-center justify-between sm:justify-end gap-2 text-[11px] pl-8 sm:pl-0">
+            <span className="font-semibold text-zinc-300 bg-zinc-800/80 px-2 py-0.5 rounded border border-zinc-700/50">
+              {totalWeight.toLocaleString()}g / ¥{totalPrice.toLocaleString()}
+            </span>
+            <div className="flex items-center bg-zinc-800 border border-zinc-700 rounded">
+              <button
+                onClick={() => onUpdateQuantity(item.id, qty, -1)}
+                className="px-1.5 text-xs font-bold text-zinc-300 hover:bg-zinc-700"
+              >
+                -
+              </button>
+              <span className="px-1.5 font-bold text-[#FF5500] text-[10px]">{qty}</span>
+              <button
+                onClick={() => onUpdateQuantity(item.id, qty, 1)}
+                className="px-1.5 text-xs font-bold text-zinc-300 hover:bg-zinc-700"
+              >
+                +
+              </button>
+            </div>
+            {item.product_url && (
+              <a
+                href={item.product_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#FFB800] hover:underline font-bold"
+                title="Amazonで購入・詳細を見る"
+              >
+                🛒
+              </a>
+            )}
+            <button onClick={startEdit} className="text-zinc-400 hover:text-white" title="編集">
+              ✏️
             </button>
-            <button
-              onClick={handleSave}
-              className="bg-[#00E676] hover:bg-[#00c865] text-black px-3 py-1 rounded text-xs font-bold"
-            >
-              保存
+            <button onClick={() => onDeleteGear(item.id)} className="text-zinc-400 hover:text-[#FF5500]" title="削除">
+              🗑️
             </button>
           </div>
         </div>
