@@ -1,168 +1,178 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 
-type Candidate = {
+type CandidateItem = {
+  brand?: string;
+  model_number?: string;
+  product_name?: string;
   name: string;
-  brand: string;
-  model_number: string;
+  category: string;
   weight: number;
   price: number;
-  category: string;
-  is_consumable?: boolean;
-  source_url: string;
-  amazon_url: string;
+  productUrl: string;
+  isConsumable: boolean;
 };
 
 type Props = {
-  onAddGear: (gear: Candidate) => void;
+  onAddGear: (item: CandidateItem) => Promise<void>;
+};
+
+const CATEGORIES = [
+  'ベースギア',
+  '調理ギア',
+  '衣類',
+  'その他・日用品',
+  '食料・消耗品',
+];
+
+const CATEGORY_COLORS = {
+  ベースギア: '#FF5500',
+  調理ギア: '#FFB800',
+  衣類: '#00E5FF',
+  'その他・日用品': '#E040FB',
+  '食料・消耗品': '#00E676',
 };
 
 export default function GearSearch({ onAddGear }: Props) {
-  const [query, setQuery] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [candidates, setCandidates] = useState<Candidate[]>([]);
-  const [errorMsg, setErrorMsg] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [candidates, setCandidates] = useState<CandidateItem[]>([]);
 
-  const handleSearch = async () => {
-    if (!query.trim()) return;
-    setLoading(true);
-    setErrorMsg('');
+  const handleAiSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+
+    setIsSearching(true);
     setCandidates([]);
-
     try {
       const res = await fetch('/api/search-gear', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query }),
+        body: JSON.stringify({ query: searchQuery }),
       });
 
       const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || '検索に失敗しました');
-      }
+      if (!res.ok) throw new Error(data.error);
 
       if (data.candidates && data.candidates.length > 0) {
         setCandidates(data.candidates);
       } else {
-        setErrorMsg('該当する商品が見つかりませんでした');
+        alert('該当する候補が見つかりませんでした。');
       }
     } catch (err: any) {
-      setErrorMsg(err.message || 'エラーが発生しました');
+      alert(err.message || '検索に失敗しました');
     } finally {
-      setLoading(false);
+      setIsSearching(false);
     }
   };
 
+  const changeCandidateCategory = (index: number, newCat: string) => {
+    setCandidates((prev) =>
+      prev.map((item, idx) => {
+        if (idx === index) {
+          return { ...item, category: newCat, isConsumable: newCat === '食料・消耗品' };
+        }
+        return item;
+      })
+    );
+  };
+
+  const handleAdd = async (item: CandidateItem) => {
+    await onAddGear(item);
+    setCandidates((prev) => prev.filter((c) => c.name !== item.name));
+  };
+
   return (
-    <div className="bg-[#18181B] border border-zinc-800 rounded-2xl p-4 sm:p-6 mb-6 shadow-xl text-white">
-      <h2 className="text-lg font-bold text-[#FF5500] mb-3 flex items-center gap-2">
+    <section className="bg-[#18181B] p-5 md:p-6 rounded-2xl border border-zinc-800 space-y-4 shadow-xl">
+      <h2 className="text-base font-extrabold text-white flex items-center gap-2">
         🔍 AI型番・キーワード自動検索
       </h2>
-
-      <div className="flex gap-2 mb-4">
+      <form onSubmit={handleAiSearch} className="flex gap-2">
         <div className="relative flex-1">
           <input
             type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-            placeholder="例: SOTO ST-310 / ほりにし / 黒ラベル"
-            className="w-full bg-[#27272A] text-white placeholder-zinc-500 text-sm px-4 py-2.5 rounded-xl border border-zinc-700 focus:outline-none focus:border-[#FF5500] pr-10"
+            placeholder="例: ST-310 / ノースフェイス / ほりにし / 黒ラベル"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-4 pr-10 py-2.5 border border-zinc-700 rounded-xl focus:outline-none focus:border-[#FF5500] bg-[#27272A] text-white text-sm transition"
           />
-          {query && (
+          {searchQuery && (
             <button
-              onClick={() => setQuery('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white bg-zinc-700 hover:bg-zinc-600 w-5 h-5 rounded-full text-xs flex items-center justify-center"
-              title="一括クリア"
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white text-sm font-bold p-1 cursor-pointer transition"
+              title="文字を消す"
             >
               ✕
             </button>
           )}
         </div>
-        <button
-          onClick={handleSearch}
-          disabled={loading}
-          className="bg-[#FF5500] hover:bg-[#e04b00] disabled:bg-zinc-700 text-white font-bold text-sm px-5 py-2.5 rounded-xl transition-all active:scale-95 flex items-center gap-2 shrink-0"
-        >
-          {loading ? '検索中...' : '候補を表示'}
-        </button>
-      </div>
 
-      {errorMsg && (
-        <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-xs p-3 rounded-xl mb-4">
-          ⚠️ {errorMsg}
-        </div>
-      )}
+        <button
+          type="submit"
+          disabled={isSearching}
+          className="bg-[#FF5500] hover:bg-[#E04B00] text-white px-5 py-2.5 rounded-xl font-black text-xs transition disabled:opacity-50 shadow-md active:scale-95 cursor-pointer shrink-0"
+        >
+          {isSearching ? '検索中...' : '検索'}
+        </button>
+      </form>
 
       {candidates.length > 0 && (
-        <div className="space-y-3 mt-4">
-          <p className="text-xs text-zinc-400 font-bold uppercase tracking-wider">
-            AIが取得した候補アイテム (全{candidates.length}件):
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {candidates.map((cand, idx) => (
-              <div
-                key={idx}
-                className="bg-[#27272A] p-3.5 rounded-xl border border-zinc-700 flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-center justify-between gap-2 mb-1">
-                    <span className="text-[10px] font-bold text-zinc-400 bg-zinc-800 px-2 py-0.5 rounded border border-zinc-700">
-                      {cand.brand || 'メーカー不明'}
-                    </span>
-                    {cand.model_number && (
-                      <span className="text-[10px] font-mono text-[#FFB800] bg-[#FFB800]/10 px-1.5 py-0.5 rounded border border-[#FFB800]/20">
-                        型番: {cand.model_number}
-                      </span>
-                    )}
-                  </div>
-                  <h4 className="font-bold text-sm text-white mb-2 line-clamp-2">
-                    {cand.name}
-                  </h4>
-                  <div className="flex items-center gap-3 text-xs text-zinc-300 font-mono mb-3">
-                    <span>⚖️ {cand.weight}g</span>
-                    <span>💰 ¥{cand.price.toLocaleString()}</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between gap-2 pt-2 border-t border-zinc-700/60">
-                  <div className="flex items-center gap-2">
-                    {cand.amazon_url && (
-                      <a
-                        href={cand.amazon_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[11px] text-[#00E5FF] hover:underline flex items-center gap-1"
-                      >
-                        🛒 Amazon
-                      </a>
-                    )}
-                    {cand.source_url && (
-                      <a
-                        href={cand.source_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[11px] text-[#00E676] hover:underline flex items-center gap-1"
-                      >
-                        🔍 根拠
-                      </a>
-                    )}
+        <div className="mt-4 pt-4 border-t border-zinc-800 space-y-3">
+          <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider pl-1">📋 該当候補:</h3>
+          <div className="space-y-2">
+            {candidates.map((cand, idx) => {
+              const catColor = CATEGORY_COLORS[cand.category as keyof typeof CATEGORY_COLORS] || '#FF5500';
+              return (
+                <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-[#27272A] border border-zinc-700/80 rounded-xl gap-2 text-xs">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {cand.brand && (
+                        <span className="text-[10px] bg-[#FF5500]/20 text-[#FF5500] border border-[#FF5500]/40 px-2 py-0.5 rounded font-bold">
+                          {cand.brand}
+                        </span>
+                      )}
+                      <span className="font-bold text-sm text-white">{cand.product_name || cand.name}</span>
+                      {cand.model_number && (
+                        <span className="text-[10px] bg-zinc-800 text-zinc-300 border border-zinc-700 px-1.5 py-0.5 rounded font-mono">
+                          [{cand.model_number}]
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[11px] text-zinc-400 flex items-center gap-3">
+                      <span>⚖️ {cand.weight}g</span>
+                      <span>💴 ¥{cand.price.toLocaleString()}</span>
+                      {cand.productUrl && (
+                        <a href={cand.productUrl} target="_blank" rel="noopener noreferrer" className="text-[#FFB800] hover:underline font-bold">
+                          🛒 Amazon
+                        </a>
+                      )}
+                    </div>
                   </div>
 
-                  <button
-                    onClick={() => onAddGear(cand)}
-                    className="bg-[#00E676] hover:bg-[#00c865] text-black font-bold text-xs px-3 py-1.5 rounded-lg transition-all active:scale-95"
-                  >
-                    ＋ 追加
-                  </button>
+                  <div className="flex items-center gap-2 pt-1 sm:pt-0">
+                    <select
+                      value={cand.category}
+                      onChange={(e) => changeCandidateCategory(idx, e.target.value)}
+                      style={{ borderColor: `${catColor}80`, color: catColor }}
+                      className="text-[11px] border rounded px-2 py-1 bg-[#18181B] font-bold"
+                    >
+                      {CATEGORIES.map((cat) => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+
+                    <button onClick={() => handleAdd(cand)} className="bg-[#FF5500] text-white px-3 py-1 rounded text-[11px] font-bold hover:bg-[#E04B00] transition">
+                      ＋ 追加
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
-    </div>
+    </section>
   );
 }

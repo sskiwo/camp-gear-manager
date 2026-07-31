@@ -1,204 +1,104 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import WeightsSummary from '@/components/WeightsSummary';
 import GearSearch from '@/components/GearSearch';
 import GearList from '@/components/GearList';
-import CsvManager from '@/components/CsvManager';
-import Link from 'next/link';
 
-type GearItem = {
-  id: string;
-  name: string;
-  brand?: string;
-  model_number?: string;
-  weight: number;
-  price: number;
-  quantity: number;
-  category: string;
-  amazon_url?: string;
-  source_url?: string;
-  is_packed: boolean;
-  is_consumable: boolean;
-};
+export default function Home() {
+  const [gears, setGears] = useState<any[]>([]);
 
-export const CATEGORIES = [
-  { id: 'base', name: 'ベースギア', icon: '⛺', color: '#FF5500' },
-  { id: 'cook', name: '調理ギア・燃料', icon: '🍳', color: '#FFB800' },
-  { id: 'wear', name: '衣類・防寒着', icon: '👕', color: '#00E5FF' },
-  { id: 'other', name: 'その他・日用品', icon: '📦', color: '#E040FB' },
-  { id: 'food', name: '食料・飲料', icon: '🍱', color: '#00E676' },
-] as const;
-
-export default function HomePage() {
-  const [gears, setGears] = useState<GearItem[]>([]);
-  const [targetWeightKg, setTargetWeightKg] = useState<number>(15.0);
-  const [openCategory, setOpenCategory] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetchGears();
-  }, []);
+  const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({
+    ベースギア: false,
+    調理ギア: false,
+    衣類: false,
+    'その他・日用品': false,
+    '食料・消耗品': false,
+  });
 
   const fetchGears = async () => {
-    const { data, error } = await supabase
-      .from('gears')
-      .select('*')
-      .order('created_at', { ascending: true });
-
-    if (error) {
-      console.error('Error fetching gears:', error);
-      return;
-    }
-
-    if (data) {
-      setGears(data as GearItem[]);
-    }
+    const { data } = await supabase.from('gears').select('*').order('created_at', { ascending: false });
+    if (data) setGears(data);
   };
 
-  const handleAddGear = async (cand: any) => {
-    const newGear = {
-      name: cand.name,
-      brand: cand.brand || '',
-      model_number: cand.model_number || '',
-      weight: cand.weight || 0,
-      price: cand.price || 0,
-      quantity: 1,
-      category: cand.category || 'other',
-      amazon_url: cand.amazon_url || '',
-      source_url: cand.source_url || '',
-      is_packed: true,
-      is_consumable: cand.is_consumable ?? false,
-    };
+  useEffect(() => { fetchGears(); }, []);
 
-    const { data, error } = await supabase
-      .from('gears')
-      .insert([newGear])
-      .select();
-
-    if (error) {
-      alert(`追加エラー: ${error.message}`);
-      return;
-    }
-
-    if (data) {
-      setGears((prev) => [...prev, data[0] as GearItem]);
-    }
+  const toggleCategoryOpen = (catName: string) => {
+    setOpenCategories((prev) => ({ ...prev, [catName]: !prev[catName] }));
   };
 
-  const handleTogglePacked = async (id: string, current: boolean) => {
-    const { error } = await supabase
-      .from('gears')
-      .update({ is_packed: !current })
-      .eq('id', id);
-
-    if (error) return;
-
-    setGears((prev) =>
-      prev.map((g) => (g.id === id ? { ...g, is_packed: !current } : g))
-    );
+  const scrollToCategory = (catName: string) => {
+    setOpenCategories((prev) => ({ ...prev, [catName]: true }));
+    setTimeout(() => {
+      document.getElementById(`category-${catName}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
   };
 
-  const handleQuantityChange = async (id: string, delta: number) => {
-    const gear = gears.find((g) => g.id === id);
-    if (!gear) return;
+  const handleAddGear = async (item: any) => {
+    const fullName = `${item.brand || ''} ${item.product_name || ''} ${item.model_number || ''}`.trim();
+    const cat = item.category || 'ベースギア';
+    const isConsumable = cat === '食料・消耗品';
 
-    const newQty = Math.max(1, gear.quantity + delta);
-    const { error } = await supabase
-      .from('gears')
-      .update({ quantity: newQty })
-      .eq('id', id);
-
-    if (error) return;
-
-    setGears((prev) =>
-      prev.map((g) => (g.id === id ? { ...g, quantity: newQty } : g))
-    );
+    await supabase.from('gears').insert([{
+      name: fullName || item.name, brand: item.brand || '', model_number: item.model_number || '',
+      product_name: item.product_name || item.name, category: cat,
+      weight: Number(item.weight) || 0, price: Number(item.price) || 0, quantity: 1,
+      is_packed: true, is_consumable: isConsumable, product_url: item.productUrl || '',
+    }]);
+    fetchGears();
   };
 
-  const handleDeleteGear = async (id: string) => {
-    if (!confirm('このギアを削除しますか？')) return;
-
-    const { error } = await supabase.from('gears').delete().eq('id', id);
-    if (error) return;
-
-    setGears((prev) => prev.filter((g) => g.id !== id));
+  const togglePacked = async (id: string, currentStatus: boolean) => {
+    await supabase.from('gears').update({ is_packed: !currentStatus }).eq('id', id);
+    fetchGears();
   };
 
-  const handleUpdateGear = async (
-    id: string,
-    updatedData: Partial<GearItem>
-  ) => {
-    const { error } = await supabase
-      .from('gears')
-      .update(updatedData)
-      .eq('id', id);
-
-    if (error) {
-      alert(`更新エラー: ${error.message}`);
-      return;
-    }
-
-    setGears((prev) =>
-      prev.map((g) => (g.id === id ? { ...g, ...updatedData } : g))
-    );
+  const updateQuantity = async (id: string, currentQty: number, delta: number) => {
+    await supabase.from('gears').update({ quantity: Math.max(1, currentQty + delta) }).eq('id', id);
+    fetchGears();
   };
 
-  const handleCategoryClick = (categoryId: string) => {
-    setOpenCategory(categoryId);
-    const el = document.getElementById(`category-section-${categoryId}`);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
-    }
+  const updateGear = async (id: string, updateData: any) => {
+    await supabase.from('gears').update(updateData).eq('id', id);
+    fetchGears();
+  };
+
+  const deleteGear = async (id: string) => {
+    await supabase.from('gears').delete().eq('id', id);
+    fetchGears();
+  };
+
+  const handleReorderGears = (reorderedGears: any[]) => {
+    setGears(reorderedGears);
   };
 
   return (
-    <main className="min-h-screen bg-[#09090B] text-white p-3 sm:p-6 max-w-4xl mx-auto">
-      <header className="flex items-center justify-between mb-6 pb-4 border-b border-zinc-800">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-black text-[#FF5500] tracking-tight flex items-center gap-2">
-            🏕️ Camp Gear Manager
+    <main className="min-h-screen bg-[#09090B] text-zinc-100 p-4 md:p-8 font-sans">
+      <div className="max-w-5xl mx-auto space-y-6">
+        <header className="border-b border-zinc-800 pb-4">
+          <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight flex items-center gap-2">
+            🏕️ <span className="text-[#FF5500]">Camp Gear</span> Manager
           </h1>
-          <p className="text-xs text-zinc-400 mt-0.5">
-            キャンプギア重量 ＆ お金管理アプリケーション
-          </p>
-        </div>
-      </header>
+          <p className="text-xs text-zinc-400 mt-1">重量シミュレーション＆5カテゴリーパッキング</p>
+        </header>
 
-      <WeightsSummary
-        gears={gears}
-        targetWeightKg={targetWeightKg}
-        onTargetWeightChange={setTargetWeightKg}
-        onCategoryClick={handleCategoryClick}
-      />
+        <WeightsSummary gears={gears} onCategoryClick={scrollToCategory} />
+        <GearSearch onAddGear={handleAddGear} />
+        <GearList
+          gears={gears} openCategories={openCategories} onToggleCategoryOpen={toggleCategoryOpen}
+          onTogglePacked={togglePacked} onUpdateQuantity={updateQuantity} onUpdateGear={updateGear} onDeleteGear={deleteGear}
+          onReorderGears={handleReorderGears}
+        />
 
-      <GearSearch onAddGear={handleAddGear} />
-
-      <GearList
-        gears={gears}
-        openCategory={openCategory}
-        onToggleCategory={(id) =>
-          setOpenCategory((prev) => (prev === id ? null : id))
-        }
-        onTogglePacked={handleTogglePacked}
-        onQuantityChange={handleQuantityChange}
-        onDelete={handleDeleteGear}
-        onUpdate={handleUpdateGear}
-      />
-
-      <CsvManager gears={gears} onImportSuccess={fetchGears} />
-
-      <footer className="mt-8 pt-6 border-t border-zinc-800 text-center">
-        <Link
-          href="/split-bill"
-          className="inline-flex items-center justify-center gap-2 bg-[#FF5500] hover:bg-[#e04b00] text-white font-black text-sm px-6 py-3.5 rounded-xl shadow-lg transition-all active:scale-95 w-full sm:w-auto"
-        >
-          💰 スマート割り勘計算機ページへ進む →
-        </Link>
-        <p className="text-[10px] text-zinc-500 mt-4">
-          ※当サイトはAmazon.co.jpアソシエイトに参加しています。
-        </p>
-      </footer>
+        <footer className="pt-8 pb-10 text-center border-t border-zinc-800 space-y-3">
+          <Link href="/split-bill" className="inline-flex items-center justify-center gap-2 bg-[#FF5500] hover:bg-[#E04B00] text-white px-6 py-3.5 rounded-2xl text-xs font-black transition shadow-lg active:scale-98">
+            💰 スマート割り勘計算機ページへ進む →
+          </Link>
+          <p className="text-[11px] text-zinc-500 font-medium">🏕️ Camp Gear Manager & Packing Tool</p>
+        </footer>
+      </div>
     </main>
   );
 }

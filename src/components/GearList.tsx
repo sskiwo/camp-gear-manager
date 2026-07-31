@@ -30,18 +30,18 @@ type Props = {
 
 const CATEGORIES = [
   'ベースギア',
-  '調理ギア・燃料',
-  '衣類・防寒着',
-  '食料・飲料',
+  '調理ギア',
+  '衣類',
   'その他・日用品',
+  '食料・消耗品',
 ];
 
 const CATEGORY_COLORS = {
   ベースギア: '#FF5500',
-  '調理ギア・燃料': '#FFB800',
-  '衣類・防寒着': '#00E5FF',
-  '食料・飲料': '#00E676',
+  調理ギア: '#FFB800',
+  衣類: '#00E5FF',
   'その他・日用品': '#E040FB',
+  '食料・消耗品': '#00E676',
 };
 
 export default function GearList({
@@ -62,7 +62,6 @@ export default function GearList({
   const [editWeight, setEditWeight] = useState('');
   const [editPrice, setEditPrice] = useState('');
   const [editQuantity, setEditQuantity] = useState('1');
-  const [editIsConsumable, setEditIsConsumable] = useState(false);
   const [editProductUrl, setEditProductUrl] = useState('');
 
   const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
@@ -76,7 +75,6 @@ export default function GearList({
     setEditWeight(String(item.weight || 0));
     setEditPrice(String(item.price || 0));
     setEditQuantity(String(item.quantity || 1));
-    setEditIsConsumable(item.is_consumable);
     setEditProductUrl(item.product_url || '');
   };
 
@@ -94,7 +92,7 @@ export default function GearList({
       weight: Number(editWeight) || 0,
       price: Number(editPrice) || 0,
       quantity: Math.max(1, Number(editQuantity) || 1),
-      is_consumable: editIsConsumable,
+      is_consumable: editCategory === '食料・消耗品',
       product_url: finalUrl,
     });
     setEditingId(null);
@@ -150,13 +148,13 @@ export default function GearList({
           const catIcon =
             catName === 'ベースギア'
               ? '⛺'
-              : catName === '調理ギア・燃料'
+              : catName === '調理ギア'
               ? '🍳'
-              : catName === '衣類・防寒着'
+              : catName === '衣類'
               ? '👕'
-              : catName === '食料・飲料'
-              ? '🍱'
-              : '📦';
+              : catName === 'その他・日用品'
+              ? '📦'
+              : '🍱';
 
           return (
             <div key={catName} id={`category-${catName}`} className="border rounded-xl overflow-hidden shadow-md scroll-mt-6" style={{ borderColor: `${catColor}50` }}>
@@ -221,14 +219,9 @@ export default function GearList({
                                 placeholder="Amazon特定商品URL"
                               />
                             </div>
-                            <div className="flex items-center justify-between pt-1">
-                              <label className="flex items-center gap-1 text-[11px] text-zinc-300 cursor-pointer">
-                                <input type="checkbox" checked={editIsConsumable} onChange={(e) => setEditIsConsumable(e.target.checked)} className="w-3 h-3 accent-[#FF5500]" /> 🔥 消費物
-                              </label>
-                              <div className="flex gap-2">
-                                <button onClick={() => handleSave(item.id)} className="bg-[#FF5500] text-white px-3 py-1 rounded text-[11px] font-bold hover:bg-[#E04B00]">保存</button>
-                                <button onClick={() => setEditingId(null)} className="bg-zinc-700 text-zinc-300 px-3 py-1 rounded text-[11px] font-bold">キャンセル</button>
-                              </div>
+                            <div className="flex items-center justify-end pt-1 gap-2">
+                              <button onClick={() => handleSave(item.id)} className="bg-[#FF5500] text-white px-3 py-1 rounded text-[11px] font-bold hover:bg-[#E04B00]">保存</button>
+                              <button onClick={() => setEditingId(null)} className="bg-zinc-700 text-zinc-300 px-3 py-1 rounded text-[11px] font-bold">キャンセル</button>
                             </div>
                           </div>
                         ) : (
@@ -257,9 +250,6 @@ export default function GearList({
                                 <span className="font-bold text-xs text-white truncate">{item.product_name || item.name}</span>
                                 {item.model_number && (
                                   <span className="text-[10px] bg-zinc-800 text-zinc-300 border border-zinc-700 px-1 py-0.2 rounded font-mono shrink-0">[{item.model_number}]</span>
-                                )}
-                                {item.is_consumable && (
-                                  <span className="text-[9px] bg-[#00E676] text-black px-1.5 py-0.2 rounded-full font-black shrink-0">消費物</span>
                                 )}
                               </div>
                             </div>

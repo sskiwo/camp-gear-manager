@@ -1,192 +1,211 @@
 'use client';
 
-import React from 'react';
+import { useState } from 'react';
 
 type GearItem = {
   id: string;
-  name: string;
+  category?: string;
   weight: number;
-  price: number;
-  quantity: number;
-  category: string;
+  price?: number;
+  quantity?: number;
   is_packed: boolean;
-  is_consumable: boolean;
+  is_consumable?: boolean;
 };
 
 type Props = {
   gears: GearItem[];
-  targetWeightKg: number;
-  onTargetWeightChange: (weight: number) => void;
-  onCategoryClick?: (categoryId: string) => void;
+  onCategoryClick?: (category: string) => void;
 };
 
 const CATEGORIES = [
-  { id: 'base', name: 'ベースギア', icon: '⛺', color: '#FF5500' },
-  { id: 'cook', name: '調理ギア・燃料', icon: '🍳', color: '#FFB800' },
-  { id: 'wear', name: '衣類・防寒着', icon: '👕', color: '#00E5FF' },
-  { id: 'other', name: 'その他・日用品', icon: '📦', color: '#E040FB' },
-  { id: 'food', name: '食料・飲料', icon: '🍱', color: '#00E676' },
+  'ベースギア',
+  '調理ギア',
+  '衣類',
+  'その他・日用品',
+  '食料・消耗品',
 ];
 
-export default function WeightsSummary({
-  gears,
-  targetWeightKg,
-  onTargetWeightChange,
-  onCategoryClick,
-}: Props) {
+const CATEGORY_COLORS = {
+  ベースギア: '#FF5500',
+  調理ギア: '#FFB800',
+  衣類: '#00E5FF',
+  'その他・日用品': '#E040FB',
+  '食料・消耗品': '#00E676',
+};
+
+export default function WeightsSummary({ gears, onCategoryClick }: Props) {
+  const [targetWeightKg, setTargetWeightKg] = useState<number>(15.0);
+
   const packedGears = gears.filter((g) => g.is_packed);
 
-  const totalWeightG = packedGears.reduce(
-    (sum, g) => sum + g.weight * g.quantity,
+  // 行き総重量 (g)
+  const totalOutgoingWeight = packedGears.reduce(
+    (sum, g) => sum + (g.weight || 0) * (g.quantity || 1),
     0
   );
-  const totalWeightKg = totalWeightG / 1000;
 
-  const returnWeightG = packedGears
-    .filter((g) => !g.is_consumable)
-    .reduce((sum, g) => sum + g.weight * g.quantity, 0);
-  const returnWeightKg = returnWeightG / 1000;
+  // 帰り総重量 (「食料・消耗品」以外)
+  const totalReturnWeight = packedGears
+    .filter((g) => (g.category || 'ベースギア') !== '食料・消耗品')
+    .reduce((sum, g) => sum + (g.weight || 0) * (g.quantity || 1), 0);
 
-  const savedWeightG = totalWeightG - returnWeightG;
-  const savedWeightKg = savedWeightG / 1000;
-
+  // パッキング全体の合計金額
   const totalPrice = packedGears.reduce(
-    (sum, g) => sum + g.price * g.quantity,
+    (sum, g) => sum + (g.price || 0) * (g.quantity || 1),
     0
   );
 
-  const categoryStats = CATEGORIES.map((cat) => {
-    const catGears = packedGears.filter((g) => g.category === cat.id);
-    const weightG = catGears.reduce(
-      (sum, g) => sum + g.weight * g.quantity,
+  // 目標重量の計算
+  const targetWeightG = targetWeightKg * 1000;
+  const diffWeightG = targetWeightG - totalOutgoingWeight;
+  const isOver = diffWeightG < 0;
+  const progressPct = targetWeightG > 0 ? Math.min(100, (totalOutgoingWeight / targetWeightG) * 100) : 0;
+
+  // カテゴリーごとの重量 ＆ 金額
+  const categoryWeights: Record<string, number> = {};
+  const categoryPrices: Record<string, number> = {};
+
+  CATEGORIES.forEach((cat) => {
+    const catGears = packedGears.filter((g) => (g.category || 'ベースギア') === cat);
+    
+    categoryWeights[cat] = catGears.reduce(
+      (sum, g) => sum + (g.weight || 0) * (g.quantity || 1),
       0
     );
-    const price = catGears.reduce(
-      (sum, g) => sum + g.price * g.quantity,
+
+    categoryPrices[cat] = catGears.reduce(
+      (sum, g) => sum + (g.price || 0) * (g.quantity || 1),
       0
     );
-    return {
-      ...cat,
-      weightKg: weightG / 1000,
-      price,
-      count: catGears.length,
-    };
   });
 
-  const targetWeightG = targetWeightKg * 1000;
-  const isOver = totalWeightG > targetWeightG;
-  const diffKg = Math.abs(totalWeightG - targetWeightG) / 1000;
-
   return (
-    <div className="bg-[#18181B] border border-zinc-800 rounded-2xl p-4 sm:p-6 mb-6 shadow-xl text-white">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-4 border-b border-zinc-800">
-        <div>
-          <h2 className="text-lg font-bold text-[#FF5500] flex items-center gap-2">
-            📊 パッキング重量＆金額サマリー
-          </h2>
-          <p className="text-xs text-zinc-400 mt-0.5">
-            消費物（🔥）にチェックを入れた品は帰りの重量から自動除外されます
-          </p>
-        </div>
+    <div className="bg-[#18181B] p-5 md:p-6 rounded-2xl border border-zinc-800 space-y-5 text-white shadow-xl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-3">
+        <h2 className="text-base font-bold text-white flex items-center gap-2">
+          📊 パッキングサマリー
+          <span className="text-xs text-zinc-400 font-normal">({packedGears.length}点)</span>
+        </h2>
 
-        <div className="flex items-center gap-2 bg-[#27272A] px-3 py-1.5 rounded-lg border border-zinc-700 self-start sm:self-auto">
-          <span className="text-xs text-zinc-300 font-medium flex items-center gap-1">
-            🎯 目標重量:
-          </span>
+        <div className="flex items-center gap-2 bg-[#27272A] px-3 py-1.5 rounded-xl border border-zinc-700">
+          <span className="text-xs font-extrabold text-[#FFB800]">🎯 目標重量:</span>
           <input
             type="number"
             step="0.5"
             min="1"
-            max="100"
             value={targetWeightKg}
-            onChange={(e) =>
-              onTargetWeightChange(parseFloat(e.target.value) || 0)
-            }
-            className="w-16 bg-[#18181B] text-white text-sm font-bold text-center rounded border border-zinc-600 focus:outline-none focus:border-[#FF5500] py-0.5"
+            onChange={(e) => setTargetWeightKg(Math.max(0.1, Number(e.target.value) || 0))}
+            className="w-16 bg-[#18181B] border border-zinc-600 rounded px-2 py-0.5 text-xs font-black text-white text-right focus:outline-none focus:border-[#FF5500]"
           />
-          <span className="text-xs text-zinc-400">kg</span>
+          <span className="text-xs font-bold text-zinc-300">kg</span>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
-        <div className="bg-[#27272A] p-3.5 rounded-xl border border-zinc-700/60 flex flex-col justify-between">
-          <span className="text-xs text-zinc-400 font-medium">🚚 行きの総重量</span>
-          <div className="flex items-baseline gap-1 mt-1">
-            <span className="text-2xl font-black text-white">
-              {totalWeightKg.toFixed(2)}
+      <div className="bg-[#27272A] p-3.5 rounded-xl border border-zinc-700/80 space-y-2">
+        <div className="flex justify-between items-center text-xs font-bold">
+          <span className="text-zinc-300">目標達成率 ({progressPct.toFixed(1)}%)</span>
+          {isOver ? (
+            <span className="text-[#FF5500] font-black animate-pulse">
+              ⚠️ 目標を {Math.abs(diffWeightG / 1000).toFixed(2)} kg オーバー！
             </span>
-            <span className="text-xs text-zinc-400">kg ({totalWeightG.toLocaleString()}g)</span>
-          </div>
-          <div className="mt-2 text-xs font-semibold">
-            {isOver ? (
-              <span className="text-[#FF5500] bg-[#FF5500]/10 px-2 py-0.5 rounded border border-[#FF5500]/20 inline-block">
-                ⚠️ 目標を {diffKg.toFixed(2)}kg オーバー
-              </span>
-            ) : (
-              <span className="text-[#00E676] bg-[#00E676]/10 px-2 py-0.5 rounded border border-[#00E676]/20 inline-block">
-                🎯 あと {diffKg.toFixed(2)}kg 余裕あり
-              </span>
-            )}
-          </div>
+          ) : (
+            <span className="text-[#00E676] font-black">
+              🎯 あと {(diffWeightG / 1000).toFixed(2)} kg 載せられます
+            </span>
+          )}
         </div>
-
-        <div className="bg-[#27272A] p-3.5 rounded-xl border border-zinc-700/60 flex flex-col justify-between">
-          <span className="text-xs text-zinc-400 font-medium">🏠 帰りの重量 (消費後)</span>
-          <div className="flex items-baseline gap-1 mt-1">
-            <span className="text-2xl font-black text-[#FFB800]">
-              {returnWeightKg.toFixed(2)}
-            </span>
-            <span className="text-xs text-zinc-400">kg ({returnWeightG.toLocaleString()}g)</span>
-          </div>
-          <div className="mt-2 text-xs text-[#00E676] font-medium">
-            🔥 消費物で -{savedWeightKg.toFixed(2)}kg (-{savedWeightG.toLocaleString()}g) 軽量化
-          </div>
-        </div>
-
-        <div className="bg-[#27272A] p-3.5 rounded-xl border border-zinc-700/60 flex flex-col justify-between">
-          <span className="text-xs text-zinc-400 font-medium">💰 パッキング合計金額</span>
-          <div className="flex items-baseline gap-1 mt-1">
-            <span className="text-2xl font-black text-[#00E676]">
-              ¥{totalPrice.toLocaleString()}
-            </span>
-          </div>
-          <div className="mt-2 text-xs text-zinc-400">
-            全 {packedGears.length} 点の合計金額
-          </div>
+        
+        <div className="h-3 w-full bg-[#18181B] rounded-full overflow-hidden p-0.5 border border-zinc-700">
+          <div
+            style={{
+              width: `${progressPct}%`,
+              backgroundColor: isOver ? '#FF5500' : '#00E676',
+            }}
+            className="h-full rounded-full transition-all duration-300"
+          />
         </div>
       </div>
 
-      <div>
-        <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2.5">
-          📦 カテゴリー別内訳 (タップで該当リストへジャンプ)
-        </h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
-          {categoryStats.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => onCategoryClick && onCategoryClick(cat.id)}
-              className="bg-[#27272A] hover:bg-zinc-700/80 p-2.5 rounded-xl border border-zinc-700/70 text-left transition-all duration-150 active:scale-95 group"
-            >
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-sm">{cat.icon}</span>
-                <span className="text-[10px] text-zinc-400 group-hover:text-white">
-                  {cat.count}件
-                </span>
-              </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="bg-[#27272A] border border-[#FF5500]/50 p-3.5 rounded-xl text-center shadow-inner">
+          <span className="text-[11px] font-extrabold text-[#FF5500] block tracking-wide">🚀 行き（全総重量）</span>
+          <span className="text-xl md:text-2xl font-black text-white">
+            {(totalOutgoingWeight / 1000).toFixed(2)} <span className="text-xs font-bold text-zinc-400">kg</span>
+          </span>
+          <span className="text-[10px] text-zinc-400 block font-mono">({totalOutgoingWeight.toLocaleString()} g)</span>
+        </div>
+
+        <div className="bg-[#27272A] border border-[#FFB800]/50 p-3.5 rounded-xl text-center shadow-inner">
+          <span className="text-[11px] font-extrabold text-[#FFB800] block tracking-wide">🏠 帰り（消費後重量）</span>
+          <span className="text-xl md:text-2xl font-black text-[#FFB800]">
+            {(totalReturnWeight / 1000).toFixed(2)} <span className="text-xs font-bold text-zinc-400">kg</span>
+          </span>
+          <span className="text-[10px] text-zinc-400 block font-mono">({totalReturnWeight.toLocaleString()} g)</span>
+        </div>
+
+        <div className="bg-[#27272A] border border-[#00E676]/50 p-3.5 rounded-xl text-center shadow-inner flex flex-col justify-center">
+          <span className="text-[11px] font-extrabold text-[#00E676] block tracking-wide">💰 パッキング合計金額</span>
+          <span className="text-xl md:text-2xl font-black text-[#00E676] mt-0.5">
+            ¥{totalPrice.toLocaleString()}
+          </span>
+        </div>
+      </div>
+
+      <div className="space-y-1.5">
+        <div className="flex justify-between text-xs font-bold text-zinc-300">
+          <span>カテゴリー別積載バランス</span>
+        </div>
+        <div className="h-4 w-full bg-[#27272A] rounded-full overflow-hidden flex border border-zinc-700/60 p-0.5">
+          {CATEGORIES.map((cat) => {
+            const weight = categoryWeights[cat] || 0;
+            const pct = totalOutgoingWeight > 0 ? (weight / totalOutgoingWeight) * 100 : 0;
+            if (pct === 0) return null;
+            return (
               <div
-                className="text-xs font-bold truncate mb-1"
-                style={{ color: cat.color }}
+                key={cat}
+                style={{
+                  width: `${pct}%`,
+                  backgroundColor: CATEGORY_COLORS[cat as keyof typeof CATEGORY_COLORS],
+                }}
+                className="h-full rounded-xs transition-all duration-300"
+                title={`${cat}: ${weight}g (${pct.toFixed(1)}%)`}
+              />
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="pt-1">
+        <span className="text-[11px] font-bold text-zinc-400 block mb-2">
+          👇 タップすると下の各カテゴリーへジャンプします:
+        </span>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+          {CATEGORIES.map((cat) => {
+            const weight = categoryWeights[cat] || 0;
+            const price = categoryPrices[cat] || 0;
+            const color = CATEGORY_COLORS[cat as keyof typeof CATEGORY_COLORS];
+            return (
+              <button
+                key={cat}
+                onClick={() => onCategoryClick && onCategoryClick(cat)}
+                style={{ borderColor: `${color}80`, backgroundColor: `${color}15` }}
+                className="p-2.5 border rounded-xl text-left transition hover:brightness-125 active:scale-95 flex flex-col justify-between cursor-pointer shadow-sm space-y-1"
               >
-                {cat.name}
-              </div>
-              <div className="text-xs font-mono font-bold text-white">
-                {cat.weightKg.toFixed(2)} <span className="text-[10px] font-normal text-zinc-400">kg</span>
-              </div>
-              <div className="text-[10px] font-mono text-zinc-400">
-                ¥{cat.price.toLocaleString()}
-              </div>
-            </button>
-          ))}
+                <span style={{ color: color }} className="font-extrabold text-[11px] truncate block">
+                  {cat}
+                </span>
+
+                <div className="space-y-0.5">
+                  <div className="text-xs font-black text-white block">
+                    ⚖️ {weight >= 1000 ? `${(weight / 1000).toFixed(2)}kg` : `${weight}g`}
+                  </div>
+                  <div className="text-[11px] font-bold text-zinc-300 block">
+                    💴 ¥{price.toLocaleString()}
+                  </div>
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
