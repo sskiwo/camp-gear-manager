@@ -252,6 +252,42 @@ export default function Home() {
     fetchGears();
   };
 
+  // 当日の朝用: 「持っていく」ギアのみパッキングチェックを外す（0%にする）
+  const handleResetAllPacked = async () => {
+    if (!selectedCampId) return;
+    const confirmed = window.confirm('当日のパッキングチェック（「詰めた！」）のみをリセットして、0%から準備を開始しますか？\n※「持っていく/お休み」の選定は変更されません。');
+    if (!confirmed) return;
+
+    const { error } = await supabase
+      .from('gears')
+      .update({ is_packed: false })
+      .eq('camp_id', selectedCampId);
+
+    if (error) {
+      alert(`一括解除に失敗しました:\n${error.message}`);
+      return;
+    }
+
+    fetchGears();
+  };
+
+  // 全ギアを「詰めた！」状態にする
+  const handleCheckAllPacked = async () => {
+    if (!selectedCampId) return;
+
+    const { error } = await supabase
+      .from('gears')
+      .update({ is_packed: true })
+      .eq('camp_id', selectedCampId);
+
+    if (error) {
+      alert(`一括更新に失敗しました:\n${error.message}`);
+      return;
+    }
+
+    fetchGears();
+  };
+
   const toggleCategoryOpen = (catName: string) => {
     setOpenCategories((prev) => ({ ...prev, [catName]: !prev[catName] }));
   };
@@ -284,14 +320,22 @@ export default function Home() {
       price: Number(item.price) || 0,
       quantity: 1,
       is_packed: true,
+      is_selected: true, // デフォルト「持っていく」
       is_consumable: isConsumable,
       product_url: item.productUrl || '',
     }]);
     fetchGears();
   };
 
+  // 当日パッキング状態の切り替え
   const togglePacked = async (id: string, currentStatus: boolean) => {
     await supabase.from('gears').update({ is_packed: !currentStatus }).eq('id', id);
+    fetchGears();
+  };
+
+  // ★ 今回持っていくかどうかの選定切り替え
+  const toggleSelected = async (id: string, currentStatus: boolean) => {
+    await supabase.from('gears').update({ is_selected: !currentStatus }).eq('id', id);
     fetchGears();
   };
 
@@ -329,7 +373,6 @@ export default function Home() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            {/* 🌐 みんなのギアギャラリーへのリンクボタン */}
             <Link
               href="/community"
               className="bg-[#27272A] hover:bg-zinc-700 text-zinc-200 border border-zinc-700 px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
@@ -337,7 +380,6 @@ export default function Home() {
               🌐 みんなのギアを見る →
             </Link>
 
-            {/* ⛺ キャンプ切り替え ＆ 編集・公開・削除UI */}
             <div className="flex items-center gap-1 bg-[#18181B] p-1.5 rounded-xl border border-zinc-800">
               <span className="text-xs font-bold text-[#FF5500] pl-1">⛺</span>
               <select
@@ -352,7 +394,6 @@ export default function Home() {
                 ))}
               </select>
 
-              {/* 公開/非公開 トグルボタン */}
               <button
                 onClick={handleTogglePublic}
                 className={`px-2 py-1.5 rounded-lg text-xs font-bold transition border cursor-pointer ${
@@ -458,8 +499,14 @@ export default function Home() {
         <GearSearch onAddGear={handleAddGear} />
         <GearList
           gears={gears} openCategories={openCategories} onToggleCategoryOpen={toggleCategoryOpen}
-          onTogglePacked={togglePacked} onUpdateQuantity={updateQuantity} onUpdateGear={updateGear} onDeleteGear={deleteGear}
+          onTogglePacked={togglePacked}
+          onToggleSelected={toggleSelected}
+          onUpdateQuantity={updateQuantity}
+          onUpdateGear={updateGear}
+          onDeleteGear={deleteGear}
           onDeleteAllGears={handleDeleteAllGears}
+          onResetAllPacked={handleResetAllPacked}
+          onCheckAllPacked={handleCheckAllPacked}
           onReorderGears={handleReorderGears}
         />
         <CsvManager gears={gears} selectedCampId={selectedCampId} onGearsUpdated={fetchGears} />
