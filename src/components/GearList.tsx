@@ -17,10 +17,16 @@ type GearItem = {
   is_selected?: boolean;
   is_consumable: boolean;
   product_url?: string;
+  storage_location?: string;
+  purchase_date?: string;
+  fuel_type?: string;
+  memo?: string;
 };
 
 type Props = {
   gears: GearItem[];
+  allCampsCount?: number;
+  allGearsInUserAccount?: GearItem[];
   openCategories: Record<string, boolean>;
   onToggleCategoryOpen: (catName: string) => void;
   onTogglePacked: (id: string, currentStatus: boolean) => void;
@@ -52,6 +58,8 @@ const CATEGORY_COLORS = {
 
 export default function GearList({
   gears,
+  allCampsCount = 1,
+  allGearsInUserAccount = [],
   openCategories,
   onToggleCategoryOpen,
   onTogglePacked,
@@ -66,8 +74,6 @@ export default function GearList({
 }: Props) {
   const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
   const [sortOrders, setSortOrders] = useState<Record<string, 'default' | 'desc' | 'asc'>>({});
-
-  // フィルター状態 ('all' | 'unpacked')
   const [filterMode, setFilterMode] = useState<'all' | 'unpacked'>('all');
 
   const toggleSortOrder = (catName: string) => {
@@ -120,17 +126,32 @@ export default function GearList({
     setDraggedItemId(null);
   };
 
-  // 「持っていく」ギアのみに進捗計算を限定
+  // 「持参」ギアのみに進捗計算を限定
   const selectedGears = gears.filter((g) => g.is_selected !== false);
   const packedCount = selectedGears.filter((g) => g.is_packed).length;
   const totalCount = selectedGears.length;
   const progressPercent = totalCount > 0 ? Math.round((packedCount / totalCount) * 100) : 0;
 
-  // フィルター適用後のギアリスト
   const filteredGears =
     filterMode === 'unpacked'
       ? gears.filter((g) => g.is_selected !== false && !g.is_packed)
       : gears;
+
+  // ⛺ 採用数 (持参ONの数 / 全キャンプ数) を計算する関数
+  const getAdoptionRate = (gearName: string) => {
+    if (!allGearsInUserAccount || allGearsInUserAccount.length === 0) {
+      return `1/${allCampsCount}`;
+    }
+
+    const cleanName = (gearName || '').trim();
+
+    // 全ギアの中から同名かつ持参ON(is_selected !== false)のものをカウント
+    const selectedCount = allGearsInUserAccount.filter(
+      (g) => (g.name || '').trim() === cleanName && g.is_selected !== false
+    ).length;
+
+    return `${selectedCount}/${Math.max(1, allCampsCount)}`;
+  };
 
   return (
     <section className="bg-[#18181B] p-5 md:p-6 rounded-2xl border border-zinc-800 space-y-4 shadow-xl">
@@ -168,14 +189,13 @@ export default function GearList({
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <span className="text-sm font-black text-white flex items-center gap-1.5">
-                🎒 当日パッキング完了率:
+                🎒 当日完了率:
               </span>
               <span className="text-sm font-black text-[#00E676] font-mono">
                 {packedCount} / {totalCount} 点 ({progressPercent}%)
               </span>
             </div>
 
-            {/* パッキング一括操作ボタン */}
             <div className="flex items-center gap-1.5">
               <button
                 onClick={() => setFilterMode(filterMode === 'all' ? 'unpacked' : 'all')}
@@ -185,7 +205,7 @@ export default function GearList({
                     : 'bg-zinc-800 text-zinc-300 border-zinc-700 hover:text-white'
                 }`}
               >
-                {filterMode === 'unpacked' ? '👁️ 全て表示に戻す' : `⚠️ 未完了のみ表示 (${totalCount - packedCount}点)`}
+                {filterMode === 'unpacked' ? '👁️ 全て表示' : `⚠️ 未完了のみ (${totalCount - packedCount}点)`}
               </button>
 
               {onResetAllPacked && (
@@ -194,7 +214,7 @@ export default function GearList({
                   className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-zinc-800 border border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-700 transition cursor-pointer"
                   title="当日のパッキング開始！チェックのみを外して0%にします"
                 >
-                  🔄 パッキング全解除
+                  🔄 全解除
                 </button>
               )}
 
@@ -202,7 +222,7 @@ export default function GearList({
                 <button
                   onClick={onCheckAllPacked}
                   className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-emerald-950/60 border border-emerald-700 text-emerald-300 hover:text-white hover:bg-emerald-900 transition cursor-pointer"
-                  title="「持っていく」ギアをすべてパッキング済みにします"
+                  title="「持参」ギアをすべてパッキング済みにします"
                 >
                   ✅ 全完了
                 </button>
@@ -210,7 +230,6 @@ export default function GearList({
             </div>
           </div>
 
-          {/* ゲージバー */}
           <div className="w-full bg-zinc-800 rounded-full h-2.5 overflow-hidden border border-zinc-700">
             <div
               className="bg-[#00E676] h-2.5 rounded-full transition-all duration-300 shadow-sm"
@@ -299,6 +318,7 @@ export default function GearList({
                       key={item.id}
                       item={item}
                       catColor={catColor}
+                      adoptionRate={getAdoptionRate(item.name)}
                       isDragging={draggedItemId === item.id}
                       onDragStart={handleDragStart}
                       onDragOver={handleDragOver}
