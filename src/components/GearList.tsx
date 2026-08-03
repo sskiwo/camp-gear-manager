@@ -26,6 +26,7 @@ type Props = {
   onUpdateQuantity: (id: string, currentQty: number, delta: number) => void;
   onUpdateGear: (id: string, data: any) => Promise<void>;
   onDeleteGear: (id: string) => void;
+  onDeleteAllGears?: () => void; // ★ 一括削除用Props
   onReorderGears?: (reorderedGears: GearItem[]) => void;
 };
 
@@ -53,6 +54,7 @@ export default function GearList({
   onUpdateQuantity,
   onUpdateGear,
   onDeleteGear,
+  onDeleteAllGears,
   onReorderGears,
 }: Props) {
   const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
@@ -113,19 +115,30 @@ export default function GearList({
 
   return (
     <section className="bg-[#18181B] p-5 md:p-6 rounded-2xl border border-zinc-800 space-y-4 shadow-xl">
-      <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800 pb-3">
         <h2 className="text-lg font-extrabold text-white flex items-center gap-2">
           🎒 積載パッキングリスト
           <span className="text-xs text-zinc-400 font-normal">({gears.length}件)</span>
         </h2>
 
         {gears.length > 0 && (
-          <button
-            onClick={handleToggleAll}
-            className="text-xs font-bold px-3 py-1.5 rounded-xl bg-[#27272A] border border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-700 transition cursor-pointer flex items-center gap-1"
-          >
-            {isAnyOpen ? '📁 すべてたたむ' : '📂 すべて展開'}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleToggleAll}
+              className="text-xs font-bold px-2.5 py-1.5 rounded-xl bg-[#27272A] border border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-700 transition cursor-pointer flex items-center gap-1"
+            >
+              {isAnyOpen ? '📁 すべてたたむ' : '📂 すべて展開'}
+            </button>
+            {onDeleteAllGears && (
+              <button
+                onClick={onDeleteAllGears}
+                className="text-xs font-bold px-2.5 py-1.5 rounded-xl bg-red-950/40 border border-red-800/60 text-red-300 hover:text-white hover:bg-red-900/60 transition cursor-pointer flex items-center gap-1"
+                title="このキャンプのギアを全削除"
+              >
+                🗑️ 一括削除
+              </button>
+            )}
+          </div>
         )}
       </div>
 
