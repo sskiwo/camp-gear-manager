@@ -16,7 +16,6 @@ type GearItem = {
   is_selected?: boolean;
   is_consumable: boolean;
   product_url?: string;
-  storage_location?: string;
   purchase_date?: string;
   fuel_type?: string;
   memo?: string;
@@ -25,7 +24,7 @@ type GearItem = {
 type Props = {
   item: GearItem;
   catColor: string;
-  adoptionRate?: string; // 例: "3/5"
+  adoptionRate?: string;
   isDragging?: boolean;
   onDragStart?: (e: React.DragEvent, id: string) => void;
   onDragOver?: (e: React.DragEvent) => void;
@@ -36,6 +35,20 @@ type Props = {
   onUpdateGear: (id: string, data: any) => Promise<void>;
   onDeleteGear: (id: string) => void;
 };
+
+// 燃料・電源タイプの選択肢候補（「その他」を追加）
+const FUEL_OPTIONS = [
+  '不要/なし',
+  'USB-C充電',
+  '単3/単4電池',
+  'OD缶',
+  'CB缶',
+  '固形燃料/アルコール',
+  '薪/炭/ペレット',
+  '灯油/ガソリン',
+  'ポータブル電源(AC)',
+  'その他',
+];
 
 export default function GearItemCard({
   item,
@@ -58,9 +71,8 @@ export default function GearItemCard({
   const [editName, setEditName] = useState(item.name);
   const [editWeight, setEditWeight] = useState(item.weight || 0);
   const [editPrice, setEditPrice] = useState(item.price || 0);
-  const [editStorage, setEditStorage] = useState(item.storage_location || '');
   const [editPurchaseDate, setEditPurchaseDate] = useState(item.purchase_date || '');
-  const [editFuelType, setEditFuelType] = useState(item.fuel_type || '');
+  const [editFuelType, setEditFuelType] = useState(item.fuel_type || '不要/なし');
   const [editMemo, setEditMemo] = useState(item.memo || '');
 
   const isSelected = item.is_selected !== false; // デフォルトtrue
@@ -71,9 +83,8 @@ export default function GearItemCard({
       product_name: editName,
       weight: Number(editWeight),
       price: Number(editPrice),
-      storage_location: editStorage,
       purchase_date: editPurchaseDate,
-      fuel_type: editFuelType,
+      fuel_type: editFuelType === '不要/なし' ? '' : editFuelType,
       memo: editMemo,
     });
     setIsEditing(false);
@@ -95,7 +106,7 @@ export default function GearItemCard({
           : 'bg-[#27272A] border-zinc-700/80 shadow-md'
       }`}
     >
-      {/* 上段: 基本操作ライン */}
+      {/* 上段: 基本操作 ＆ タグ一覧 */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
         {/* 左側: ドラッグ & 当日完了ボタン & ギア名・各種タグ */}
         <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -103,7 +114,7 @@ export default function GearItemCard({
             ⋮⋮
           </span>
 
-          {/* 当日パッキングボタン (文言短縮: ✅ 完了 / ⬜ 未) */}
+          {/* 当日完了ボタン */}
           {isSelected ? (
             <button
               onClick={() => onTogglePacked(item.id, item.is_packed)}
@@ -126,7 +137,7 @@ export default function GearItemCard({
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 flex-wrap">
               {item.brand && (
-                <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-400 border border-zinc-700 shrink-0">
+                <span className="inline-flex items-center h-5 text-[10px] font-bold px-2 py-0.5 rounded-md bg-zinc-800 text-zinc-400 border border-zinc-700 shrink-0 leading-none">
                   {item.brand}
                 </span>
               )}
@@ -146,23 +157,16 @@ export default function GearItemCard({
               {/* 採用数タグ (例: ⛺ 3/5) */}
               {adoptionRate && (
                 <span
-                  className="text-[10px] font-extrabold px-1.5 py-0.2 rounded bg-[#FF5500]/15 border border-[#FF5500]/40 text-[#FF5500] font-mono shrink-0"
+                  className="inline-flex items-center h-5 text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-[#FF5500]/15 border border-[#FF5500]/40 text-[#FF5500] font-mono shrink-0 leading-none"
                   title="全キャンプでの採用数 (持参ON数 / 全キャンプ数)"
                 >
                   ⛺ {adoptionRate}
                 </span>
               )}
 
-              {/* 収納場所タグ */}
-              {item.storage_location && (
-                <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-zinc-800/90 text-amber-300 border border-amber-500/30 shrink-0">
-                  📦 {item.storage_location}
-                </span>
-              )}
-
               {/* 燃料・電源タグ */}
               {item.fuel_type && (
-                <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-cyan-950/60 text-cyan-300 border border-cyan-700/50 shrink-0">
+                <span className="inline-flex items-center h-5 text-[10px] font-bold px-2 py-0.5 rounded-md bg-cyan-950/60 text-cyan-300 border border-cyan-700/50 shrink-0 leading-none">
                   🔋 {item.fuel_type}
                 </span>
               )}
@@ -180,7 +184,6 @@ export default function GearItemCard({
 
         {/* 右側: 持ち出しスイッチ & 個数 & 詳細・編集・削除 */}
         <div className="flex items-center justify-end gap-1.5 shrink-0 border-t sm:border-t-0 border-zinc-800/80 pt-2 sm:pt-0">
-          {/* 今回持っていくかどうかの選定スイッチ (文言短縮: 🎒 持参 / 💤 お休み) */}
           <button
             onClick={() => onToggleSelected(item.id, isSelected)}
             className={`text-[11px] font-bold px-2 py-1 rounded-lg border transition cursor-pointer ${
@@ -218,7 +221,7 @@ export default function GearItemCard({
             className={`p-1 rounded text-xs transition cursor-pointer ${
               showDetail ? 'text-amber-400 bg-amber-950/30' : 'text-zinc-400 hover:text-white'
             }`}
-            title="収納・購入時期・メモ等の詳細表示"
+            title="購入時期・燃料・メモ等の詳細表示"
           >
             {showDetail ? '▲' : '🔍'}
           </button>
@@ -245,11 +248,7 @@ export default function GearItemCard({
 
       {/* 下段: 詳細アコーディオン (タップ時表示) */}
       {showDetail && !isEditing && (
-        <div className="pt-2 border-t border-zinc-800/80 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-zinc-300 bg-[#18181B]/60 p-2.5 rounded-lg font-sans animate-fade-in">
-          <div>
-            <span className="text-zinc-500 font-bold block text-[10px]">📦 収納・保管場所:</span>
-            <span>{item.storage_location || '未設定'}</span>
-          </div>
+        <div className="pt-2 border-t border-zinc-800/80 grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-zinc-300 bg-[#18181B]/60 p-2.5 rounded-lg font-sans animate-fade-in">
           <div>
             <span className="text-zinc-500 font-bold block text-[10px]">📅 購入時期:</span>
             <span>{item.purchase_date || '未設定'}</span>
@@ -267,73 +266,90 @@ export default function GearItemCard({
 
       {/* 下段: 編集モード */}
       {isEditing && (
-        <div className="pt-2 border-t border-zinc-800/80 space-y-2 bg-[#18181B] p-3 rounded-lg animate-fade-in">
+        <div className="pt-2 border-t border-zinc-800/80 space-y-2.5 bg-[#18181B] p-3 rounded-lg animate-fade-in">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            <input
-              type="text"
-              placeholder="商品名"
-              value={editName}
-              onChange={(e) => setEditName(e.target.value)}
-              className="bg-[#27272A] border border-zinc-700 rounded px-2 py-1 text-xs text-white"
-            />
-            <input
-              type="number"
-              placeholder="重量(g)"
-              value={editWeight}
-              onChange={(e) => setEditWeight(Number(e.target.value))}
-              className="bg-[#27272A] border border-zinc-700 rounded px-2 py-1 text-xs text-white"
-            />
-            <input
-              type="number"
-              placeholder="価格(円)"
-              value={editPrice}
-              onChange={(e) => setEditPrice(Number(e.target.value))}
-              className="bg-[#27272A] border border-zinc-700 rounded px-2 py-1 text-xs text-white"
-            />
+            <div>
+              <label className="text-[10px] font-bold text-zinc-400 block mb-0.5">商品名</label>
+              <input
+                type="text"
+                placeholder="商品名"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                className="w-full bg-[#27272A] border border-zinc-700 rounded px-2 py-1.5 text-xs text-white"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-zinc-400 block mb-0.5">重量(g)</label>
+              <input
+                type="number"
+                placeholder="重量(g)"
+                value={editWeight}
+                onChange={(e) => setEditWeight(Number(e.target.value))}
+                className="w-full bg-[#27272A] border border-zinc-700 rounded px-2 py-1.5 text-xs text-white"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-zinc-400 block mb-0.5">価格(円)</label>
+              <input
+                type="number"
+                placeholder="価格(円)"
+                value={editPrice}
+                onChange={(e) => setEditPrice(Number(e.target.value))}
+                className="w-full bg-[#27272A] border border-zinc-700 rounded px-2 py-1.5 text-xs text-white"
+              />
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            <input
-              type="text"
-              placeholder="収納場所 (例: コンテナA)"
-              value={editStorage}
-              onChange={(e) => setEditStorage(e.target.value)}
-              className="bg-[#27272A] border border-zinc-700 rounded px-2 py-1 text-xs text-white"
-            />
-            <input
-              type="text"
-              placeholder="購入時期 (例: 2026/05)"
-              value={editPurchaseDate}
-              onChange={(e) => setEditPurchaseDate(e.target.value)}
-              className="bg-[#27272A] border border-zinc-700 rounded px-2 py-1 text-xs text-white"
-            />
-            <input
-              type="text"
-              placeholder="燃料/電源 (例: USB-C, OD缶)"
-              value={editFuelType}
-              onChange={(e) => setEditFuelType(e.target.value)}
-              className="bg-[#27272A] border border-zinc-700 rounded px-2 py-1 text-xs text-white"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {/* 購入時期カレンダー (年月) */}
+            <div>
+              <label className="text-[10px] font-bold text-emerald-400 block mb-0.5">📅 購入時期</label>
+              <input
+                type="month"
+                value={editPurchaseDate}
+                onChange={(e) => setEditPurchaseDate(e.target.value)}
+                className="w-full bg-[#27272A] border border-zinc-700 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-emerald-400 cursor-pointer"
+              />
+            </div>
+
+            {/* 燃料・電源ドロップダウン（「その他」追加済み） */}
+            <div>
+              <label className="text-[10px] font-bold text-cyan-400 block mb-0.5">🔋 燃料・電源タイプ</label>
+              <select
+                value={editFuelType}
+                onChange={(e) => setEditFuelType(e.target.value)}
+                className="w-full bg-[#27272A] border border-zinc-700 rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-400 cursor-pointer"
+              >
+                {FUEL_OPTIONS.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
-          <input
-            type="text"
-            placeholder="メモ (例: スタッキング可、要充電)"
-            value={editMemo}
-            onChange={(e) => setEditMemo(e.target.value)}
-            className="w-full bg-[#27272A] border border-zinc-700 rounded px-2 py-1 text-xs text-white"
-          />
+          <div>
+            <label className="text-[10px] font-bold text-zinc-400 block mb-0.5">📝 メモ</label>
+            <input
+              type="text"
+              placeholder="例: リビング棚保管、コンテナA、スタッキング可"
+              value={editMemo}
+              onChange={(e) => setEditMemo(e.target.value)}
+              className="w-full bg-[#27272A] border border-zinc-700 rounded px-2 py-1.5 text-xs text-white"
+            />
+          </div>
 
           <div className="flex justify-end gap-2 pt-1">
             <button
               onClick={handleSaveEdit}
-              className="bg-[#00E676] text-black text-xs font-bold px-3 py-1 rounded cursor-pointer"
+              className="bg-[#00E676] hover:bg-emerald-400 text-black text-xs font-bold px-3.5 py-1.5 rounded cursor-pointer transition"
             >
               保存
             </button>
             <button
               onClick={() => setIsEditing(false)}
-              className="bg-zinc-800 text-zinc-400 text-xs px-3 py-1 rounded cursor-pointer"
+              className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs px-3 py-1.5 rounded cursor-pointer transition"
             >
               中止
             </button>
