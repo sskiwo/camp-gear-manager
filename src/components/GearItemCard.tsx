@@ -102,7 +102,7 @@ export default function GearItemCard({
       onDragStart={(e) => onDragStart(e, item.id)}
       onDragOver={onDragOver}
       onDrop={() => onDrop(item.id)}
-      className={`p-2.5 rounded-lg border text-xs transition select-none ${
+      className={`p-3 rounded-xl border text-xs transition select-none ${
         isDragging ? 'opacity-30 border-[#FF5500] bg-zinc-800' : ''
       } ${
         item.is_packed
@@ -198,75 +198,100 @@ export default function GearItemCard({
           </div>
         </div>
       ) : (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
-          <div className="flex items-start sm:items-center gap-2 flex-1 min-w-0">
-            <span
-              className="text-zinc-500 hover:text-zinc-300 cursor-grab active:cursor-grabbing font-bold text-sm tracking-tighter shrink-0 px-0.5"
-              title="ドラッグして並び替え"
-            >
-              ⋮⋮
-            </span>
+        <div className="space-y-2">
+          {/* 【上段：情報 ＆ 編集・削除アクション】 */}
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <span
+                className="text-zinc-500 hover:text-zinc-300 cursor-grab active:cursor-grabbing font-bold text-sm tracking-tighter shrink-0 px-0.5"
+                title="ドラッグして並び替え"
+              >
+                ⋮⋮
+              </span>
+              <input
+                type="checkbox"
+                checked={item.is_packed}
+                onChange={() => onTogglePacked(item.id, item.is_packed)}
+                className="w-4 h-4 accent-[#FF5500] cursor-pointer shrink-0"
+              />
+              <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                {item.brand && (
+                  <span
+                    style={{ color: catColor, borderColor: `${catColor}60`, backgroundColor: `${catColor}20` }}
+                    className="text-[10px] px-1.5 py-0.2 rounded font-bold border shrink-0"
+                  >
+                    {item.brand}
+                  </span>
+                )}
+                <span className="font-bold text-xs text-white truncate">{item.product_name || item.name}</span>
+                {item.model_number && (
+                  <span className="text-[10px] bg-zinc-800 text-zinc-300 border border-zinc-700 px-1 py-0.2 rounded font-mono shrink-0">
+                    [{item.model_number}]
+                  </span>
+                )}
+              </div>
+            </div>
 
-            <input
-              type="checkbox"
-              checked={item.is_packed}
-              onChange={() => onTogglePacked(item.id, item.is_packed)}
-              className="w-4 h-4 mt-0.5 sm:mt-0 accent-[#FF5500] cursor-pointer"
-            />
-            <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-              {item.brand && (
-                <span
-                  style={{ color: catColor, borderColor: `${catColor}60`, backgroundColor: `${catColor}20` }}
-                  className="text-[10px] px-1.5 py-0.2 rounded font-bold border shrink-0"
-                >
-                  {item.brand}
-                </span>
-              )}
-              <span className="font-bold text-xs text-white truncate">{item.product_name || item.name}</span>
-              {item.model_number && (
-                <span className="text-[10px] bg-zinc-800 text-zinc-300 border border-zinc-700 px-1 py-0.2 rounded font-mono shrink-0">
-                  [{item.model_number}]
-                </span>
-              )}
+            {/* 編集・削除ボタン（誤タップ防止の余白を保持） */}
+            <div className="flex items-center gap-1.5 shrink-0 pt-0.5">
+              <button
+                onClick={startEdit}
+                className="p-1 text-zinc-400 hover:text-white rounded hover:bg-zinc-800 transition"
+                title="編集"
+              >
+                ✏️
+              </button>
+              <button
+                onClick={() => onDeleteGear(item.id)}
+                className="p-1 text-zinc-400 hover:text-[#FF5500] rounded hover:bg-zinc-800 transition"
+                title="削除"
+              >
+                🗑️
+              </button>
             </div>
           </div>
 
-          <div className="flex items-center justify-between sm:justify-end gap-2 text-[11px] pl-8 sm:pl-0">
-            <span className="font-semibold text-zinc-300 bg-zinc-800/80 px-2 py-0.5 rounded border border-zinc-700/50">
-              {totalWeight.toLocaleString()}g / ¥{totalPrice.toLocaleString()}
-            </span>
-            <div className="flex items-center bg-zinc-800 border border-zinc-700 rounded">
-              <button
-                onClick={() => onUpdateQuantity(item.id, qty, -1)}
-                className="px-1.5 text-xs font-bold text-zinc-300 hover:bg-zinc-700"
-              >
-                -
-              </button>
-              <span className="px-1.5 font-bold text-[#FF5500] text-[10px]">{qty}</span>
-              <button
-                onClick={() => onUpdateQuantity(item.id, qty, 1)}
-                className="px-1.5 text-xs font-bold text-zinc-300 hover:bg-zinc-700"
-              >
-                +
-              </button>
+          {/* 【下段：数値 ＆ 数量操作・Amazonリンク】 */}
+          <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-zinc-800/80 text-[11px] pl-6">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-zinc-200">
+                {totalWeight.toLocaleString()}g
+              </span>
+              <span className="text-zinc-600">|</span>
+              <span className="font-semibold text-zinc-200">
+                ¥{totalPrice.toLocaleString()}
+              </span>
             </div>
-            {item.product_url && (
-              <a
-                href={item.product_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[#FFB800] hover:underline font-bold"
-                title="Amazonで購入・詳細を見る"
-              >
-                🛒
-              </a>
-            )}
-            <button onClick={startEdit} className="text-zinc-400 hover:text-white" title="編集">
-              ✏️
-            </button>
-            <button onClick={() => onDeleteGear(item.id)} className="text-zinc-400 hover:text-[#FF5500]" title="削除">
-              🗑️
-            </button>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center bg-zinc-800 border border-zinc-700 rounded overflow-hidden">
+                <button
+                  onClick={() => onUpdateQuantity(item.id, qty, -1)}
+                  className="px-2 py-0.5 text-xs font-bold text-zinc-300 hover:bg-zinc-700 active:bg-zinc-600"
+                >
+                  -
+                </button>
+                <span className="px-1.5 font-bold text-[#FF5500] text-[11px] min-w-[20px] text-center">{qty}</span>
+                <button
+                  onClick={() => onUpdateQuantity(item.id, qty, 1)}
+                  className="px-2 py-0.5 text-xs font-bold text-zinc-300 hover:bg-zinc-700 active:bg-zinc-600"
+                >
+                  +
+                </button>
+              </div>
+
+              {item.product_url && (
+                <a
+                  href={item.product_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#FFB800] hover:underline font-bold px-1 py-0.5 rounded hover:bg-zinc-800 transition"
+                  title="Amazonで購入・詳細を見る"
+                >
+                  🛒
+                </a>
+              )}
+            </div>
           </div>
         </div>
       )}

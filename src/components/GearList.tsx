@@ -68,6 +68,18 @@ export default function GearList({
     });
   };
 
+  // 一括開閉機能
+  const isAnyOpen = CATEGORIES.some((cat) => openCategories[cat] !== false);
+
+  const handleToggleAll = () => {
+    CATEGORIES.forEach((catName) => {
+      const isOpen = openCategories[catName] !== false;
+      if ((isAnyOpen && isOpen) || (!isAnyOpen && !isOpen)) {
+        onToggleCategoryOpen(catName);
+      }
+    });
+  };
+
   const handleDragStart = (e: React.DragEvent, id: string) => {
     setDraggedItemId(id);
     e.dataTransfer.effectAllowed = 'move';
@@ -101,7 +113,21 @@ export default function GearList({
 
   return (
     <section className="bg-[#18181B] p-5 md:p-6 rounded-2xl border border-zinc-800 space-y-4 shadow-xl">
-      <h2 className="text-lg font-extrabold text-white">🎒 積載パッキングリスト</h2>
+      <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <h2 className="text-lg font-extrabold text-white flex items-center gap-2">
+          🎒 積載パッキングリスト
+          <span className="text-xs text-zinc-400 font-normal">({gears.length}件)</span>
+        </h2>
+
+        {gears.length > 0 && (
+          <button
+            onClick={handleToggleAll}
+            className="text-xs font-bold px-3 py-1.5 rounded-xl bg-[#27272A] border border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-700 transition cursor-pointer flex items-center gap-1"
+          >
+            {isAnyOpen ? '📁 すべてたたむ' : '📂 すべて展開'}
+          </button>
+        )}
+      </div>
 
       {gears.length === 0 ? (
         <p className="text-center text-zinc-500 py-6 font-medium bg-[#27272A]/50 rounded-xl border border-zinc-800 text-xs">
@@ -150,6 +176,11 @@ export default function GearList({
                   <span className="text-base">{catIcon}</span>
                   <span style={{ color: catColor }} className="font-extrabold text-sm tracking-wide truncate">{catName}</span>
                   <span className="text-xs text-zinc-400 font-normal shrink-0">({categoryGears.length}件)</span>
+                  {catName === '食料・消耗品' && (
+                    <span className="text-[10px] bg-[#00E676]/20 text-[#00E676] border border-[#00E676]/40 px-1.5 py-0.2 rounded font-normal shrink-0">
+                      ※自動消費
+                    </span>
+                  )}
                 </button>
 
                 <div className="flex items-center gap-2 shrink-0">
