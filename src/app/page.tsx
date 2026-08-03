@@ -161,7 +161,35 @@ export default function Home() {
     }
   };
 
-  // ★ キャンプ自体の削除処理
+  // 公開・非公開の切り替え処理
+  const handleTogglePublic = async () => {
+    const currentCamp = camps.find((c) => c.id === selectedCampId);
+    if (!currentCamp) return;
+
+    const newPublicStatus = !currentCamp.is_public;
+
+    const { error } = await supabase
+      .from('camps')
+      .update({ is_public: newPublicStatus })
+      .eq('id', selectedCampId);
+
+    if (error) {
+      alert(`公開設定の変更に失敗しました:\n${error.message}`);
+      return;
+    }
+
+    setCamps((prev) =>
+      prev.map((c) => (c.id === selectedCampId ? { ...c, is_public: newPublicStatus } : c))
+    );
+
+    alert(
+      newPublicStatus
+        ? '🌐 「みんなのギアギャラリー」に公開しました！'
+        : '🔒 非公開に設定しました。'
+    );
+  };
+
+  // キャンプ自体の削除処理
   const handleDeleteCamp = async () => {
     if (!selectedCampId) return;
 
@@ -189,7 +217,6 @@ export default function Home() {
       return;
     }
 
-    // 残ったキャンプに表示を切り替え
     const remainingCamps = camps.filter((c) => c.id !== selectedCampId);
     setCamps(remainingCamps);
     if (remainingCamps.length > 0) {
@@ -287,6 +314,8 @@ export default function Home() {
     setGears(reorderedGears);
   };
 
+  const currentSelectedCamp = camps.find((c) => c.id === selectedCampId);
+
   return (
     <main className="min-h-screen bg-[#09090B] text-zinc-100 p-4 md:p-8 font-sans">
       <div className="max-w-5xl mx-auto space-y-6">
@@ -299,41 +328,67 @@ export default function Home() {
             <p className="text-xs text-zinc-400 mt-0.5">重量シミュレーション＆5カテゴリーパッキング</p>
           </div>
 
-          {/* ⛺ キャンプ切り替え ＆ 編集・削除UI */}
-          <div className="flex items-center gap-1.5 bg-[#18181B] p-1.5 rounded-xl border border-zinc-800">
-            <span className="text-xs font-bold text-[#FF5500] pl-1">⛺</span>
-            <select
-              value={selectedCampId}
-              onChange={(e) => setSelectedCampId(e.target.value)}
-              className="bg-[#27272A] text-white text-xs font-bold px-2 py-1.5 rounded-lg border border-zinc-700 focus:outline-none focus:border-[#FF5500] cursor-pointer max-w-[170px] truncate"
+          <div className="flex flex-wrap items-center gap-2">
+            {/* 🌐 みんなのギアギャラリーへのリンクボタン */}
+            <Link
+              href="/community"
+              className="bg-[#27272A] hover:bg-zinc-700 text-zinc-200 border border-zinc-700 px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
             >
-              {camps.map((camp) => (
-                <option key={camp.id} value={camp.id}>
-                  {camp.title}
-                </option>
-              ))}
-            </select>
-            <button
-              onClick={startEditCampTitle}
-              className="p-1.5 bg-[#27272A] hover:bg-zinc-700 text-zinc-300 rounded-lg text-xs transition border border-zinc-700 cursor-pointer"
-              title="選択中のキャンプ名を変更"
-            >
-              ✏️
-            </button>
-            <button
-              onClick={handleDeleteCamp}
-              className="p-1.5 bg-red-950/40 hover:bg-red-900/60 text-red-300 hover:text-white rounded-lg text-xs transition border border-red-800/60 cursor-pointer"
-              title="選択中のキャンプ自体を削除"
-            >
-              🗑️
-            </button>
-            <button
-              onClick={() => setIsAddCampOpen(true)}
-              className="bg-[#FF5500] hover:bg-[#E04B00] text-white px-2.5 py-1.5 rounded-lg text-xs font-bold transition shrink-0 cursor-pointer"
-              title="新しいキャンプを作成"
-            >
-              ＋新規
-            </button>
+              🌐 みんなのギアを見る →
+            </Link>
+
+            {/* ⛺ キャンプ切り替え ＆ 編集・公開・削除UI */}
+            <div className="flex items-center gap-1 bg-[#18181B] p-1.5 rounded-xl border border-zinc-800">
+              <span className="text-xs font-bold text-[#FF5500] pl-1">⛺</span>
+              <select
+                value={selectedCampId}
+                onChange={(e) => setSelectedCampId(e.target.value)}
+                className="bg-[#27272A] text-white text-xs font-bold px-2 py-1.5 rounded-lg border border-zinc-700 focus:outline-none focus:border-[#FF5500] cursor-pointer max-w-[150px] truncate"
+              >
+                {camps.map((camp) => (
+                  <option key={camp.id} value={camp.id}>
+                    {camp.title}
+                  </option>
+                ))}
+              </select>
+
+              {/* 公開/非公開 トグルボタン */}
+              <button
+                onClick={handleTogglePublic}
+                className={`px-2 py-1.5 rounded-lg text-xs font-bold transition border cursor-pointer ${
+                  currentSelectedCamp?.is_public
+                    ? 'bg-emerald-950/60 border-emerald-700 text-emerald-300 hover:bg-emerald-900'
+                    : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white'
+                }`}
+                title="このキャンプをコミュニティに公開/非公開設定"
+              >
+                {currentSelectedCamp?.is_public ? '🌐 公開中' : '🔒 非公開'}
+              </button>
+
+              <button
+                onClick={startEditCampTitle}
+                className="p-1.5 bg-[#27272A] hover:bg-zinc-700 text-zinc-300 rounded-lg text-xs transition border border-zinc-700 cursor-pointer"
+                title="選択中のキャンプ名を変更"
+              >
+                ✏️
+              </button>
+
+              <button
+                onClick={handleDeleteCamp}
+                className="p-1.5 bg-red-950/40 hover:bg-red-900/60 text-red-300 hover:text-white rounded-lg text-xs transition border border-red-800/60 cursor-pointer"
+                title="選択中のキャンプ自体を削除"
+              >
+                🗑️
+              </button>
+
+              <button
+                onClick={() => setIsAddCampOpen(true)}
+                className="bg-[#FF5500] hover:bg-[#E04B00] text-white px-2 py-1.5 rounded-lg text-xs font-bold transition shrink-0 cursor-pointer"
+                title="新しいキャンプを作成"
+              >
+                ＋新規
+              </button>
+            </div>
           </div>
         </header>
 
