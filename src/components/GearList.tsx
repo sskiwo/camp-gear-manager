@@ -76,8 +76,8 @@ export default function GearList({
   const [sortOrders, setSortOrders] = useState<Record<string, 'default' | 'desc' | 'asc'>>({});
   const [filterMode, setFilterMode] = useState<'all' | 'unpacked'>('all');
 
-  // 🎛️ 表示モード切り替え ('detailed' | 'compact')
-  const [viewMode, setViewMode] = useState<'detailed' | 'compact'>('detailed');
+  // 画面モード: 'packing' (デフォルト) vs 'edit'
+  const [screenMode, setScreenMode] = useState<'packing' | 'edit'>('packing');
 
   const toggleSortOrder = (catName: string) => {
     setSortOrders((prev) => {
@@ -129,7 +129,6 @@ export default function GearList({
     setDraggedItemId(null);
   };
 
-  // 「持参」ギアのみに進捗計算を限定
   const selectedGears = gears.filter((g) => g.is_selected !== false);
   const packedCount = selectedGears.filter((g) => g.is_packed).length;
   const totalCount = selectedGears.length;
@@ -140,7 +139,6 @@ export default function GearList({
       ? gears.filter((g) => g.is_selected !== false && !g.is_packed)
       : gears;
 
-  // ⛺ 採用数 (持参ONの数 / 全キャンプ数) を計算
   const getAdoptionRate = (gearName: string) => {
     if (!allGearsInUserAccount || allGearsInUserAccount.length === 0) {
       return `1/${allCampsCount}`;
@@ -155,59 +153,39 @@ export default function GearList({
   };
 
   return (
-    <section className="bg-[#18181B] p-5 md:p-6 rounded-2xl border border-zinc-800 space-y-4 shadow-xl">
-      {/* ヘッダーエリア */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800 pb-3">
-        <h2 className="text-lg font-extrabold text-white flex items-center gap-2">
-          🎒 積載パッキングリスト
+    <section className="bg-[#18181B] p-4 md:p-6 rounded-2xl border border-zinc-800 space-y-4 shadow-xl">
+      {/* 🚀 モード切替トグル (かっこ書きなし「🎒 パッキング」/「✏️ 編集・整理」) */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-3">
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-extrabold text-white flex items-center gap-2">
+            🎒 積載パッキングリスト
+          </h2>
           <span className="text-xs text-zinc-400 font-normal">({gears.length}件)</span>
-        </h2>
+        </div>
 
-        {gears.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2">
-            {/* 🎛️ 表示モード切り替えスイッチ (提案1) */}
-            <div className="flex items-center bg-[#27272A] p-0.5 rounded-xl border border-zinc-700">
-              <button
-                onClick={() => setViewMode('detailed')}
-                className={`text-xs font-bold px-2.5 py-1 rounded-lg transition cursor-pointer ${
-                  viewMode === 'detailed'
-                    ? 'bg-[#FF5500] text-white shadow-sm'
-                    : 'text-zinc-400 hover:text-white'
-                }`}
-                title="詳細カード表示"
-              >
-                🎴 詳細
-              </button>
-              <button
-                onClick={() => setViewMode('compact')}
-                className={`text-xs font-bold px-2.5 py-1 rounded-lg transition cursor-pointer ${
-                  viewMode === 'compact'
-                    ? 'bg-[#FF5500] text-white shadow-sm'
-                    : 'text-zinc-400 hover:text-white'
-                }`}
-                title="1行コンパクト表示"
-              >
-                📄 コンパクト
-              </button>
-            </div>
-
-            <button
-              onClick={handleToggleAll}
-              className="text-xs font-bold px-2.5 py-1.5 rounded-xl bg-[#27272A] border border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-700 transition cursor-pointer"
-            >
-              {isAnyOpen ? '📁 たたむ' : '📂 展開'}
-            </button>
-            {onDeleteAllGears && (
-              <button
-                onClick={onDeleteAllGears}
-                className="text-xs font-bold px-2.5 py-1.5 rounded-xl bg-red-950/40 border border-red-800/60 text-red-300 hover:text-white hover:bg-red-900/60 transition cursor-pointer"
-                title="このキャンプのギアを全削除"
-              >
-                🗑️ 一括削除
-              </button>
-            )}
-          </div>
-        )}
+        {/* トグルスイッチ */}
+        <div className="flex items-center bg-[#09090B] p-1 rounded-xl border border-zinc-800 self-start sm:self-auto">
+          <button
+            onClick={() => setScreenMode('packing')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-black transition cursor-pointer flex items-center gap-1.5 ${
+              screenMode === 'packing'
+                ? 'bg-[#FF5500] text-white shadow-md'
+                : 'text-zinc-400 hover:text-white'
+            }`}
+          >
+            🎒 パッキング
+          </button>
+          <button
+            onClick={() => setScreenMode('edit')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-black transition cursor-pointer flex items-center gap-1.5 ${
+              screenMode === 'edit'
+                ? 'bg-[#FFB800] text-black shadow-md'
+                : 'text-zinc-400 hover:text-white'
+            }`}
+          >
+            ✏️ 編集・整理
+          </button>
+        </div>
       </div>
 
       {/* 🚀 パッキング準備・進捗プログレスバー */}
@@ -292,7 +270,7 @@ export default function GearList({
           }
 
           const catColor = CATEGORY_COLORS[catName as keyof typeof CATEGORY_COLORS] || '#FF5500';
-          const isOpen = openCategories[catName] !== false;
+          const isOpen = screenMode === 'packing' ? true : openCategories[catName] !== false;
 
           const catIcon =
             catName === 'ベースギア'
@@ -312,49 +290,50 @@ export default function GearList({
               className="border rounded-xl overflow-hidden shadow-md scroll-mt-6"
               style={{ borderColor: `${catColor}50` }}
             >
-              {/* 📌 カテゴリーヘッダーの Sticky 固定化 (提案2) */}
               <div
                 style={{ backgroundColor: '#18181B', borderColor: `${catColor}40` }}
-                className="sticky top-0 z-10 w-full flex items-center justify-between px-4 py-2.5 border-b backdrop-blur-md"
+                className="sticky top-0 z-10 w-full flex items-center justify-between px-4 py-2 border-b backdrop-blur-md"
               >
                 <button
                   onClick={() => onToggleCategoryOpen(catName)}
                   className="flex items-center gap-2 text-left cursor-pointer flex-1 min-w-0"
                 >
-                  <span className="text-base">{catIcon}</span>
-                  <span style={{ color: catColor }} className="font-extrabold text-sm tracking-wide truncate">
+                  <span className="text-sm">{catIcon}</span>
+                  <span style={{ color: catColor }} className="font-extrabold text-xs sm:text-sm tracking-wide truncate">
                     {catName}
                   </span>
-                  <span className="text-xs text-zinc-400 font-normal shrink-0">({categoryGears.length}件)</span>
+                  <span className="text-[11px] text-zinc-400 font-normal shrink-0">({categoryGears.length}件)</span>
                 </button>
 
                 <div className="flex items-center gap-2 shrink-0">
                   <button
                     onClick={() => toggleSortOrder(catName)}
-                    className="text-[11px] font-bold px-2 py-1 rounded bg-zinc-800 border border-zinc-700 text-zinc-300 hover:text-white transition cursor-pointer"
+                    className="text-[10px] font-bold px-2 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-300 hover:text-white transition cursor-pointer"
                   >
                     ⚖️ {sortOrder === 'default' ? '登録順' : sortOrder === 'desc' ? '重い順' : '軽い順'}
                   </button>
 
-                  <button
-                    onClick={() => onToggleCategoryOpen(catName)}
-                    style={{ color: catColor }}
-                    className="text-xs font-bold cursor-pointer pl-1"
-                  >
-                    {isOpen ? '▲ 閉じる' : '▼ 開く'}
-                  </button>
+                  {screenMode === 'edit' && (
+                    <button
+                      onClick={() => onToggleCategoryOpen(catName)}
+                      style={{ color: catColor }}
+                      className="text-xs font-bold cursor-pointer pl-1"
+                    >
+                      {isOpen ? '▲' : '▼'}
+                    </button>
+                  )}
                 </div>
               </div>
 
               {isOpen && (
-                <div className="p-2 space-y-2 bg-[#121215]">
+                <div className="p-1.5 space-y-1 bg-[#121215]">
                   {categoryGears.map((item) => (
                     <GearItemCard
                       key={item.id}
                       item={item}
                       catColor={catColor}
                       adoptionRate={getAdoptionRate(item.name)}
-                      viewMode={viewMode}
+                      mode={screenMode}
                       isDragging={draggedItemId === item.id}
                       onDragStart={handleDragStart}
                       onDragOver={handleDragOver}

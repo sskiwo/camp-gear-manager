@@ -25,7 +25,7 @@ type Props = {
   item: GearItem;
   catColor: string;
   adoptionRate?: string;
-  viewMode?: 'detailed' | 'compact'; // ★ 表示モード ('detailed' | 'compact')
+  mode?: 'packing' | 'edit';
   isDragging?: boolean;
   onDragStart?: (e: React.DragEvent, id: string) => void;
   onDragOver?: (e: React.DragEvent) => void;
@@ -37,17 +37,69 @@ type Props = {
   onDeleteGear: (id: string) => void;
 };
 
-// 燃料・電源タイプの選択肢候補
+// 属性バッジ(燃料・電源タイプ) マッピング
+const getBadgeStyle = (fuelType?: string) => {
+  if (!fuelType || fuelType === '不要/なし') return null;
+
+  const typeUpper = fuelType.toUpperCase();
+
+  if (typeUpper.includes('CB') || typeUpper.includes('カセット')) {
+    return { label: 'CB', className: 'bg-[#FF5500] text-white font-bold' };
+  }
+  if (typeUpper.includes('OD') || typeUpper.includes('アウトドア')) {
+    return { label: 'OD', className: 'bg-[#EAB308] text-black font-bold' };
+  }
+  if (typeUpper.includes('WG') || typeUpper.includes('ガソリン')) {
+    return { label: 'WG', className: 'bg-[#EF4444] text-white font-bold' };
+  }
+  if (fuelType.includes('灯油') || typeUpper.includes('KEROSENE')) {
+    return { label: '灯油', className: 'bg-[#B45309] text-white font-bold' };
+  }
+  if (fuelType.includes('薪') || fuelType.includes('炭') || typeUpper.includes('WOOD')) {
+    return { label: '薪炭', className: 'bg-[#52525B] text-white font-bold' };
+  }
+  if (typeUpper.includes('USB') || typeUpper.includes('充電')) {
+    return { label: 'USB-C', className: 'bg-[#06B6D4] text-white font-bold' };
+  }
+  if (fuelType.includes('単3')) {
+    return { label: '単3電池', className: 'bg-[#10B981] text-white font-bold' };
+  }
+  if (fuelType.includes('単4')) {
+    return { label: '単4電池', className: 'bg-[#059669] text-white font-bold' };
+  }
+  if (typeUpper.includes('AC') || typeUpper.includes('コンセント')) {
+    return { label: 'AC', className: 'bg-[#8B5CF6] text-white font-bold' };
+  }
+
+  return { label: fuelType, className: 'bg-zinc-800 text-zinc-300 border border-zinc-700' };
+};
+
+// メーカー名トリミング関数
+const getCleanItemName = (fullName: string, brandName?: string): string => {
+  if (!brandName || !brandName.trim()) return fullName;
+  const regex = new RegExp(`^${brandName.trim()}\\s*`, 'i');
+  return fullName.replace(regex, '');
+};
+
+// ★ 仕様準拠: 重量表示フォーマット関数 (1000g未満: g整数 / 1000g以上: 小数点第2位kg)
+const formatWeight = (grams: number) => {
+  if (grams >= 1000) {
+    return `${(grams / 1000).toFixed(2)}kg`;
+  }
+  return `${Math.round(grams)}g`;
+};
+
 const FUEL_OPTIONS = [
   '不要/なし',
   'USB-C充電',
-  '単3/単4電池',
-  'OD缶',
+  '単3電池',
+  '単4電池',
   'CB缶',
-  '固形燃料/アルコール',
-  '薪/炭/ペレット',
-  '灯油/ガソリン',
-  'ポータブル電源(AC)',
+  'OD缶',
+  'ホワイトガソリン',
+  '灯油/ケロシン',
+  '薪/炭',
+  'ACコンセント',
   'その他',
 ];
 
@@ -55,7 +107,7 @@ export default function GearItemCard({
   item,
   catColor,
   adoptionRate,
-  viewMode = 'detailed',
+  mode = 'packing',
   isDragging,
   onDragStart,
   onDragOver,
@@ -70,6 +122,7 @@ export default function GearItemCard({
   const [showDetail, setShowDetail] = useState(false);
 
   // 編集用ステート
+  const [editBrand, setEditBrand] = useState(item.brand || '');
   const [editName, setEditName] = useState(item.name);
   const [editWeight, setEditWeight] = useState(item.weight || 0);
   const [editPrice, setEditPrice] = useState(item.price || 0);
@@ -77,10 +130,15 @@ export default function GearItemCard({
   const [editFuelType, setEditFuelType] = useState(item.fuel_type || '不要/なし');
   const [editMemo, setEditMemo] = useState(item.memo || '');
 
-  const isSelected = item.is_selected !== false; // デフォルトtrue
+  const isSelected = item.is_selected !== false;
+  const badge = getBadgeStyle(item.fuel_type);
+  const cleanName = getCleanItemName(item.name, item.brand);
+
+  const totalWeight = item.weight * (item.quantity || 1);
 
   const handleSaveEdit = async () => {
     await onUpdateGear(item.id, {
+      brand: editBrand,
       name: editName,
       product_name: editName,
       weight: Number(editWeight),
@@ -92,17 +150,13 @@ export default function GearItemCard({
     setIsEditing(false);
   };
 
-  // 📄 コンパクト表示モード (1行高密度レイアウト)
-  if (viewMode === 'compact' && !isEditing) {
+  // 🎒 パッキングモード
+  if (mode === 'packing') {
     return (
       <div
-        draggable
-        onDragStart={(e) => onDragStart && onDragStart(e, item.id)}
         onDragOver={onDragOver}
         onDrop={() => onDrop && onDrop(item.id)}
-        className={`px-3 py-1.5 rounded-xl border transition-all duration-150 flex items-center justify-between gap-2 ${
-          isDragging ? 'opacity-30 border-amber-500 bg-amber-950/20' : ''
-        } ${
+        className={`h-[50px] px-2.5 rounded-xl border transition-all duration-150 flex items-center justify-between gap-2 select-text ${
           !isSelected
             ? 'bg-[#18181B]/40 border-zinc-800/80 opacity-60'
             : item.is_packed
@@ -110,13 +164,7 @@ export default function GearItemCard({
             : 'bg-[#27272A] border-zinc-700/80 shadow-sm'
         }`}
       >
-        {/* 左側: Grip & 持参/完了 & ギア名 */}
-        <div className="flex items-center gap-1.5 min-w-0 flex-1">
-          <span className="text-zinc-600 hover:text-zinc-400 cursor-grab active:cursor-grabbing text-xs select-none shrink-0 p-1">
-            ⋮⋮
-          </span>
-
-          {/* 持参ボタン (タップ領域拡大: min-h-[36px]) */}
+        <div className="flex items-center gap-2 min-w-0 flex-1">
           <button
             onClick={() => onToggleSelected(item.id, isSelected)}
             className={`min-h-[36px] px-2 py-1 rounded-lg text-[11px] font-bold transition flex items-center justify-center border shrink-0 cursor-pointer active:scale-95 ${
@@ -124,11 +172,11 @@ export default function GearItemCard({
                 ? 'bg-[#FF5500]/20 border-[#FF5500]/60 text-[#FF5500]'
                 : 'bg-zinc-800/80 border-zinc-700 text-zinc-400'
             }`}
+            title="持参/お休み切り替え"
           >
             {isSelected ? '🎒 持参' : '💤 お休み'}
           </button>
 
-          {/* 当日完了ボタン (タップ領域拡大: min-h-[36px]) */}
           {isSelected ? (
             <button
               onClick={() => onTogglePacked(item.id, item.is_packed)}
@@ -137,43 +185,48 @@ export default function GearItemCard({
                   ? 'bg-emerald-950/80 border-emerald-700 text-emerald-300'
                   : 'bg-zinc-800 border-zinc-700 text-zinc-400'
               }`}
+              title="パッキング完了チェック"
             >
               {item.is_packed ? '✅ 完了' : '⬜ 未'}
             </button>
           ) : (
-            <span className="text-[10px] text-zinc-600 px-1 select-none">-</span>
+            <span className="text-[10px] text-zinc-600 p-1 select-none shrink-0">-</span>
           )}
 
-          {/* ギア名 ＆ 重量 */}
-          <div className="min-w-0 flex-1 flex items-center gap-2">
-            <span
-              className={`text-xs font-bold truncate ${
-                !isSelected
-                  ? 'line-through text-zinc-500'
-                  : item.is_packed
-                  ? 'text-zinc-400'
-                  : 'text-white'
-              }`}
-            >
-              {item.name}
-            </span>
-            <span className="text-[11px] text-zinc-400 font-mono shrink-0">
-              {item.weight * (item.quantity || 1)}g
-            </span>
-          </div>
+          <span
+            title={item.name}
+            className={`text-xs font-bold truncate flex-1 ${
+              !isSelected
+                ? 'line-through text-zinc-500'
+                : item.is_packed
+                ? 'text-zinc-400'
+                : 'text-white'
+            }`}
+          >
+            {cleanName}
+          </span>
         </div>
 
-        {/* 右側: アクション操作ボタン群 (タップ領域44x44px意識) */}
-        <div className="flex items-center gap-1 shrink-0">
-          {/* 個数変更 */}
-          <div className="flex items-center bg-[#18181B] rounded-lg border border-zinc-700/80">
+        <div className="flex items-center gap-2 shrink-0">
+          {badge && (
+            <span className={`text-[10px] px-1.5 py-0.5 rounded ${badge.className} shrink-0`}>
+              {badge.label}
+            </span>
+          )}
+
+          {/* ★ 仕様適用: 固定幅(min-w-[60px]) & 右揃え(text-right) & 等幅数値(tabular-nums) */}
+          <span className="text-xs font-mono tabular-nums font-bold text-zinc-300 shrink-0 min-w-[60px] text-right">
+            {formatWeight(totalWeight)}
+          </span>
+
+          <div className="flex items-center bg-[#18181B] rounded-lg border border-zinc-700/80 shrink-0">
             <button
               onClick={() => onUpdateQuantity(item.id, item.quantity || 1, -1)}
               className="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white font-bold text-xs cursor-pointer active:bg-zinc-800 rounded-l-lg"
             >
               -
             </button>
-            <span className="px-1 text-xs font-mono font-bold text-white">
+            <span className="px-1 text-xs font-mono tabular-nums font-bold text-white">
               {item.quantity || 1}
             </span>
             <button
@@ -183,37 +236,17 @@ export default function GearItemCard({
               +
             </button>
           </div>
-
-          {/* 編集ボタン (44x44pxタップ判定) */}
-          <button
-            onClick={() => setIsEditing(true)}
-            className="w-9 h-9 flex items-center justify-center text-zinc-500 hover:text-zinc-300 text-xs cursor-pointer rounded-lg hover:bg-zinc-800"
-            title="編集"
-          >
-            ✏️
-          </button>
-
-          {/* 削除ボタン (44x44pxタップ判定) */}
-          <button
-            onClick={() => onDeleteGear(item.id)}
-            className="w-9 h-9 flex items-center justify-center text-zinc-500 hover:text-red-400 text-xs cursor-pointer rounded-lg hover:bg-zinc-800"
-            title="削除"
-          >
-            🗑️
-          </button>
         </div>
       </div>
     );
   }
 
-  // 🎴 詳細カードモード (通常のカードレイアウト)
+  // ✏️ 編集・整理モード
   return (
     <div
-      draggable
-      onDragStart={(e) => onDragStart && onDragStart(e, item.id)}
       onDragOver={onDragOver}
       onDrop={() => onDrop && onDrop(item.id)}
-      className={`p-3 rounded-xl border transition-all duration-200 space-y-2 ${
+      className={`p-3 rounded-xl border transition-all duration-200 space-y-2 select-text ${
         isDragging ? 'opacity-30 border-amber-500 bg-amber-950/20' : ''
       } ${
         !isSelected
@@ -223,54 +256,21 @@ export default function GearItemCard({
           : 'bg-[#27272A] border-zinc-700/80 shadow-md'
       }`}
     >
-      {/* 上段: 基本操作 ＆ タグ一覧 */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-        {/* 左側: ドラッグ & 操作ボタン(持参➔完了) & ギア名・各種タグ */}
-        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 min-w-0 flex-1">
-          <span className="text-zinc-600 hover:text-zinc-400 cursor-grab active:cursor-grabbing text-xs select-none shrink-0 p-1">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <span
+            draggable
+            onDragStart={(e) => onDragStart && onDragStart(e, item.id)}
+            className="text-zinc-500 hover:text-zinc-300 cursor-grab active:cursor-grabbing text-xs select-none shrink-0 p-1"
+            title="ドラッグして並び替え"
+          >
             ⋮⋮
           </span>
 
-          {/* 操作ボタン群: ①持参 ➔ ②完了 (横並び & タップ判定拡大) */}
-          <div className="flex items-center gap-1.5 shrink-0">
-            {/* ①持参選定ボタン */}
-            <button
-              onClick={() => onToggleSelected(item.id, isSelected)}
-              className={`min-h-[38px] px-2.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer border shrink-0 active:scale-95 ${
-                isSelected
-                  ? 'bg-[#FF5500]/20 border-[#FF5500]/60 text-[#FF5500] hover:bg-[#FF5500]/30'
-                  : 'bg-zinc-800/80 border-zinc-700 text-zinc-400 hover:text-zinc-200'
-              }`}
-              title="今回のキャンプに持っていくか選定"
-            >
-              {isSelected ? '🎒 持参' : '💤 お休み'}
-            </button>
-
-            {/* ②当日完了チェックボタン */}
-            {isSelected ? (
-              <button
-                onClick={() => onTogglePacked(item.id, item.is_packed)}
-                className={`min-h-[38px] px-2.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer border shrink-0 active:scale-95 ${
-                  item.is_packed
-                    ? 'bg-emerald-950/80 border-emerald-700 text-emerald-300'
-                    : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white'
-                }`}
-                title="当日のパッキング完了チェック"
-              >
-                {item.is_packed ? '✅ 完了' : '⬜ 未'}
-              </button>
-            ) : (
-              <span className="text-[10px] font-bold px-2 py-1 rounded bg-zinc-800/60 text-zinc-500 border border-zinc-700/40 shrink-0 select-none">
-                -
-              </span>
-            )}
-          </div>
-
-          {/* ギア詳細名 ＆ タグ */}
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 flex-wrap">
               {item.brand && (
-                <span className="inline-flex items-center h-5 text-[10px] font-bold px-2 py-0.5 rounded-md bg-zinc-800 text-zinc-400 border border-zinc-700 shrink-0 leading-none">
+                <span className="inline-flex items-center h-5 text-[10px] font-bold px-2 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-zinc-700 shrink-0">
                   {item.brand}
                 </span>
               )}
@@ -287,79 +287,83 @@ export default function GearItemCard({
                 {item.name}
               </span>
 
-              {/* 採用数タグ (例: ⛺ 3/5) */}
               {adoptionRate && (
                 <span
-                  className="inline-flex items-center h-5 text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-[#FF5500]/15 border border-[#FF5500]/40 text-[#FF5500] font-mono shrink-0 leading-none"
-                  title="全キャンプでの採用数 (持参ON数 / 全キャンプ数)"
+                  className="inline-flex items-center h-5 text-[10px] font-extrabold px-2 py-0.5 rounded bg-[#FF5500]/15 border border-[#FF5500]/40 text-[#FF5500] font-mono shrink-0"
+                  title="全キャンプでの採用数"
                 >
                   ⛺ {adoptionRate}
                 </span>
               )}
 
-              {/* 燃料・電源タグ */}
-              {item.fuel_type && (
-                <span className="inline-flex items-center h-5 text-[10px] font-bold px-2 py-0.5 rounded-md bg-cyan-950/60 text-cyan-300 border border-cyan-700/50 shrink-0 leading-none">
-                  🔋 {item.fuel_type}
+              {badge && (
+                <span className={`inline-flex items-center h-5 text-[10px] px-2 py-0.5 rounded ${badge.className} shrink-0`}>
+                  🔋 {badge.label}
                 </span>
               )}
             </div>
 
-            <div className="flex items-center gap-3 text-[11px] text-zinc-400 mt-0.5 font-mono">
+            {/* 重量 ＆ 金額 (等幅数値 tabular-nums 適用) */}
+            <div className="flex items-center gap-3 text-[11px] text-zinc-400 mt-1 font-mono tabular-nums">
               <span>
-                ⚖️ {item.weight * (item.quantity || 1)}g{' '}
-                {item.quantity && item.quantity > 1 ? `(${item.weight}g×${item.quantity})` : ''}
+                ⚖️ {formatWeight(totalWeight)}{' '}
+                {item.quantity && item.quantity > 1 ? `(${formatWeight(item.weight)}×${item.quantity})` : ''}
               </span>
               {item.price > 0 && <span>💰 ¥{(item.price * (item.quantity || 1)).toLocaleString()}</span>}
             </div>
           </div>
         </div>
 
-        {/* 右側: 個数 & 詳細・編集・削除 (タップ領域広めのボタン配置) */}
-        <div className="flex items-center justify-end gap-1 shrink-0 border-t sm:border-t-0 border-zinc-800/80 pt-2 sm:pt-0">
-          {/* 個数変更ボタン */}
-          <div className="flex items-center bg-[#18181B] rounded-xl border border-zinc-700/80">
+        <div className="flex items-center justify-end gap-1.5 shrink-0 border-t sm:border-t-0 border-zinc-800/80 pt-2 sm:pt-0">
+          <button
+            onClick={() => onToggleSelected(item.id, isSelected)}
+            className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition border shrink-0 cursor-pointer ${
+              isSelected
+                ? 'bg-[#FF5500]/20 border-[#FF5500]/60 text-[#FF5500]'
+                : 'bg-zinc-800/80 border-zinc-700 text-zinc-400'
+            }`}
+          >
+            {isSelected ? '🎒 持参' : '💤 お休み'}
+          </button>
+
+          <div className="flex items-center bg-[#18181B] rounded-lg border border-zinc-700/80">
             <button
               onClick={() => onUpdateQuantity(item.id, item.quantity || 1, -1)}
-              className="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white font-bold text-xs cursor-pointer active:bg-zinc-800 rounded-l-xl"
+              className="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white font-bold text-xs cursor-pointer rounded-l-lg"
             >
               -
             </button>
-            <span className="px-1.5 text-xs font-mono font-bold text-white">
+            <span className="px-1.5 text-xs font-mono tabular-nums font-bold text-white">
               {item.quantity || 1}
             </span>
             <button
               onClick={() => onUpdateQuantity(item.id, item.quantity || 1, 1)}
-              className="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white font-bold text-xs cursor-pointer active:bg-zinc-800 rounded-r-xl"
+              className="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white font-bold text-xs cursor-pointer rounded-r-lg"
             >
               +
             </button>
           </div>
 
-          {/* 詳細開閉ボタン (タップ判定 36x36px) */}
           <button
             onClick={() => setShowDetail(!showDetail)}
-            className={`w-9 h-9 flex items-center justify-center rounded-xl text-xs transition cursor-pointer ${
+            className={`w-9 h-9 flex items-center justify-center rounded-lg text-xs transition cursor-pointer ${
               showDetail ? 'text-amber-400 bg-amber-950/40' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
             }`}
-            title="購入時期・燃料・メモ等の詳細表示"
           >
             {showDetail ? '▲' : '🔍'}
           </button>
 
-          {/* 編集ボタン (タップ判定 36x36px) */}
           <button
             onClick={() => setIsEditing(!isEditing)}
-            className="w-9 h-9 flex items-center justify-center text-zinc-500 hover:text-zinc-300 text-xs cursor-pointer rounded-xl hover:bg-zinc-800"
+            className="w-9 h-9 flex items-center justify-center text-zinc-500 hover:text-zinc-300 text-xs cursor-pointer rounded-lg hover:bg-zinc-800"
             title="編集"
           >
             ✏️
           </button>
 
-          {/* 削除ボタン (タップ判定 36x36px) */}
           <button
             onClick={() => onDeleteGear(item.id)}
-            className="w-9 h-9 flex items-center justify-center text-zinc-500 hover:text-red-400 text-xs cursor-pointer rounded-xl hover:bg-zinc-800"
+            className="w-9 h-9 flex items-center justify-center text-zinc-500 hover:text-red-400 text-xs cursor-pointer rounded-lg hover:bg-zinc-800"
             title="削除"
           >
             🗑️
@@ -367,7 +371,6 @@ export default function GearItemCard({
         </div>
       </div>
 
-      {/* 下段: 詳細アコーディオン (タップ時表示) */}
       {showDetail && !isEditing && (
         <div className="pt-2 border-t border-zinc-800/80 grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-zinc-300 bg-[#18181B]/60 p-2.5 rounded-lg font-sans animate-fade-in">
           <div>
@@ -385,15 +388,23 @@ export default function GearItemCard({
         </div>
       )}
 
-      {/* 下段: 編集モード */}
       {isEditing && (
         <div className="pt-2 border-t border-zinc-800/80 space-y-2.5 bg-[#18181B] p-3 rounded-lg animate-fade-in">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+            <div>
+              <label className="text-[10px] font-bold text-zinc-400 block mb-0.5">メーカー/ブランド</label>
+              <input
+                type="text"
+                placeholder="例: Snow Peak"
+                value={editBrand}
+                onChange={(e) => setEditBrand(e.target.value)}
+                className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white"
+              />
+            </div>
             <div>
               <label className="text-[10px] font-bold text-zinc-400 block mb-0.5">商品名</label>
               <input
                 type="text"
-                placeholder="商品名"
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
                 className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white"
@@ -403,7 +414,6 @@ export default function GearItemCard({
               <label className="text-[10px] font-bold text-zinc-400 block mb-0.5">重量(g)</label>
               <input
                 type="number"
-                placeholder="重量(g)"
                 value={editWeight}
                 onChange={(e) => setEditWeight(Number(e.target.value))}
                 className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white"
@@ -413,7 +423,6 @@ export default function GearItemCard({
               <label className="text-[10px] font-bold text-zinc-400 block mb-0.5">価格(円)</label>
               <input
                 type="number"
-                placeholder="価格(円)"
                 value={editPrice}
                 onChange={(e) => setEditPrice(Number(e.target.value))}
                 className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white"
@@ -428,16 +437,15 @@ export default function GearItemCard({
                 type="month"
                 value={editPurchaseDate}
                 onChange={(e) => setEditPurchaseDate(e.target.value)}
-                className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-emerald-400 cursor-pointer"
+                className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2 py-1 text-xs text-white"
               />
             </div>
-
             <div>
               <label className="text-[10px] font-bold text-cyan-400 block mb-0.5">🔋 燃料・電源タイプ</label>
               <select
                 value={editFuelType}
                 onChange={(e) => setEditFuelType(e.target.value)}
-                className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-400 cursor-pointer"
+                className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white"
               >
                 {FUEL_OPTIONS.map((opt) => (
                   <option key={opt} value={opt}>
@@ -452,7 +460,7 @@ export default function GearItemCard({
             <label className="text-[10px] font-bold text-zinc-400 block mb-0.5">📝 メモ</label>
             <input
               type="text"
-              placeholder="例: リビング棚保管、コンテナA、スタッキング可"
+              placeholder="例: リビング棚保管、コンテナA"
               value={editMemo}
               onChange={(e) => setEditMemo(e.target.value)}
               className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white"
@@ -462,13 +470,13 @@ export default function GearItemCard({
           <div className="flex justify-end gap-2 pt-1">
             <button
               onClick={handleSaveEdit}
-              className="bg-[#00E676] hover:bg-emerald-400 text-black text-xs font-bold px-4 py-2 rounded-xl cursor-pointer transition active:scale-95"
+              className="bg-[#00E676] hover:bg-emerald-400 text-black text-xs font-bold px-4 py-1.5 rounded-xl cursor-pointer transition"
             >
               保存
             </button>
             <button
               onClick={() => setIsEditing(false)}
-              className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs px-3.5 py-2 rounded-xl cursor-pointer transition"
+              className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs px-3.5 py-1.5 rounded-xl cursor-pointer transition"
             >
               中止
             </button>
