@@ -36,24 +36,24 @@ type Props = {
   onDeleteGear: (id: string) => void;
   onDeleteAllGears?: () => void;
   onResetAllPacked?: () => void;
-  onCheckAllPacked?: () => void;
   onReorderGears?: (reorderedGears: GearItem[]) => void;
 };
 
+// ★ 短縮カテゴリー定義
 const CATEGORIES = [
-  'ベースギア',
-  '調理ギア',
+  'ベース',
+  '調理',
   '衣類',
-  'その他・日用品',
-  '食料・消耗品',
+  'その他',
+  '消耗品',
 ];
 
 const CATEGORY_COLORS = {
-  ベースギア: '#FF5500',
-  調理ギア: '#FFB800',
+  ベース: '#FF5500',
+  調理: '#FFB800',
   衣類: '#00E5FF',
-  'その他・日用品': '#E040FB',
-  '食料・消耗品': '#00E676',
+  その他: '#E040FB',
+  消耗品: '#00E676',
 };
 
 export default function GearList({
@@ -69,7 +69,6 @@ export default function GearList({
   onDeleteGear,
   onDeleteAllGears,
   onResetAllPacked,
-  onCheckAllPacked,
   onReorderGears,
 }: Props) {
   const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
@@ -83,17 +82,6 @@ export default function GearList({
       const current = prev[catName] || 'default';
       const next = current === 'default' ? 'desc' : current === 'desc' ? 'asc' : 'default';
       return { ...prev, [catName]: next };
-    });
-  };
-
-  const isAnyOpen = CATEGORIES.some((cat) => openCategories[cat] !== false);
-
-  const handleToggleAll = () => {
-    CATEGORIES.forEach((catName) => {
-      const isOpen = openCategories[catName] !== false;
-      if ((isAnyOpen && isOpen) || (!isAnyOpen && !isOpen)) {
-        onToggleCategoryOpen(catName);
-      }
     });
   };
 
@@ -151,6 +139,17 @@ export default function GearList({
     return `${selectedCount}/${Math.max(1, allCampsCount)}`;
   };
 
+  // 旧名カテゴリー互換マッチング関数
+  const matchesCategory = (gearCategory: string | undefined, catName: string) => {
+    const cat = gearCategory || 'ベース';
+    if (catName === 'ベース') return cat === 'ベース' || cat === 'ベースギア';
+    if (catName === '調理') return cat === '調理' || cat === '調理ギア';
+    if (catName === '衣類') return cat === '衣類';
+    if (catName === 'その他') return cat === 'その他' || cat === 'その他・日用品';
+    if (catName === '消耗品') return cat === '消耗品' || cat === '食料・消耗品';
+    return cat === catName;
+  };
+
   return (
     <section className="bg-[#18181B] p-4 md:p-6 rounded-2xl border border-zinc-800 space-y-4 shadow-xl">
       {/* モード切替トグル */}
@@ -162,7 +161,6 @@ export default function GearList({
           <span className="text-xs text-zinc-400 font-normal">({gears.length}件)</span>
         </div>
 
-        {/* トグルスイッチ */}
         <div className="flex items-center bg-[#09090B] p-1 rounded-xl border border-zinc-800 self-start sm:self-auto">
           <button
             onClick={() => setScreenMode('packing')}
@@ -187,7 +185,7 @@ export default function GearList({
         </div>
       </div>
 
-      {/* 🚀 パッキング準備・進捗プログレスバー */}
+      {/* 進捗プログレスバー */}
       {totalCount > 0 && (
         <div className="bg-[#27272A]/80 p-3.5 rounded-2xl border border-zinc-700/70 space-y-2 shadow-inner">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -212,7 +210,6 @@ export default function GearList({
                 {filterMode === 'unpacked' ? '👁️ 全て表示' : `⚠️ 未完了のみ (${totalCount - packedCount}点)`}
               </button>
 
-              {/* ★ 「🔄 全解除」ボタンのみ残し、「✅ 全完了」ボタンを削除 */}
               {onResetAllPacked && (
                 <button
                   onClick={onResetAllPacked}
@@ -245,7 +242,7 @@ export default function GearList({
         </div>
       ) : (
         CATEGORIES.map((catName) => {
-          let categoryGears = filteredGears.filter((g) => (g.category || 'ベースギア') === catName);
+          let categoryGears = filteredGears.filter((g) => matchesCategory(g.category, catName));
           if (categoryGears.length === 0) return null;
 
           const sortOrder = sortOrders[catName] || 'default';
@@ -263,13 +260,13 @@ export default function GearList({
           const isOpen = screenMode === 'packing' ? true : openCategories[catName] !== false;
 
           const catIcon =
-            catName === 'ベースギア'
+            catName === 'ベース'
               ? '⛺'
-              : catName === '調理ギア'
+              : catName === '調理'
               ? '🍳'
               : catName === '衣類'
               ? '👕'
-              : catName === 'その他・日用品'
+              : catName === 'その他'
               ? '📦'
               : '🍱';
 

@@ -134,7 +134,8 @@ export default function GearItemCard({
   const badge = getBadgeStyle(item.fuel_type);
   const cleanName = getCleanItemName(item.name, item.brand);
 
-  const totalWeight = item.weight * (item.quantity || 1);
+  const qty = item.quantity || 1;
+  const totalWeight = item.weight * qty;
 
   const handleSaveEdit = async () => {
     await onUpdateGear(item.id, {
@@ -150,13 +151,13 @@ export default function GearItemCard({
     setIsEditing(false);
   };
 
-  // 🎒 パッキングモード (文字消去・アイコンのみ化)
+  // 🎒 パッキングモード (数量変更ボタンを撤去し、2個以上の場合のみ『×2』テキスト表示)
   if (mode === 'packing') {
     return (
       <div
         onDragOver={onDragOver}
         onDrop={() => onDrop && onDrop(item.id)}
-        className={`h-[48px] px-2 rounded-xl border transition-all duration-150 flex items-center justify-between gap-1.5 select-text ${
+        className={`h-[48px] px-2 rounded-xl border transition-all duration-150 flex items-center justify-between gap-2 select-text ${
           !isSelected
             ? 'bg-[#18181B]/40 border-zinc-800/80 opacity-60'
             : item.is_packed
@@ -165,7 +166,7 @@ export default function GearItemCard({
         }`}
       >
         <div className="flex items-center gap-1.5 min-w-0 flex-1">
-          {/* ①持参選定ボタン (アイコンのみ: 🎒 / 💤) */}
+          {/* ① 持参/お休み */}
           <button
             onClick={() => onToggleSelected(item.id, isSelected)}
             className={`w-8 h-8 rounded-lg text-sm transition flex items-center justify-center border shrink-0 cursor-pointer active:scale-95 ${
@@ -178,7 +179,7 @@ export default function GearItemCard({
             {isSelected ? '🎒' : '💤'}
           </button>
 
-          {/* ②パッキング完了チェックボックス (アイコンのみ: ✅ / ⬜) */}
+          {/* ② パッキング完了チェック */}
           {isSelected ? (
             <button
               onClick={() => onTogglePacked(item.id, item.is_packed)}
@@ -195,7 +196,7 @@ export default function GearItemCard({
             <span className="w-8 h-8 flex items-center justify-center text-xs text-zinc-600 select-none shrink-0">-</span>
           )}
 
-          {/* 商品名 (領域最大化) */}
+          {/* ③ 商品名 (領域最大化) */}
           <span
             title={item.name}
             className={`text-xs font-bold truncate flex-1 min-w-0 ${
@@ -210,42 +211,24 @@ export default function GearItemCard({
           </span>
         </div>
 
-        <div className="flex items-center gap-1.5 shrink-0">
-          {badge && (
-            <span className={`text-[10px] px-1.5 py-0.5 rounded ${badge.className} shrink-0`}>
-              {badge.label}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* ★ 数量表示: 2個以上のときだけ 『×2』 などのテキストを表示 */}
+          {qty > 1 && (
+            <span className="text-[11px] font-mono font-black text-[#FFB800] bg-[#FFB800]/15 border border-[#FFB800]/40 px-1.5 py-0.5 rounded shrink-0">
+              ×{qty}
             </span>
           )}
 
-          {/* 固定幅・右揃え・等幅数値 */}
+          {/* 重量 (右揃え・固定幅) */}
           <span className="text-xs font-mono tabular-nums font-bold text-zinc-300 shrink-0 min-w-[55px] text-right">
             {formatWeight(totalWeight)}
           </span>
-
-          {/* 数量コントロール [-1+] */}
-          <div className="flex items-center bg-[#18181B] rounded-lg border border-zinc-700/80 shrink-0">
-            <button
-              onClick={() => onUpdateQuantity(item.id, item.quantity || 1, -1)}
-              className="w-7 h-7 flex items-center justify-center text-zinc-400 hover:text-white font-bold text-xs cursor-pointer active:bg-zinc-800 rounded-l-lg"
-            >
-              -
-            </button>
-            <span className="px-1 text-xs font-mono tabular-nums font-bold text-white">
-              {item.quantity || 1}
-            </span>
-            <button
-              onClick={() => onUpdateQuantity(item.id, item.quantity || 1, 1)}
-              className="w-7 h-7 flex items-center justify-center text-zinc-400 hover:text-white font-bold text-xs cursor-pointer active:bg-zinc-800 rounded-r-lg"
-            >
-              +
-            </button>
-          </div>
         </div>
       </div>
     );
   }
 
-  // ✏️ 編集・整理モード
+  // ✏️ 編集・整理モード (数量変更 [- 1 +] ボタンを配置)
   return (
     <div
       onDragOver={onDragOver}
@@ -310,9 +293,9 @@ export default function GearItemCard({
             <div className="flex items-center gap-3 text-[11px] text-zinc-400 mt-1 font-mono tabular-nums">
               <span>
                 ⚖️ {formatWeight(totalWeight)}{' '}
-                {item.quantity && item.quantity > 1 ? `(${formatWeight(item.weight)}×${item.quantity})` : ''}
+                {qty > 1 ? `(${formatWeight(item.weight)}×${qty})` : ''}
               </span>
-              {item.price > 0 && <span>💰 ¥{(item.price * (item.quantity || 1)).toLocaleString()}</span>}
+              {item.price > 0 && <span>💰 ¥{(item.price * qty).toLocaleString()}</span>}
             </div>
           </div>
         </div>
@@ -330,18 +313,19 @@ export default function GearItemCard({
             {isSelected ? '🎒' : '💤'}
           </button>
 
+          {/* 編集・整理モードでは数量調整ボタンを表示 */}
           <div className="flex items-center bg-[#18181B] rounded-lg border border-zinc-700/80">
             <button
-              onClick={() => onUpdateQuantity(item.id, item.quantity || 1, -1)}
+              onClick={() => onUpdateQuantity(item.id, qty, -1)}
               className="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white font-bold text-xs cursor-pointer rounded-l-lg"
             >
               -
             </button>
             <span className="px-1.5 text-xs font-mono tabular-nums font-bold text-white">
-              {item.quantity || 1}
+              {qty}
             </span>
             <button
-              onClick={() => onUpdateQuantity(item.id, item.quantity || 1, 1)}
+              onClick={() => onUpdateQuantity(item.id, qty, 1)}
               className="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white font-bold text-xs cursor-pointer rounded-r-lg"
             >
               +

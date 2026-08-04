@@ -29,12 +29,13 @@ export default function Home() {
   const [isEditCampOpen, setIsEditCampOpen] = useState(false);
   const [editCampTitle, setEditCampTitle] = useState('');
 
+  // ★ 短縮カテゴリー名ステート
   const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({
-    ベースギア: false,
-    調理ギア: false,
+    ベース: false,
+    調理: false,
     衣類: false,
-    'その他・日用品': false,
-    '食料・消耗品': false,
+    その他: false,
+    消耗品: false,
   });
 
   // 1. 全キャンプ一覧の取得
@@ -240,7 +241,11 @@ export default function Home() {
     if (!selectedCampId) return;
 
     const fullName = `${item.brand || ''} ${item.product_name || ''} ${item.model_number || ''}`.trim();
-    const cat = item.category || 'ベースギア';
+    let cat = item.category || 'ベース';
+    if (cat === 'ベースギア') cat = 'ベース';
+    if (cat === '調理ギア') cat = '調理';
+    if (cat === 'その他・日用品') cat = 'その他';
+    if (cat === '食料・消耗品') cat = '消耗品';
 
     await supabase.from('gears').insert([{
       camp_id: selectedCampId,
@@ -254,7 +259,7 @@ export default function Home() {
       quantity: 1,
       is_packed: true,
       is_selected: true,
-      is_consumable: cat === '食料・消耗品',
+      is_consumable: cat === '消耗品',
       product_url: item.productUrl || '',
     }]);
     fetchGears();
@@ -324,13 +329,11 @@ export default function Home() {
       <div className="max-w-5xl mx-auto space-y-6">
         {/* ヘッダーエリア */}
         <header className="border-b border-zinc-800 pb-4 space-y-3">
-          {/* ヘッダー上段: タイトル ＆ 公開ステータス */}
           <div className="flex items-center justify-between gap-2">
             <h1 className="text-lg md:text-2xl font-black text-white tracking-tight flex items-center gap-1.5">
               🏕️ <span className="text-[#FF5500]">Camp Gear</span> Manager
             </h1>
 
-            {/* 公開ステータスボタン */}
             <button
               onClick={handleTogglePublic}
               className={`px-2.5 py-1 rounded-xl text-xs font-bold transition border cursor-pointer shrink-0 ${
@@ -343,9 +346,7 @@ export default function Home() {
             </button>
           </div>
 
-          {/* ヘッダー下段: キャンプ選択 ＋ 操作ボタン群 (新規 ➔ 編集 ➔ 削除) */}
           <div className="flex items-center justify-between gap-1.5 bg-[#18181B] p-2 rounded-2xl border border-zinc-800">
-            {/* キャンプ選択 (flex-1で幅最大確保) */}
             <div className="flex items-center gap-1.5 flex-1 min-w-0">
               <span className="text-sm font-bold text-[#FF5500] pl-1 shrink-0">⛺</span>
               <select
@@ -361,9 +362,7 @@ export default function Home() {
               </select>
             </div>
 
-            {/* 操作ボタン群: 1.新規 ➔ 2.編集 ➔ 3.削除 */}
             <div className="flex items-center gap-1 shrink-0">
-              {/* ① 新規アイコン */}
               <button
                 onClick={() => setIsAddCampOpen(true)}
                 className="w-9 h-9 flex items-center justify-center bg-[#FF5500] hover:bg-[#E04B00] text-white text-base font-black rounded-xl transition shrink-0 cursor-pointer shadow-sm"
@@ -372,7 +371,6 @@ export default function Home() {
                 +
               </button>
 
-              {/* ② 編集アイコン */}
               <button
                 onClick={startEditCampTitle}
                 className="w-9 h-9 flex items-center justify-center bg-[#27272A] hover:bg-zinc-700 text-zinc-300 rounded-xl text-xs transition border border-zinc-700 cursor-pointer"
@@ -381,7 +379,6 @@ export default function Home() {
                 ✏️
               </button>
 
-              {/* ③ 削除アイコン */}
               <button
                 onClick={handleDeleteCamp}
                 className="ml-2 w-9 h-9 flex items-center justify-center bg-red-950/30 hover:bg-red-900/60 text-red-400 hover:text-white rounded-xl text-xs transition border border-red-900/50 cursor-pointer"
@@ -437,11 +434,10 @@ export default function Home() {
 
         <WeightsSummary gears={gears} onCategoryClick={scrollToCategory} />
         
-        {/* 🔍 AI検索エリア ＆ 直下の「みんなのギアから追加する →」ボタン */}
+        {/* AI検索エリア ＆ 直下の「みんなのギアから追加する →」ボタン */}
         <div className="space-y-2">
           <GearSearch onAddGear={handleAddGear} />
           
-          {/* ★ 検索窓のすぐ下に「みんなのギア」導線を配置 */}
           <div className="flex justify-end">
             <Link
               href="/community"
