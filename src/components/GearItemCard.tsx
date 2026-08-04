@@ -81,7 +81,7 @@ const getCleanItemName = (fullName: string, brandName?: string): string => {
   return fullName.replace(regex, '');
 };
 
-// ★ 仕様準拠: 重量表示フォーマット関数 (1000g未満: g整数 / 1000g以上: 小数点第2位kg)
+// 重量表示フォーマット関数 (1000g未満: g整数 / 1000g以上: 小数点第2位kg)
 const formatWeight = (grams: number) => {
   if (grams >= 1000) {
     return `${(grams / 1000).toFixed(2)}kg`;
@@ -150,13 +150,13 @@ export default function GearItemCard({
     setIsEditing(false);
   };
 
-  // 🎒 パッキングモード
+  // 🎒 パッキングモード (文字消去・アイコンのみ化)
   if (mode === 'packing') {
     return (
       <div
         onDragOver={onDragOver}
         onDrop={() => onDrop && onDrop(item.id)}
-        className={`h-[50px] px-2.5 rounded-xl border transition-all duration-150 flex items-center justify-between gap-2 select-text ${
+        className={`h-[48px] px-2 rounded-xl border transition-all duration-150 flex items-center justify-between gap-1.5 select-text ${
           !isSelected
             ? 'bg-[#18181B]/40 border-zinc-800/80 opacity-60'
             : item.is_packed
@@ -164,38 +164,41 @@ export default function GearItemCard({
             : 'bg-[#27272A] border-zinc-700/80 shadow-sm'
         }`}
       >
-        <div className="flex items-center gap-2 min-w-0 flex-1">
+        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+          {/* ①持参選定ボタン (アイコンのみ: 🎒 / 💤) */}
           <button
             onClick={() => onToggleSelected(item.id, isSelected)}
-            className={`min-h-[36px] px-2 py-1 rounded-lg text-[11px] font-bold transition flex items-center justify-center border shrink-0 cursor-pointer active:scale-95 ${
+            className={`w-8 h-8 rounded-lg text-sm transition flex items-center justify-center border shrink-0 cursor-pointer active:scale-95 ${
               isSelected
                 ? 'bg-[#FF5500]/20 border-[#FF5500]/60 text-[#FF5500]'
                 : 'bg-zinc-800/80 border-zinc-700 text-zinc-400'
             }`}
-            title="持参/お休み切り替え"
+            title={isSelected ? '持参（タップで休みに変更）' : 'お休み（タップで持参に変更）'}
           >
-            {isSelected ? '🎒 持参' : '💤 お休み'}
+            {isSelected ? '🎒' : '💤'}
           </button>
 
+          {/* ②パッキング完了チェックボックス (アイコンのみ: ✅ / ⬜) */}
           {isSelected ? (
             <button
               onClick={() => onTogglePacked(item.id, item.is_packed)}
-              className={`min-h-[36px] px-2 py-1 rounded-lg text-[11px] font-bold transition flex items-center justify-center border shrink-0 cursor-pointer active:scale-95 ${
+              className={`w-8 h-8 rounded-lg text-sm transition flex items-center justify-center border shrink-0 cursor-pointer active:scale-95 ${
                 item.is_packed
                   ? 'bg-emerald-950/80 border-emerald-700 text-emerald-300'
                   : 'bg-zinc-800 border-zinc-700 text-zinc-400'
               }`}
-              title="パッキング完了チェック"
+              title={item.is_packed ? '完了済み（タップで未完了に変更）' : '未完了（タップで完了に変更）'}
             >
-              {item.is_packed ? '✅ 完了' : '⬜ 未'}
+              {item.is_packed ? '✅' : '⬜'}
             </button>
           ) : (
-            <span className="text-[10px] text-zinc-600 p-1 select-none shrink-0">-</span>
+            <span className="w-8 h-8 flex items-center justify-center text-xs text-zinc-600 select-none shrink-0">-</span>
           )}
 
+          {/* 商品名 (領域最大化) */}
           <span
             title={item.name}
-            className={`text-xs font-bold truncate flex-1 ${
+            className={`text-xs font-bold truncate flex-1 min-w-0 ${
               !isSelected
                 ? 'line-through text-zinc-500'
                 : item.is_packed
@@ -207,22 +210,23 @@ export default function GearItemCard({
           </span>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0">
           {badge && (
             <span className={`text-[10px] px-1.5 py-0.5 rounded ${badge.className} shrink-0`}>
               {badge.label}
             </span>
           )}
 
-          {/* ★ 仕様適用: 固定幅(min-w-[60px]) & 右揃え(text-right) & 等幅数値(tabular-nums) */}
-          <span className="text-xs font-mono tabular-nums font-bold text-zinc-300 shrink-0 min-w-[60px] text-right">
+          {/* 固定幅・右揃え・等幅数値 */}
+          <span className="text-xs font-mono tabular-nums font-bold text-zinc-300 shrink-0 min-w-[55px] text-right">
             {formatWeight(totalWeight)}
           </span>
 
+          {/* 数量コントロール [-1+] */}
           <div className="flex items-center bg-[#18181B] rounded-lg border border-zinc-700/80 shrink-0">
             <button
               onClick={() => onUpdateQuantity(item.id, item.quantity || 1, -1)}
-              className="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white font-bold text-xs cursor-pointer active:bg-zinc-800 rounded-l-lg"
+              className="w-7 h-7 flex items-center justify-center text-zinc-400 hover:text-white font-bold text-xs cursor-pointer active:bg-zinc-800 rounded-l-lg"
             >
               -
             </button>
@@ -231,7 +235,7 @@ export default function GearItemCard({
             </span>
             <button
               onClick={() => onUpdateQuantity(item.id, item.quantity || 1, 1)}
-              className="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-white font-bold text-xs cursor-pointer active:bg-zinc-800 rounded-r-lg"
+              className="w-7 h-7 flex items-center justify-center text-zinc-400 hover:text-white font-bold text-xs cursor-pointer active:bg-zinc-800 rounded-r-lg"
             >
               +
             </button>
@@ -303,7 +307,6 @@ export default function GearItemCard({
               )}
             </div>
 
-            {/* 重量 ＆ 金額 (等幅数値 tabular-nums 適用) */}
             <div className="flex items-center gap-3 text-[11px] text-zinc-400 mt-1 font-mono tabular-nums">
               <span>
                 ⚖️ {formatWeight(totalWeight)}{' '}
@@ -317,13 +320,14 @@ export default function GearItemCard({
         <div className="flex items-center justify-end gap-1.5 shrink-0 border-t sm:border-t-0 border-zinc-800/80 pt-2 sm:pt-0">
           <button
             onClick={() => onToggleSelected(item.id, isSelected)}
-            className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition border shrink-0 cursor-pointer ${
+            className={`w-8 h-8 rounded-lg text-sm transition border shrink-0 cursor-pointer flex items-center justify-center ${
               isSelected
                 ? 'bg-[#FF5500]/20 border-[#FF5500]/60 text-[#FF5500]'
                 : 'bg-zinc-800/80 border-zinc-700 text-zinc-400'
             }`}
+            title={isSelected ? '持参（タップで休みに変更）' : 'お休み（タップで持参に変更）'}
           >
-            {isSelected ? '🎒 持参' : '💤 お休み'}
+            {isSelected ? '🎒' : '💤'}
           </button>
 
           <div className="flex items-center bg-[#18181B] rounded-lg border border-zinc-700/80">

@@ -76,7 +76,6 @@ export default function GearList({
   const [sortOrders, setSortOrders] = useState<Record<string, 'default' | 'desc' | 'asc'>>({});
   const [filterMode, setFilterMode] = useState<'all' | 'unpacked'>('all');
 
-  // 画面モード: 'packing' (デフォルト) vs 'edit'
   const [screenMode, setScreenMode] = useState<'packing' | 'edit'>('packing');
 
   const toggleSortOrder = (catName: string) => {
@@ -154,11 +153,11 @@ export default function GearList({
 
   return (
     <section className="bg-[#18181B] p-4 md:p-6 rounded-2xl border border-zinc-800 space-y-4 shadow-xl">
-      {/* 🚀 モード切替トグル (かっこ書きなし「🎒 パッキング」/「✏️ 編集・整理」) */}
+      {/* モード切替トグル */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-3">
         <div className="flex items-center gap-2">
           <h2 className="text-lg font-extrabold text-white flex items-center gap-2">
-            🎒 積載パッキングリスト
+            🎒 パッキングリスト
           </h2>
           <span className="text-xs text-zinc-400 font-normal">({gears.length}件)</span>
         </div>
@@ -213,6 +212,7 @@ export default function GearList({
                 {filterMode === 'unpacked' ? '👁️ 全て表示' : `⚠️ 未完了のみ (${totalCount - packedCount}点)`}
               </button>
 
+              {/* ★ 「🔄 全解除」ボタンのみ残し、「✅ 全完了」ボタンを削除 */}
               {onResetAllPacked && (
                 <button
                   onClick={onResetAllPacked}
@@ -220,16 +220,6 @@ export default function GearList({
                   title="当日のパッキング開始！チェックのみを外して0%にします"
                 >
                   🔄 全解除
-                </button>
-              )}
-
-              {onCheckAllPacked && (
-                <button
-                  onClick={onCheckAllPacked}
-                  className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-emerald-950/60 border border-emerald-700 text-emerald-300 hover:text-white hover:bg-emerald-900 transition cursor-pointer"
-                  title="「持参」ギアをすべてパッキング済みにします"
-                >
-                  ✅ 全完了
                 </button>
               )}
             </div>
