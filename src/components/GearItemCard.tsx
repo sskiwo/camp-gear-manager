@@ -219,7 +219,7 @@ export default function GearItemCard({
             </span>
           )}
 
-          {/* 重量 (天秤アイコンなし・右揃え・固定幅) */}
+          {/* 重量 (右揃え・固定幅) */}
           <span className="text-xs font-mono tabular-nums font-bold text-zinc-300 shrink-0 min-w-[55px] text-right">
             {formatWeight(totalWeight)}
           </span>
@@ -240,18 +240,18 @@ export default function GearItemCard({
       {/* ── 上段：識別ゾーン（ドラッグハンドル ➔ 持参アイコン ➔ ブランド ＋ 商品名 ➔ 最右端: 属性バッジ） ── */}
       <div className="flex items-center justify-between gap-2 min-w-0">
         <div className="flex items-center gap-2 min-w-0 flex-1">
-          {/* 最左端: ドラッグハンドル [⋮⋮] (確実に掴めるよう draggable={true} と touch-none 設定) */}
-          <span
+          {/* ★ 最左端: ドラッグハンドル [⋮⋮] (button要素化 ＆ onDragStart連携で確実に動作) */}
+          <button
+            type="button"
             draggable={true}
             onDragStart={(e) => {
-              e.stopPropagation();
               if (onDragStart) onDragStart(e, item.id);
             }}
-            className="text-zinc-400 hover:text-white cursor-grab active:cursor-grabbing text-sm font-black select-none shrink-0 px-1 py-0.5 touch-none"
-            title="ドラッグして並び替え"
+            className="text-zinc-400 hover:text-white cursor-grab active:cursor-grabbing text-sm font-black select-none shrink-0 px-1 py-0.5 border-0 bg-transparent focus:outline-none touch-none"
+            title="ドラッグして上下に並び替え"
           >
             ⋮⋮
-          </span>
+          </button>
 
           {/* 持参・お休みトグルアイコン [🎒/💤] */}
           <button
@@ -284,7 +284,7 @@ export default function GearItemCard({
           </div>
         </div>
 
-        {/* 最右端: 属性バッジ (CB, OD, USB-C等) */}
+        {/* 最右端: 属性バッジ */}
         {badge && (
           <span className={`text-[10px] px-1.5 py-0.5 rounded ${badge.className} shrink-0`}>
             {badge.label}
@@ -292,9 +292,9 @@ export default function GearItemCard({
         )}
       </div>
 
-      {/* ── 下段：数値・操作ゾーン（重量 / 金額 [天秤アイコンなし] ➔ 数量 [- 1 +] ➔ ✏️ [鉛筆アイコンのみ] ➔ 🗑️） ── */}
+      {/* ── 下段：数値・操作ゾーン ── */}
       <div className="flex items-center justify-between gap-2 pt-0.5">
-        {/* 左側: 重量 / 金額 （天秤アイコン削除済み） */}
+        {/* 左側: 重量 / 金額 */}
         <div className="text-[11px] font-mono tabular-nums text-zinc-400 flex items-center gap-1.5 shrink-0">
           <span>{formatWeight(totalWeight)}</span>
           {totalPrice > 0 && (
@@ -302,7 +302,7 @@ export default function GearItemCard({
           )}
         </div>
 
-        {/* 右側: 数量コントロール ＋ ✏️ [鉛筆アイコンのみ] ＋ 🗑️ */}
+        {/* 右側: 数量コントロール ＋ ✏️ ＋ 🗑️ */}
         <div className="flex items-center gap-1.5 shrink-0">
           {/* 数量コントロール [- 1 +] */}
           <div className="flex items-center bg-[#18181B] rounded-lg border border-zinc-700/80">
@@ -323,7 +323,7 @@ export default function GearItemCard({
             </button>
           </div>
 
-          {/* ✏️ 編集ボタン (文字削除・鉛筆アイコンのみ) */}
+          {/* ✏️ 編集ボタン */}
           <button
             onClick={() => setIsEditing(!isEditing)}
             className={`w-7 h-7 flex items-center justify-center rounded-lg text-xs transition border cursor-pointer ${

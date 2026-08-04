@@ -85,9 +85,11 @@ export default function GearList({
     });
   };
 
+  // ★ ドラッグ開始処理 (dataTransferへIDをセットし確実に移動イベントを起こす)
   const handleDragStart = (e: React.DragEvent, id: string) => {
     setDraggedItemId(id);
     e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', id);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -152,13 +154,12 @@ export default function GearList({
 
   return (
     <section className="bg-[#18181B] p-4 md:p-6 rounded-2xl border border-zinc-800 space-y-4 shadow-xl">
-      {/* 🎒 パッキングリスト (〇点) ＆ [ ☑️ パッキング ] [ ✏️ ギア編集 ] */}
+      {/* モード切替トグル */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-3">
         <h2 className="text-lg font-extrabold text-white flex items-center gap-1.5">
           🎒 パッキングリスト <span className="text-zinc-400 font-normal text-sm">({gears.length}点)</span>
         </h2>
 
-        {/* モード切替ボタン */}
         <div className="flex items-center bg-[#09090B] p-1 rounded-xl border border-zinc-800 self-start sm:self-auto">
           <button
             onClick={() => setScreenMode('packing')}
@@ -183,7 +184,7 @@ export default function GearList({
         </div>
       </div>
 
-      {/* 📊 パッキング進捗: 〇 / 〇 点 (〇%) */}
+      {/* 進捗プログレスバー */}
       {totalCount > 0 && (
         <div className="bg-[#27272A]/80 p-3.5 rounded-2xl border border-zinc-700/70 space-y-2 shadow-inner">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -196,7 +197,6 @@ export default function GearList({
               </span>
             </div>
 
-            {/* ［ 📦 未チェックのみ ］ ［ 🔄 チェックをリセット ］ */}
             <div className="flex items-center gap-1.5">
               <button
                 onClick={() => setFilterMode(filterMode === 'all' ? 'unpacked' : 'all')}
@@ -292,11 +292,12 @@ export default function GearList({
                 </button>
 
                 <div className="flex items-center gap-2 shrink-0">
+                  {/* ★ 天秤アイコン(⚖️)を完全除去したソートボタン */}
                   <button
                     onClick={() => toggleSortOrder(catName)}
                     className="text-[10px] font-bold px-2 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-300 hover:text-white transition cursor-pointer"
                   >
-                    ⚖️ {sortOrder === 'default' ? '登録順' : sortOrder === 'desc' ? '重い順' : '軽い順'}
+                    {sortOrder === 'default' ? '登録順' : sortOrder === 'desc' ? '重い順' : '軽い順'}
                   </button>
 
                   {screenMode === 'edit' && (
