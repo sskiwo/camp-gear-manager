@@ -33,6 +33,9 @@ type Props = {
   onDeleteGear: (id: string) => void;
 };
 
+// カテゴリー選択肢
+const CATEGORY_OPTIONS = ['ベース', '調理', '衣類', 'その他', '消耗品'];
+
 // 属性バッジ(燃料・電源タイプ) マッピング
 const getBadgeStyle = (fuelType?: string) => {
   if (!fuelType || fuelType === '不要/なし') return null;
@@ -112,9 +115,10 @@ export default function GearItemCard({
 }: Props) {
   const [isEditing, setIsEditing] = useState(false);
 
-  // 編集フォーム用ステート
+  // 編集フォーム用ステート (★ editCategory を追加)
   const [editBrand, setEditBrand] = useState(item.brand || '');
   const [editName, setEditName] = useState(item.name);
+  const [editCategory, setEditCategory] = useState(item.category || 'ベース');
   const [editWeight, setEditWeight] = useState(item.weight || 0);
   const [editPrice, setEditPrice] = useState(item.price || 0);
   const [editPurchaseDate, setEditPurchaseDate] = useState(item.purchase_date || '');
@@ -134,6 +138,7 @@ export default function GearItemCard({
       brand: editBrand,
       name: editName,
       product_name: editName,
+      category: editCategory, // ★ カテゴリー更新
       weight: Number(editWeight),
       price: Number(editPrice),
       purchase_date: editPurchaseDate,
@@ -143,89 +148,100 @@ export default function GearItemCard({
     setIsEditing(false);
   };
 
-  // 🎒 【1】 パッキングモード UI (超スリム1行表示)
+  // 🎒 【1】 パッキングモード UI (名前タップで編集フォーム起動可能)
   if (mode === 'packing') {
     return (
-      <div
-        className={`h-[48px] px-2 rounded-xl border transition-all duration-150 flex items-center justify-between gap-2 select-text ${
-          !isSelected
-            ? 'bg-[#18181B]/40 border-zinc-800/80 opacity-60'
-            : item.is_packed
-            ? 'bg-[#1F1F23] border-zinc-800'
-            : 'bg-[#27272A] border-zinc-700/80 shadow-sm'
-        }`}
-      >
-        <div className="flex items-center gap-1.5 min-w-0 flex-1">
-          {/* ① 持参/お休み */}
-          <button
-            onClick={() => onToggleSelected(item.id, isSelected)}
-            className={`w-8 h-8 rounded-lg text-sm transition flex items-center justify-center border shrink-0 cursor-pointer active:scale-95 ${
-              isSelected
-                ? 'bg-[#FF5500]/20 border-[#FF5500]/60 text-[#FF5500]'
-                : 'bg-zinc-800/80 border-zinc-700 text-zinc-400'
-            }`}
-            title={isSelected ? '持参（タップでお休みに変更）' : 'お休み（タップで持参に変更）'}
-          >
-            {isSelected ? '🎒' : '💤'}
-          </button>
-
-          {/* ② パッキング完了チェック */}
-          {isSelected ? (
+      <div className="space-y-1">
+        <div
+          className={`h-[48px] px-2 rounded-xl border transition-all duration-150 flex items-center justify-between gap-2 select-text ${
+            !isSelected
+              ? 'bg-[#18181B]/40 border-zinc-800/80 opacity-60'
+              : item.is_packed
+              ? 'bg-[#1F1F23] border-zinc-800'
+              : 'bg-[#27272A] border-zinc-700/80 shadow-sm'
+          }`}
+        >
+          <div className="flex items-center gap-1.5 min-w-0 flex-1">
+            {/* ① 持参/お休み */}
             <button
-              onClick={() => onTogglePacked(item.id, item.is_packed)}
+              onClick={() => onToggleSelected(item.id, isSelected)}
               className={`w-8 h-8 rounded-lg text-sm transition flex items-center justify-center border shrink-0 cursor-pointer active:scale-95 ${
-                item.is_packed
-                  ? 'bg-emerald-950/80 border-emerald-700 text-emerald-300'
-                  : 'bg-zinc-800 border-zinc-700 text-zinc-400'
+                isSelected
+                  ? 'bg-[#FF5500]/20 border-[#FF5500]/60 text-[#FF5500]'
+                  : 'bg-zinc-800/80 border-zinc-700 text-zinc-400'
               }`}
-              title={item.is_packed ? '完了済み（タップで未完了に変更）' : '未完了（タップで完了に変更）'}
+              title={isSelected ? '持参（タップでお休みに変更）' : 'お休み（タップで持参に変更）'}
             >
-              {item.is_packed ? '✅' : '⬜'}
+              {isSelected ? '🎒' : '💤'}
             </button>
-          ) : (
-            <span className="w-8 h-8 flex items-center justify-center text-xs text-zinc-600 select-none shrink-0">-</span>
-          )}
 
-          {/* ③ 商品名 */}
-          <span
-            title={item.name}
-            className={`text-xs font-bold truncate flex-1 min-w-0 ${
-              !isSelected
-                ? 'line-through text-zinc-500'
-                : item.is_packed
-                ? 'text-zinc-400'
-                : 'text-white'
-            }`}
-          >
-            {cleanName}
-          </span>
-        </div>
+            {/* ② パッキング完了チェック */}
+            {isSelected ? (
+              <button
+                onClick={() => onTogglePacked(item.id, item.is_packed)}
+                className={`w-8 h-8 rounded-lg text-sm transition flex items-center justify-center border shrink-0 cursor-pointer active:scale-95 ${
+                  item.is_packed
+                    ? 'bg-emerald-950/80 border-emerald-700 text-emerald-300'
+                    : 'bg-zinc-800 border-zinc-700 text-zinc-400'
+                }`}
+                title={item.is_packed ? '完了済み（タップで未完了に変更）' : '未完了（タップで完了に変更）'}
+              >
+                {item.is_packed ? '✅' : '⬜'}
+              </button>
+            ) : (
+              <span className="w-8 h-8 flex items-center justify-center text-xs text-zinc-600 select-none shrink-0">-</span>
+            )}
 
-        <div className="flex items-center gap-2 shrink-0">
-          {/* 数量表示: 2個以上の時だけ ×2 */}
-          {qty > 1 && (
-            <span className="text-[11px] font-mono font-black text-[#FFB800] bg-[#FFB800]/15 border border-[#FFB800]/40 px-1.5 py-0.5 rounded shrink-0">
-              ×{qty}
+            {/* ★ ③ 商品名 (タップで編集画面を展開) */}
+            <button
+              type="button"
+              onClick={() => setIsEditing(!isEditing)}
+              className="text-left flex-1 min-w-0 cursor-pointer group focus:outline-none"
+              title="タップしてギア情報を編集"
+            >
+              <span
+                className={`text-xs font-bold truncate block group-hover:text-[#FF5500] transition-colors ${
+                  !isSelected
+                    ? 'line-through text-zinc-500'
+                    : item.is_packed
+                    ? 'text-zinc-400'
+                    : 'text-white'
+                }`}
+              >
+                {cleanName}
+              </span>
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            {/* 数量表示: 2個以上の時だけ ×2 */}
+            {qty > 1 && (
+              <span className="text-[11px] font-mono font-black text-[#FFB800] bg-[#FFB800]/15 border border-[#FFB800]/40 px-1.5 py-0.5 rounded shrink-0">
+                ×{qty}
+              </span>
+            )}
+
+            {/* 重量 */}
+            <span className="text-xs font-mono tabular-nums font-bold text-zinc-300 shrink-0 min-w-[55px] text-right">
+              {formatWeight(totalWeight)}
             </span>
-          )}
-
-          {/* 重量 (右揃え・固定幅) */}
-          <span className="text-xs font-mono tabular-nums font-bold text-zinc-300 shrink-0 min-w-[55px] text-right">
-            {formatWeight(totalWeight)}
-          </span>
+          </div>
         </div>
+
+        {/* パッキングモード時のタップ展開インライン編集フォーム */}
+        {isEditing && renderEditForm()}
       </div>
     );
   }
 
-  // ✏️ 【2】 ギア編集モード UI (グリップ削除済み・スリム2行)
+  // ✏️ 【2】 ギア編集モード UI
   return (
     <div
       className={`py-2 px-2.5 border-b border-zinc-800/80 transition-colors select-text hover:bg-[#1F1F23]/60 space-y-1.5 ${
         !isSelected ? 'opacity-50' : ''
       }`}
     >
-      {/* ── 上段：識別ゾーン（持参アイコン ➔ ブランド ＋ 商品名 ➔ 最右端: 属性バッジ） ── */}
+      {/* ── 上段：識別ゾーン ── */}
       <div className="flex items-center justify-between gap-2 min-w-0">
         <div className="flex items-center gap-1.5 min-w-0 flex-1">
           {/* 持参・お休みトグルアイコン [🎒/💤] */}
@@ -241,22 +257,26 @@ export default function GearItemCard({
             {isSelected ? '🎒' : '💤'}
           </button>
 
-          {/* ブランド名 ＋ 商品名 */}
-          <div className="min-w-0 flex-1 flex items-center gap-1.5 text-xs truncate">
+          {/* ブランド名 ＋ 商品名 (タップでも編集可能) */}
+          <button
+            type="button"
+            onClick={() => setIsEditing(!isEditing)}
+            className="min-w-0 flex-1 text-left flex items-center gap-1.5 text-xs truncate cursor-pointer group focus:outline-none"
+            title="タップしてギア情報を編集"
+          >
             {item.brand && (
               <span className="text-zinc-400 font-medium shrink-0">
                 {item.brand}
               </span>
             )}
             <span
-              className={`font-bold truncate ${
+              className={`font-bold truncate group-hover:text-[#FF5500] transition-colors ${
                 !isSelected ? 'line-through text-zinc-500' : 'text-white'
               }`}
-              title={item.name}
             >
               {cleanName}
             </span>
-          </div>
+          </button>
         </div>
 
         {/* 最右端: 属性バッジ */}
@@ -323,101 +343,125 @@ export default function GearItemCard({
       </div>
 
       {/* ── 詳細インライン編集フォーム ── */}
-      {isEditing && (
-        <div className="mt-2 pt-2 border-t border-zinc-800 space-y-2.5 bg-[#18181B] p-3 rounded-xl animate-fade-in">
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
-            <div>
-              <label className="text-[10px] font-bold text-zinc-400 block mb-0.5">メーカー/ブランド</label>
-              <input
-                type="text"
-                placeholder="例: モンベル"
-                value={editBrand}
-                onChange={(e) => setEditBrand(e.target.value)}
-                className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white focus:border-[#FF5500] focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="text-[10px] font-bold text-zinc-400 block mb-0.5">商品名</label>
-              <input
-                type="text"
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white focus:border-[#FF5500] focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="text-[10px] font-bold text-zinc-400 block mb-0.5">重量(g)</label>
-              <input
-                type="number"
-                value={editWeight}
-                onChange={(e) => setEditWeight(Number(e.target.value))}
-                className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white focus:border-[#FF5500] focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="text-[10px] font-bold text-zinc-400 block mb-0.5">価格(円)</label>
-              <input
-                type="number"
-                value={editPrice}
-                onChange={(e) => setEditPrice(Number(e.target.value))}
-                className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white focus:border-[#FF5500] focus:outline-none"
-              />
-            </div>
-          </div>
+      {isEditing && renderEditForm()}
+    </div>
+  );
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <div>
-              <label className="text-[10px] font-bold text-emerald-400 block mb-0.5">📅 購入時期</label>
-              <input
-                type="month"
-                value={editPurchaseDate}
-                onChange={(e) => setEditPurchaseDate(e.target.value)}
-                className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="text-[10px] font-bold text-cyan-400 block mb-0.5">🔋 燃料・電源タイプ</label>
-              <select
-                value={editFuelType}
-                onChange={(e) => setEditFuelType(e.target.value)}
-                className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none"
-              >
-                {FUEL_OPTIONS.map((opt) => (
-                  <option key={opt} value={opt}>
-                    {opt}
-                  </option>
-                ))}
-              </select>
-            </div>
+  // ✏️ 共通編集フォーム（カテゴリー変更ドロップダウンを追加）
+  function renderEditForm() {
+    return (
+      <div className="mt-2 pt-2 border-t border-zinc-800 space-y-2.5 bg-[#18181B] p-3 rounded-xl animate-fade-in text-left">
+        <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
+          {/* ★ カテゴリー変更ドロップダウン */}
+          <div>
+            <label className="text-[10px] font-bold text-[#FF5500] block mb-0.5">📂 カテゴリー</label>
+            <select
+              value={editCategory}
+              onChange={(e) => setEditCategory(e.target.value)}
+              className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white focus:border-[#FF5500] focus:outline-none cursor-pointer"
+            >
+              {CATEGORY_OPTIONS.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>
-            <label className="text-[10px] font-bold text-zinc-400 block mb-0.5">📝 メモ</label>
+            <label className="text-[10px] font-bold text-zinc-400 block mb-0.5">メーカー/ブランド</label>
             <input
               type="text"
-              placeholder="例: リビング棚保管、コンテナA"
-              value={editMemo}
-              onChange={(e) => setEditMemo(e.target.value)}
+              placeholder="例: モンベル"
+              value={editBrand}
+              onChange={(e) => setEditBrand(e.target.value)}
               className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white focus:border-[#FF5500] focus:outline-none"
             />
           </div>
 
-          <div className="flex justify-end gap-2 pt-1">
-            <button
-              onClick={handleSaveEdit}
-              className="bg-[#00E676] hover:bg-emerald-400 text-black text-xs font-bold px-4 py-1.5 rounded-xl cursor-pointer transition active:scale-95"
-            >
-              保存
-            </button>
-            <button
-              onClick={() => setIsEditing(false)}
-              className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs px-3.5 py-1.5 rounded-xl cursor-pointer transition"
-            >
-              中止
-            </button>
+          <div>
+            <label className="text-[10px] font-bold text-zinc-400 block mb-0.5">商品名</label>
+            <input
+              type="text"
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white focus:border-[#FF5500] focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="text-[10px] font-bold text-zinc-400 block mb-0.5">重量(g)</label>
+            <input
+              type="number"
+              value={editWeight}
+              onChange={(e) => setEditWeight(Number(e.target.value))}
+              className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white focus:border-[#FF5500] focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="text-[10px] font-bold text-zinc-400 block mb-0.5">価格(円)</label>
+            <input
+              type="number"
+              value={editPrice}
+              onChange={(e) => setEditPrice(Number(e.target.value))}
+              className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white focus:border-[#FF5500] focus:outline-none"
+            />
           </div>
         </div>
-      )}
-    </div>
-  );
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div>
+            <label className="text-[10px] font-bold text-emerald-400 block mb-0.5">📅 購入時期</label>
+            <input
+              type="month"
+              value={editPurchaseDate}
+              onChange={(e) => setEditPurchaseDate(e.target.value)}
+              className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="text-[10px] font-bold text-cyan-400 block mb-0.5">🔋 燃料・電源タイプ</label>
+            <select
+              value={editFuelType}
+              onChange={(e) => setEditFuelType(e.target.value)}
+              className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none"
+            >
+              {FUEL_OPTIONS.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label className="text-[10px] font-bold text-zinc-400 block mb-0.5">📝 メモ</label>
+          <input
+            type="text"
+            placeholder="例: リビング棚保管、コンテナA"
+            value={editMemo}
+            onChange={(e) => setEditMemo(e.target.value)}
+            className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white focus:border-[#FF5500] focus:outline-none"
+          />
+        </div>
+
+        <div className="flex justify-end gap-2 pt-1">
+          <button
+            onClick={handleSaveEdit}
+            className="bg-[#00E676] hover:bg-emerald-400 text-black text-xs font-bold px-4 py-1.5 rounded-xl cursor-pointer transition active:scale-95"
+          >
+            保存
+          </button>
+          <button
+            onClick={() => setIsEditing(false)}
+            className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs px-3.5 py-1.5 rounded-xl cursor-pointer transition"
+          >
+            中止
+          </button>
+        </div>
+      </div>
+    );
+  }
 }
