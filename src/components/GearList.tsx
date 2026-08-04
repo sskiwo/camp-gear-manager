@@ -39,7 +39,7 @@ type Props = {
   onReorderGears?: (reorderedGears: GearItem[]) => void;
 };
 
-// ★ 短縮カテゴリー定義
+// 短縮カテゴリー定義
 const CATEGORIES = [
   'ベース',
   '調理',
@@ -152,15 +152,13 @@ export default function GearList({
 
   return (
     <section className="bg-[#18181B] p-4 md:p-6 rounded-2xl border border-zinc-800 space-y-4 shadow-xl">
-      {/* モード切替トグル */}
+      {/* 🎒 パッキングリスト (〇点) ＆ [ ☑️ パッキング ] [ ✏️ ギア編集 ] */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-3">
-        <div className="flex items-center gap-2">
-          <h2 className="text-lg font-extrabold text-white flex items-center gap-2">
-            🎒 パッキングリスト
-          </h2>
-          <span className="text-xs text-zinc-400 font-normal">({gears.length}件)</span>
-        </div>
+        <h2 className="text-lg font-extrabold text-white flex items-center gap-1.5">
+          🎒 パッキングリスト <span className="text-zinc-400 font-normal text-sm">({gears.length}点)</span>
+        </h2>
 
+        {/* モード切替ボタン */}
         <div className="flex items-center bg-[#09090B] p-1 rounded-xl border border-zinc-800 self-start sm:self-auto">
           <button
             onClick={() => setScreenMode('packing')}
@@ -170,7 +168,7 @@ export default function GearList({
                 : 'text-zinc-400 hover:text-white'
             }`}
           >
-            🎒 パッキング
+            ☑️ パッキング
           </button>
           <button
             onClick={() => setScreenMode('edit')}
@@ -180,24 +178,25 @@ export default function GearList({
                 : 'text-zinc-400 hover:text-white'
             }`}
           >
-            ✏️ 編集・整理
+            ✏️ ギア編集
           </button>
         </div>
       </div>
 
-      {/* 進捗プログレスバー */}
+      {/* 📊 パッキング進捗: 〇 / 〇 点 (〇%) */}
       {totalCount > 0 && (
         <div className="bg-[#27272A]/80 p-3.5 rounded-2xl border border-zinc-700/70 space-y-2 shadow-inner">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <span className="text-sm font-black text-white flex items-center gap-1.5">
-                🎒 当日完了率:
+                📊 パッキング進捗:
               </span>
               <span className="text-sm font-black text-[#00E676] font-mono">
                 {packedCount} / {totalCount} 点 ({progressPercent}%)
               </span>
             </div>
 
+            {/* ［ 📦 未チェックのみ ］ ［ 🔄 チェックをリセット ］ */}
             <div className="flex items-center gap-1.5">
               <button
                 onClick={() => setFilterMode(filterMode === 'all' ? 'unpacked' : 'all')}
@@ -207,16 +206,16 @@ export default function GearList({
                     : 'bg-zinc-800 text-zinc-300 border-zinc-700 hover:text-white'
                 }`}
               >
-                {filterMode === 'unpacked' ? '👁️ 全て表示' : `⚠️ 未完了のみ (${totalCount - packedCount}点)`}
+                {filterMode === 'unpacked' ? '👁️ 全て表示' : '📦 未チェックのみ'}
               </button>
 
               {onResetAllPacked && (
                 <button
                   onClick={onResetAllPacked}
                   className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-zinc-800 border border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-700 transition cursor-pointer"
-                  title="当日のパッキング開始！チェックのみを外して0%にします"
+                  title="当日のパッキング完了チェックをリセットします"
                 >
-                  🔄 全解除
+                  🔄 チェックをリセット
                 </button>
               )}
             </div>
