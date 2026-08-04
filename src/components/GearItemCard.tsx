@@ -174,7 +174,7 @@ export default function GearItemCard({
                 ? 'bg-[#FF5500]/20 border-[#FF5500]/60 text-[#FF5500]'
                 : 'bg-zinc-800/80 border-zinc-700 text-zinc-400'
             }`}
-            title={isSelected ? '持参（タップで休みに変更）' : 'お休み（タップで持参に変更）'}
+            title={isSelected ? '持参（タップでお休みに変更）' : 'お休み（タップで持参に変更）'}
           >
             {isSelected ? '🎒' : '💤'}
           </button>
@@ -196,7 +196,7 @@ export default function GearItemCard({
             <span className="w-8 h-8 flex items-center justify-center text-xs text-zinc-600 select-none shrink-0">-</span>
           )}
 
-          {/* ③ 商品名 (テキスト指定: text-xs) */}
+          {/* ③ 商品名 */}
           <span
             title={item.name}
             className={`text-xs font-bold truncate flex-1 min-w-0 ${
@@ -219,7 +219,7 @@ export default function GearItemCard({
             </span>
           )}
 
-          {/* 重量 (右揃え・固定幅) */}
+          {/* 重量 (天秤アイコンなし・右揃え・固定幅) */}
           <span className="text-xs font-mono tabular-nums font-bold text-zinc-300 shrink-0 min-w-[55px] text-right">
             {formatWeight(totalWeight)}
           </span>
@@ -228,7 +228,7 @@ export default function GearItemCard({
     );
   }
 
-  // ✏️ 【2】 ギア編集モード UI (新レイアウト: 2行構造 ＋ 下線ボーダー区切り)
+  // ✏️ 【2】 ギア編集モード UI (2行構造)
   return (
     <div
       onDragOver={onDragOver}
@@ -237,20 +237,36 @@ export default function GearItemCard({
         isDragging ? 'opacity-30 bg-amber-950/20' : ''
       } ${!isSelected ? 'opacity-50' : ''}`}
     >
-      {/* ── 上段：識別ゾーン（ドラッグ ➔ ブランド ＋ 商品名 ➔ 最右端: 属性バッジ） ── */}
+      {/* ── 上段：識別ゾーン（ドラッグハンドル ➔ 持参アイコン ➔ ブランド ＋ 商品名 ➔ 最右端: 属性バッジ） ── */}
       <div className="flex items-center justify-between gap-2 min-w-0">
         <div className="flex items-center gap-2 min-w-0 flex-1">
-          {/* 最左端: ドラッグハンドル [⋮⋮] */}
+          {/* 最左端: ドラッグハンドル [⋮⋮] (確実に掴めるよう draggable={true} と touch-none 設定) */}
           <span
-            draggable
-            onDragStart={(e) => onDragStart && onDragStart(e, item.id)}
-            className="text-zinc-500 hover:text-zinc-300 cursor-grab active:cursor-grabbing text-xs select-none shrink-0 p-0.5"
+            draggable={true}
+            onDragStart={(e) => {
+              e.stopPropagation();
+              if (onDragStart) onDragStart(e, item.id);
+            }}
+            className="text-zinc-400 hover:text-white cursor-grab active:cursor-grabbing text-sm font-black select-none shrink-0 px-1 py-0.5 touch-none"
             title="ドラッグして並び替え"
           >
             ⋮⋮
           </span>
 
-          {/* ブランド名 ＋ 商品名 (ブランドは灰色でテキストインライン配置) */}
+          {/* 持参・お休みトグルアイコン [🎒/💤] */}
+          <button
+            onClick={() => onToggleSelected(item.id, isSelected)}
+            className={`w-6 h-6 rounded-md text-xs transition flex items-center justify-center border shrink-0 cursor-pointer active:scale-95 ${
+              isSelected
+                ? 'bg-[#FF5500]/20 border-[#FF5500]/60 text-[#FF5500]'
+                : 'bg-zinc-800/80 border-zinc-700 text-zinc-400'
+            }`}
+            title={isSelected ? '持参（タップでお休みに変更）' : 'お休み（タップで持参に変更）'}
+          >
+            {isSelected ? '🎒' : '💤'}
+          </button>
+
+          {/* ブランド名 ＋ 商品名 */}
           <div className="min-w-0 flex-1 flex items-center gap-1.5 text-xs truncate">
             {item.brand && (
               <span className="text-zinc-400 font-medium shrink-0">
@@ -276,17 +292,17 @@ export default function GearItemCard({
         )}
       </div>
 
-      {/* ── 下段：数値・操作ゾーン（重量/金額 ➔ 数量 [- 1 +] ➔ ✏️編集 ➔ 🗑️削除） ── */}
+      {/* ── 下段：数値・操作ゾーン（重量 / 金額 [天秤アイコンなし] ➔ 数量 [- 1 +] ➔ ✏️ [鉛筆アイコンのみ] ➔ 🗑️） ── */}
       <div className="flex items-center justify-between gap-2 pt-0.5">
-        {/* 左側: 重量 / 金額 */}
+        {/* 左側: 重量 / 金額 （天秤アイコン削除済み） */}
         <div className="text-[11px] font-mono tabular-nums text-zinc-400 flex items-center gap-1.5 shrink-0">
-          <span>⚖️ {formatWeight(totalWeight)}</span>
+          <span>{formatWeight(totalWeight)}</span>
           {totalPrice > 0 && (
             <span className="text-zinc-500">/ ¥{totalPrice.toLocaleString()}</span>
           )}
         </div>
 
-        {/* 右側: 数量コントロール ＋ ✏️編集 ＋ 🗑️削除 */}
+        {/* 右側: 数量コントロール ＋ ✏️ [鉛筆アイコンのみ] ＋ 🗑️ */}
         <div className="flex items-center gap-1.5 shrink-0">
           {/* 数量コントロール [- 1 +] */}
           <div className="flex items-center bg-[#18181B] rounded-lg border border-zinc-700/80">
@@ -307,20 +323,20 @@ export default function GearItemCard({
             </button>
           </div>
 
-          {/* ✏️ 編集ボタン */}
+          {/* ✏️ 編集ボタン (文字削除・鉛筆アイコンのみ) */}
           <button
             onClick={() => setIsEditing(!isEditing)}
-            className={`px-2 py-1 rounded-lg text-[11px] font-bold transition border cursor-pointer flex items-center gap-1 ${
+            className={`w-7 h-7 flex items-center justify-center rounded-lg text-xs transition border cursor-pointer ${
               isEditing
                 ? 'bg-amber-500/20 border-amber-500 text-amber-300'
                 : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border-zinc-700'
             }`}
             title="ギア詳細を編集"
           >
-            ✏️ 編集
+            ✏️
           </button>
 
-          {/* 🗑️ 削除ボタン (誤操作防止のためマージン隔離 & 危険色) */}
+          {/* 🗑️ 削除ボタン */}
           <button
             onClick={() => onDeleteGear(item.id)}
             className="ml-2 w-7 h-7 flex items-center justify-center text-red-400 hover:text-white hover:bg-red-950/60 rounded-lg text-xs transition border border-red-900/40 cursor-pointer"
@@ -331,7 +347,7 @@ export default function GearItemCard({
         </div>
       </div>
 
-      {/* ── 詳細インライン編集フォーム（✏️ 編集タップ時にアコーディオン展開） ── */}
+      {/* ── 詳細インライン編集フォーム ── */}
       {isEditing && (
         <div className="mt-2 pt-2 border-t border-zinc-800 space-y-2.5 bg-[#18181B] p-3 rounded-xl animate-fade-in">
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
