@@ -49,8 +49,9 @@ const matchesCategory = (gearCategory: string | undefined, catName: string) => {
   return cat === catName;
 };
 
-// 重量フォーマット表示関数 (1,000g未満: g整数 / 1,000g以上: 小数点第2位kg)
+// 重量フォーマット表示ルール (1,000g未満: 整数g / 1,000g以上: 小数点第2位kg)
 const formatWeightDisplay = (grams: number) => {
+  if (grams === 0) return '0g';
   if (grams >= 1000) {
     return `${(grams / 1000).toFixed(2)}kg`;
   }
@@ -96,79 +97,70 @@ export default function WeightsSummary({ gears, onCategoryClick }: Props) {
   const diffGrams = Math.abs(targetWeightGrams - totalWeight);
 
   return (
-    <section className="bg-[#18181B] border border-zinc-800 p-4 md:p-5 rounded-2xl shadow-xl space-y-3.5">
+    <section className="bg-[#18181B] border border-zinc-800 p-4 md:p-5 rounded-2xl shadow-xl space-y-3">
       {/* 📊 タイトル ＆ 持参件数 */}
       <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
         <h2 className="text-sm font-extrabold text-white flex items-center gap-1.5">
           📊 パッキングサマリー
         </h2>
-        <span className="text-[11px] font-bold text-zinc-400 font-mono">
+        <span className="text-[11px] font-bold text-zinc-400 font-mono tabular-nums">
           (持参対象: {selectedGears.length} / 全{gears.length}点)
         </span>
       </div>
 
-      {/* 🎯 最上段：目標重量 ＆ 達成率 */}
+      {/* 🎯 目標重量 ＆ プログレスバーエリア */}
       <div className="bg-[#27272A]/50 p-3 rounded-xl border border-zinc-700/60 space-y-2">
-        <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-1 font-bold text-amber-400">
-              <span>🎯 目標:</span>
-              {isEditingTarget ? (
-                <div className="flex items-center gap-1">
-                  <input
-                    type="number"
-                    step="0.5"
-                    value={targetWeightKg}
-                    onChange={(e) => setTargetWeightKg(Number(e.target.value))}
-                    className="w-16 bg-[#18181B] border border-amber-500 rounded px-1.5 py-0.5 text-xs font-mono text-white focus:outline-none"
-                  />
-                  <span className="text-xs text-zinc-300">kg</span>
-                  <button
-                    onClick={() => setIsEditingTarget(false)}
-                    className="text-[10px] bg-amber-500 text-black px-2 py-0.5 rounded font-bold cursor-pointer hover:bg-amber-400"
-                  >
-                    保存
-                  </button>
-                </div>
-              ) : (
-                <span
-                  onClick={() => setIsEditingTarget(true)}
-                  className="font-mono text-sm font-black text-amber-300 cursor-pointer hover:underline flex items-center gap-1"
-                  title="タップして目標重量を変更"
+        <div className="flex items-center justify-between gap-2 text-xs">
+          <div className="flex items-center gap-1 font-bold text-zinc-200">
+            <span>🎯 目標:</span>
+            {isEditingTarget ? (
+              <div className="flex items-center gap-1">
+                <input
+                  type="number"
+                  step="0.5"
+                  value={targetWeightKg}
+                  onChange={(e) => setTargetWeightKg(Number(e.target.value))}
+                  className="w-16 bg-[#18181B] border border-[#FF5500] rounded px-1.5 py-0.5 text-xs font-mono tabular-nums text-white focus:outline-none"
+                />
+                <span className="text-xs text-zinc-300">kg</span>
+                <button
+                  onClick={() => setIsEditingTarget(false)}
+                  className="text-[10px] bg-[#FF5500] text-white px-2 py-0.5 rounded font-bold cursor-pointer hover:bg-[#E04B00]"
                 >
-                  {targetWeightKg.toFixed(2)} kg
-                  <span className="text-[10px] text-zinc-400 font-normal">✏️</span>
-                </span>
-              )}
-            </div>
-
-            {targetWeightGrams > 0 && (
+                  保存
+                </button>
+              </div>
+            ) : (
               <span
-                className={`text-[11px] font-bold ${
-                  isOverTarget ? 'text-red-400 font-black animate-pulse' : 'text-emerald-400'
-                }`}
+                onClick={() => setIsEditingTarget(true)}
+                className="font-mono tabular-nums text-xs font-bold text-zinc-100 cursor-pointer hover:underline flex items-center gap-1"
+                title="タップして目標重量を変更"
               >
-                {isOverTarget
-                  ? `(⚠️ 目標を ${(diffGrams / 1000).toFixed(2)}kg オーバー！)`
-                  : `(あと ${(diffGrams / 1000).toFixed(2)}kg 持てる！)`}
+                {targetWeightKg.toFixed(2)} kg
+                <span className="text-[10px] text-zinc-400 font-normal">✏️</span>
               </span>
             )}
           </div>
 
-          <span
-            className={`font-mono text-xs font-black shrink-0 ${
-              isOverTarget ? 'text-red-400' : 'text-amber-400'
-            }`}
-          >
-            {Math.round(targetPercent)}%
-          </span>
+          {/* シンプルな残り重量表記（％表示排除） */}
+          {targetWeightGrams > 0 && (
+            <span
+              className={`text-xs font-bold font-mono tabular-nums shrink-0 ${
+                isOverTarget ? 'text-red-400 font-black animate-pulse' : 'text-[#FF5500]'
+              }`}
+            >
+              {isOverTarget
+                ? `⚠️ ${(diffGrams / 1000).toFixed(2)}kg オーバー`
+                : `残り ${(diffGrams / 1000).toFixed(2)}kg`}
+            </span>
+          )}
         </div>
 
-        {/* 達成率プログレスバー */}
-        <div className="w-full bg-zinc-800 rounded-full h-2 overflow-hidden border border-zinc-700">
+        {/* 目標プログレスバー (高さ: h-2.5 / 10px に設定) */}
+        <div className="w-full bg-zinc-800 rounded-full h-2.5 overflow-hidden border border-zinc-700">
           <div
-            className={`h-2 rounded-full transition-all duration-300 ${
-              isOverTarget ? 'bg-red-500' : 'bg-amber-400'
+            className={`h-2.5 rounded-full transition-all duration-300 ${
+              isOverTarget ? 'bg-[#EF4444]' : 'bg-[#FF5500]'
             }`}
             style={{ width: `${Math.min(100, Math.max(0, targetPercent))}%` }}
           />
@@ -179,35 +171,34 @@ export default function WeightsSummary({ gears, onCategoryClick }: Props) {
       <div className="bg-[#27272A]/50 p-2.5 rounded-xl border border-zinc-700/60 flex flex-wrap items-center justify-between gap-2 text-xs font-bold divide-y sm:divide-y-0 sm:divide-x divide-zinc-700/60">
         <div className="flex items-center gap-1.5 flex-1 min-w-[110px] justify-center pt-1 sm:pt-0">
           <span className="text-zinc-400">🚀 行き:</span>
-          <span className="font-mono text-sm font-black text-white">
+          <span className="font-mono tabular-nums text-sm font-black text-white">
             {(totalWeight / 1000).toFixed(2)} kg
           </span>
         </div>
 
         <div className="flex items-center gap-1.5 flex-1 min-w-[110px] justify-center pt-1 sm:pt-0">
           <span className="text-zinc-400">🏠 帰り:</span>
-          <span className="font-mono text-sm font-black text-[#FF5500]">
+          <span className="font-mono tabular-nums text-sm font-black text-[#FF5500]">
             {(baseWeight / 1000).toFixed(2)} kg
           </span>
         </div>
 
         <div className="flex items-center gap-1.5 flex-1 min-w-[130px] justify-center pt-1 sm:pt-0">
           <span className="text-zinc-400">💰 合計:</span>
-          <span className="font-mono text-sm font-black text-amber-400">
+          <span className="font-mono tabular-nums text-sm font-black text-amber-400">
             ¥{totalPrice.toLocaleString()}
           </span>
         </div>
       </div>
 
-      {/* 🎨 スリム帯バー (高さ12pxのマルチカラー積層バー) ＆ 5カテゴリー内訳 */}
+      {/* 🎨 5カテゴリー積載バランスバー ＆ 内訳エリア */}
       <div className="bg-[#27272A]/50 p-3 rounded-xl border border-zinc-700/60 space-y-2.5">
         <div className="flex items-center justify-between text-xs font-bold text-zinc-300">
           <span>🎨 積載バランス</span>
-          <span className="text-[10px] text-zinc-500 font-normal">※タップで該当カテゴリーへ移動</span>
         </div>
 
-        {/* 高さ12px相当（h-3）の細いマルチカラー帯バー */}
-        <div className="w-full bg-zinc-800 rounded-full h-3 overflow-hidden border border-zinc-700 flex shadow-inner">
+        {/* 積載バランスバー (目標バーと高さ h-2.5 / 10px 完全統一) */}
+        <div className="w-full bg-zinc-800 rounded-full h-2.5 overflow-hidden border border-zinc-700 flex shadow-inner">
           {CATEGORIES.map((cat) => {
             const weight = categoryWeights[cat] || 0;
             if (weight === 0 || totalWeight === 0) return null;
@@ -218,7 +209,7 @@ export default function WeightsSummary({ gears, onCategoryClick }: Props) {
               <div
                 key={cat}
                 style={{ width: `${percent}%`, backgroundColor: color }}
-                className="h-3 transition-all duration-300 cursor-pointer hover:opacity-80"
+                className="h-2.5 transition-all duration-300 cursor-pointer hover:opacity-80"
                 onClick={() => onCategoryClick && onCategoryClick(cat)}
                 title={`${cat}: ${formatWeightDisplay(weight)} (${percent.toFixed(1)}%)`}
               />
@@ -231,25 +222,37 @@ export default function WeightsSummary({ gears, onCategoryClick }: Props) {
           )}
         </div>
 
-        {/* 5カテゴリー内訳（タップでスムーズスクロール移動） */}
+        {/* 5カテゴリー重量内訳 (0gカテゴリーはトーンダウン) */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 pt-1">
           {CATEGORIES.map((cat) => {
             const weight = categoryWeights[cat] || 0;
             const color = CATEGORY_COLORS[cat] || '#FF5500';
             const icon = CATEGORY_ICONS[cat] || '📦';
+            const isEmpty = weight === 0;
 
             return (
               <button
                 key={cat}
                 type="button"
                 onClick={() => onCategoryClick && onCategoryClick(cat)}
-                className="bg-[#18181B]/80 hover:bg-[#18181B] p-2 rounded-lg border border-zinc-800 hover:border-zinc-700 transition flex flex-col items-center justify-center text-center cursor-pointer group"
+                className={`p-2 rounded-lg border transition flex flex-col items-center justify-center text-center cursor-pointer group ${
+                  isEmpty
+                    ? 'bg-[#18181B]/40 border-zinc-800/60 opacity-60'
+                    : 'bg-[#18181B]/80 hover:bg-[#18181B] border-zinc-800 hover:border-zinc-700'
+                }`}
               >
-                <div className="flex items-center gap-1 text-[11px] font-bold group-hover:scale-105 transition-transform" style={{ color }}>
+                <div
+                  className="flex items-center gap-1 text-[11px] font-bold group-hover:scale-105 transition-transform"
+                  style={{ color: isEmpty ? '#71717A' : color }}
+                >
                   <span>{icon}</span>
                   <span>{cat}</span>
                 </div>
-                <span className="text-xs font-mono tabular-nums font-extrabold text-zinc-200 mt-0.5">
+                <span
+                  className={`text-xs font-mono tabular-nums font-extrabold mt-0.5 ${
+                    isEmpty ? 'text-zinc-600' : 'text-zinc-200'
+                  }`}
+                >
                   {formatWeightDisplay(weight)}
                 </span>
               </button>
