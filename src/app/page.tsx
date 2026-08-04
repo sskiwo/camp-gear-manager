@@ -221,20 +221,8 @@ export default function Home() {
     const confirmed = window.confirm('当日のパッキング完了チェックをリセットして0%にしますか？');
     if (!confirmed) return;
 
-    // ローカルを即時更新
     setGears((prev) => prev.map((g) => ({ ...g, is_packed: false })));
-
     await supabase.from('gears').update({ is_packed: false }).eq('camp_id', selectedCampId);
-  };
-
-  // パッキング全完了
-  const handleCheckAllPacked = async () => {
-    if (!selectedCampId) return;
-
-    // ローカルを即時更新
-    setGears((prev) => prev.map((g) => ({ ...g, is_packed: true })));
-
-    await supabase.from('gears').update({ is_packed: true }).eq('camp_id', selectedCampId);
   };
 
   const toggleCategoryOpen = (catName: string) => {
@@ -272,7 +260,6 @@ export default function Home() {
     fetchGears();
   };
 
-  // ★ 位置ズレ防止: 楽観的更新 (即座にローカル表示を切り替え、バックグラウンドでDB更新)
   const togglePacked = async (id: string, currentStatus: boolean) => {
     const nextStatus = !currentStatus;
     setGears((prev) =>
@@ -286,7 +273,6 @@ export default function Home() {
     }
   };
 
-  // ★ 位置ズレ防止: 楽観的更新 (即座にローカル表示を切り替え、バックグラウンドでDB更新)
   const toggleSelected = async (id: string, currentStatus: boolean) => {
     const nextStatus = !currentStatus;
     setGears((prev) =>
@@ -336,29 +322,36 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-[#09090B] text-zinc-100 p-4 md:p-8 font-sans">
       <div className="max-w-5xl mx-auto space-y-6">
-        {/* ヘッダー */}
-        <header className="border-b border-zinc-800 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight flex items-center gap-2">
+        {/* ヘッダーエリア */}
+        <header className="border-b border-zinc-800 pb-4 space-y-3">
+          {/* ヘッダー上段: タイトル ＆ 公開ステータス */}
+          <div className="flex items-center justify-between gap-2">
+            <h1 className="text-lg md:text-2xl font-black text-white tracking-tight flex items-center gap-1.5">
               🏕️ <span className="text-[#FF5500]">Camp Gear</span> Manager
             </h1>
-            <p className="text-xs text-zinc-400 mt-0.5">重量シミュレーション＆5カテゴリーパッキング</p>
+
+            {/* 公開ステータスボタン */}
+            <button
+              onClick={handleTogglePublic}
+              className={`px-2.5 py-1 rounded-xl text-xs font-bold transition border cursor-pointer shrink-0 ${
+                currentSelectedCamp?.is_public
+                  ? 'bg-emerald-950/60 border-emerald-700 text-emerald-300 hover:bg-emerald-900'
+                  : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white'
+              }`}
+            >
+              {currentSelectedCamp?.is_public ? '🌐 公開中' : '🔒 非公開'}
+            </button>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <Link
-              href="/community"
-              className="bg-[#27272A] hover:bg-zinc-700 text-zinc-200 border border-zinc-700 px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
-            >
-              🌐 みんなのギアを見る →
-            </Link>
-
-            <div className="flex items-center gap-1 bg-[#18181B] p-1.5 rounded-xl border border-zinc-800">
-              <span className="text-xs font-bold text-[#FF5500] pl-1">⛺</span>
+          {/* ヘッダー下段: キャンプ選択 ＋ 操作ボタン群 (新規 ➔ 編集 ➔ 削除) */}
+          <div className="flex items-center justify-between gap-1.5 bg-[#18181B] p-2 rounded-2xl border border-zinc-800">
+            {/* キャンプ選択 (flex-1で幅最大確保) */}
+            <div className="flex items-center gap-1.5 flex-1 min-w-0">
+              <span className="text-sm font-bold text-[#FF5500] pl-1 shrink-0">⛺</span>
               <select
                 value={selectedCampId}
                 onChange={(e) => setSelectedCampId(e.target.value)}
-                className="bg-[#27272A] text-white text-xs font-bold px-2 py-1.5 rounded-lg border border-zinc-700 focus:outline-none focus:border-[#FF5500] cursor-pointer max-w-[150px] truncate"
+                className="w-full bg-[#27272A] text-white text-xs font-bold px-2.5 py-2 rounded-xl border border-zinc-700 focus:outline-none focus:border-[#FF5500] cursor-pointer truncate"
               >
                 {camps.map((camp) => (
                   <option key={camp.id} value={camp.id}>
@@ -366,37 +359,35 @@ export default function Home() {
                   </option>
                 ))}
               </select>
+            </div>
 
+            {/* 操作ボタン群: 1.新規 ➔ 2.編集 ➔ 3.削除 */}
+            <div className="flex items-center gap-1 shrink-0">
+              {/* ① 新規アイコン */}
               <button
-                onClick={handleTogglePublic}
-                className={`px-2 py-1.5 rounded-lg text-xs font-bold transition border cursor-pointer ${
-                  currentSelectedCamp?.is_public
-                    ? 'bg-emerald-950/60 border-emerald-700 text-emerald-300 hover:bg-emerald-900'
-                    : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white'
-                }`}
+                onClick={() => setIsAddCampOpen(true)}
+                className="w-9 h-9 flex items-center justify-center bg-[#FF5500] hover:bg-[#E04B00] text-white text-base font-black rounded-xl transition shrink-0 cursor-pointer shadow-sm"
+                title="新しいキャンプを追加"
               >
-                {currentSelectedCamp?.is_public ? '🌐 公開中' : '🔒 非公開'}
+                +
               </button>
 
+              {/* ② 編集アイコン */}
               <button
                 onClick={startEditCampTitle}
-                className="p-1.5 bg-[#27272A] hover:bg-zinc-700 text-zinc-300 rounded-lg text-xs transition border border-zinc-700 cursor-pointer"
+                className="w-9 h-9 flex items-center justify-center bg-[#27272A] hover:bg-zinc-700 text-zinc-300 rounded-xl text-xs transition border border-zinc-700 cursor-pointer"
+                title="キャンプ名を編集"
               >
                 ✏️
               </button>
 
+              {/* ③ 削除アイコン */}
               <button
                 onClick={handleDeleteCamp}
-                className="p-1.5 bg-red-950/40 hover:bg-red-900/60 text-red-300 hover:text-white rounded-lg text-xs transition border border-red-800/60 cursor-pointer"
+                className="ml-2 w-9 h-9 flex items-center justify-center bg-red-950/30 hover:bg-red-900/60 text-red-400 hover:text-white rounded-xl text-xs transition border border-red-900/50 cursor-pointer"
+                title="このキャンプを削除"
               >
                 🗑️
-              </button>
-
-              <button
-                onClick={() => setIsAddCampOpen(true)}
-                className="bg-[#FF5500] hover:bg-[#E04B00] text-white px-2 py-1.5 rounded-lg text-xs font-bold transition shrink-0 cursor-pointer"
-              >
-                ＋新規
               </button>
             </div>
           </div>
@@ -445,7 +436,22 @@ export default function Home() {
         )}
 
         <WeightsSummary gears={gears} onCategoryClick={scrollToCategory} />
-        <GearSearch onAddGear={handleAddGear} />
+        
+        {/* 🔍 AI検索エリア ＆ 直下の「みんなのギアから追加する →」ボタン */}
+        <div className="space-y-2">
+          <GearSearch onAddGear={handleAddGear} />
+          
+          {/* ★ 検索窓のすぐ下に「みんなのギア」導線を配置 */}
+          <div className="flex justify-end">
+            <Link
+              href="/community"
+              className="inline-flex items-center gap-1.5 bg-[#18181B] hover:bg-[#27272A] text-zinc-300 hover:text-white border border-zinc-800 hover:border-zinc-700 px-3.5 py-2 rounded-xl text-xs font-bold transition shadow-sm"
+            >
+              🌐 みんなのギアから追加する →
+            </Link>
+          </div>
+        </div>
+
         <GearList
           gears={gears}
           allCampsCount={camps.length}
@@ -459,14 +465,13 @@ export default function Home() {
           onDeleteGear={deleteGear}
           onDeleteAllGears={handleDeleteAllGears}
           onResetAllPacked={handleResetAllPacked}
-          onCheckAllPacked={handleCheckAllPacked}
           onReorderGears={handleReorderGears}
         />
         <CsvManager gears={gears} selectedCampId={selectedCampId} onGearsUpdated={fetchGears} />
 
         <footer className="pt-8 pb-10 text-center border-t border-zinc-800 space-y-3">
           <Link href="/split-bill" className="inline-flex items-center justify-center gap-2 bg-[#FF5500] text-white px-6 py-3.5 rounded-2xl text-xs font-black">
-            💰 スマート割り勘計算機ページへ進む →
+            💰 スマート割り勘計算ページへ進む →
           </Link>
           <p className="text-[11px] text-zinc-500 font-medium">🏕️ Camp Gear Manager & Packing Tool</p>
         </footer>
