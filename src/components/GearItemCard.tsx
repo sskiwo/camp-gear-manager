@@ -36,7 +36,7 @@ type Props = {
   onDeleteGear: (id: string) => void;
 };
 
-// 燃料・電源タイプの選択肢候補（「その他」を追加）
+// 燃料・電源タイプの選択肢候補
 const FUEL_OPTIONS = [
   '不要/なし',
   'USB-C充電',
@@ -108,30 +108,46 @@ export default function GearItemCard({
     >
       {/* 上段: 基本操作 ＆ タグ一覧 */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-        {/* 左側: ドラッグ & 当日完了ボタン & ギア名・各種タグ */}
-        <div className="flex items-center gap-2 min-w-0 flex-1">
+        {/* 左側: ドラッグ & 操作ボタン(持参➔完了) & ギア名・各種タグ */}
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 min-w-0 flex-1">
           <span className="text-zinc-600 hover:text-zinc-400 cursor-grab active:cursor-grabbing text-xs select-none shrink-0">
             ⋮⋮
           </span>
 
-          {/* 当日完了ボタン */}
-          {isSelected ? (
+          {/* 操作ボタン群: ①持参 ➔ ②完了 (横並び) */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            {/* ①持参選定ボタン */}
             <button
-              onClick={() => onTogglePacked(item.id, item.is_packed)}
-              className={`px-2 py-1 rounded-lg text-[11px] font-bold transition flex items-center gap-1 cursor-pointer shrink-0 border ${
-                item.is_packed
-                  ? 'bg-emerald-950/80 border-emerald-700 text-emerald-300'
-                  : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white'
+              onClick={() => onToggleSelected(item.id, isSelected)}
+              className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer border shrink-0 ${
+                isSelected
+                  ? 'bg-[#FF5500]/20 border-[#FF5500]/60 text-[#FF5500] hover:bg-[#FF5500]/30'
+                  : 'bg-zinc-800/80 border-zinc-700 text-zinc-400 hover:text-zinc-200'
               }`}
-              title="当日のパッキング完了チェック"
+              title="今回のキャンプに持っていくか選定"
             >
-              {item.is_packed ? '✅ 完了' : '⬜ 未'}
+              {isSelected ? '🎒 持参' : '💤 お休み'}
             </button>
-          ) : (
-            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-500 border border-zinc-700/60 shrink-0">
-              💤 お休み
-            </span>
-          )}
+
+            {/* ②当日完了チェックボタン */}
+            {isSelected ? (
+              <button
+                onClick={() => onTogglePacked(item.id, item.is_packed)}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer border shrink-0 ${
+                  item.is_packed
+                    ? 'bg-emerald-950/80 border-emerald-700 text-emerald-300'
+                    : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white'
+                }`}
+                title="当日のパッキング完了チェック"
+              >
+                {item.is_packed ? '✅ 完了' : '⬜ 未'}
+              </button>
+            ) : (
+              <span className="text-[10px] font-bold px-2 py-1 rounded bg-zinc-800/60 text-zinc-500 border border-zinc-700/40 shrink-0 select-none">
+                -
+              </span>
+            )}
+          </div>
 
           {/* ギア詳細名 ＆ タグ */}
           <div className="min-w-0 flex-1">
@@ -182,20 +198,8 @@ export default function GearItemCard({
           </div>
         </div>
 
-        {/* 右側: 持ち出しスイッチ & 個数 & 詳細・編集・削除 */}
+        {/* 右側: 個数 & 詳細・編集・削除 */}
         <div className="flex items-center justify-end gap-1.5 shrink-0 border-t sm:border-t-0 border-zinc-800/80 pt-2 sm:pt-0">
-          <button
-            onClick={() => onToggleSelected(item.id, isSelected)}
-            className={`text-[11px] font-bold px-2 py-1 rounded-lg border transition cursor-pointer ${
-              isSelected
-                ? 'bg-[#FF5500]/20 border-[#FF5500]/60 text-[#FF5500] hover:bg-[#FF5500]/30'
-                : 'bg-zinc-800/80 border-zinc-700 text-zinc-400 hover:text-zinc-200'
-            }`}
-            title="今回のキャンプに持っていくか選定"
-          >
-            {isSelected ? '🎒 持参' : '💤 お休み'}
-          </button>
-
           {/* 個数変更ボタン */}
           <div className="flex items-center bg-[#18181B] rounded-lg border border-zinc-700/80 p-0.5">
             <button
@@ -301,7 +305,7 @@ export default function GearItemCard({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {/* 購入時期カレンダー (年月) */}
+            {/* 購入時期カレンダー */}
             <div>
               <label className="text-[10px] font-bold text-emerald-400 block mb-0.5">📅 購入時期</label>
               <input
@@ -312,7 +316,7 @@ export default function GearItemCard({
               />
             </div>
 
-            {/* 燃料・電源ドロップダウン（「その他」追加済み） */}
+            {/* 燃料・電源ドロップダウン */}
             <div>
               <label className="text-[10px] font-bold text-cyan-400 block mb-0.5">🔋 燃料・電源タイプ</label>
               <select

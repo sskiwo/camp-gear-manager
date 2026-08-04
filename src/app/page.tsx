@@ -73,11 +73,10 @@ export default function Home() {
     }
   };
 
-  // 2. 選択中キャンプのギア & 全ギア（採用率計算用）の取得
+  // 2. 選択中キャンプのギア & 全ギアの取得
   const fetchGears = async () => {
     if (!selectedCampId) return;
 
-    // 選択中のキャンプのギア
     const { data: currentGears, error } = await supabase
       .from('gears')
       .select('*')
@@ -90,7 +89,6 @@ export default function Home() {
     }
     if (currentGears) setGears(currentGears);
 
-    // 全ギアデータ（採用率計算用）
     const { data: allGears } = await supabase.from('gears').select('*');
     if (allGears) setAllGearsInAccount(allGears);
   };
@@ -223,15 +221,20 @@ export default function Home() {
     const confirmed = window.confirm('当日のパッキング完了チェックをリセットして0%にしますか？');
     if (!confirmed) return;
 
+    // ローカルを即時更新
+    setGears((prev) => prev.map((g) => ({ ...g, is_packed: false })));
+
     await supabase.from('gears').update({ is_packed: false }).eq('camp_id', selectedCampId);
-    fetchGears();
   };
 
   // パッキング全完了
   const handleCheckAllPacked = async () => {
     if (!selectedCampId) return;
+
+    // ローカルを即時更新
+    setGears((prev) => prev.map((g) => ({ ...g, is_packed: true })));
+
     await supabase.from('gears').update({ is_packed: true }).eq('camp_id', selectedCampId);
-    fetchGears();
   };
 
   const toggleCategoryOpen = (catName: string) => {
@@ -269,27 +272,57 @@ export default function Home() {
     fetchGears();
   };
 
+  // ★ 位置ズレ防止: 楽観的更新 (即座にローカル表示を切り替え、バックグラウンドでDB更新)
   const togglePacked = async (id: string, currentStatus: boolean) => {
-    await supabase.from('gears').update({ is_packed: !currentStatus }).eq('id', id);
-    fetchGears();
+    const nextStatus = !currentStatus;
+    setGears((prev) =>
+      prev.map((g) => (g.id === id ? { ...g, is_packed: nextStatus } : g))
+    );
+
+    const { error } = await supabase.from('gears').update({ is_packed: nextStatus }).eq('id', id);
+    if (error) {
+      console.error('Update is_packed Error:', error);
+      fetchGears();
+    }
   };
 
+  // ★ 位置ズレ防止: 楽観的更新 (即座にローカル表示を切り替え、バックグラウンドでDB更新)
   const toggleSelected = async (id: string, currentStatus: boolean) => {
-    await supabase.from('gears').update({ is_selected: !currentStatus }).eq('id', id);
-    fetchGears();
+    const nextStatus = !currentStatus;
+    setGears((prev) =>
+      prev.map((g) => (g.id === id ? { ...g, is_selected: nextStatus } : g))
+    );
+    setAllGearsInAccount((prev) =>
+      prev.map((g) => (g.id === id ? { ...g, is_selected: nextStatus } : g))
+    );
+
+    const { error } = await supabase.from('gears').update({ is_selected: nextStatus }).eq('id', id);
+    if (error) {
+      console.error('Update is_selected Error:', error);
+      fetchGears();
+    }
   };
 
   const updateQuantity = async (id: string, currentQty: number, delta: number) => {
-    await supabase.from('gears').update({ quantity: Math.max(1, currentQty + delta) }).eq('id', id);
-    fetchGears();
+    const newQty = Math.max(1, currentQty + delta);
+    setGears((prev) =>
+      prev.map((g) => (g.id === id ? { ...g, quantity: newQty } : g))
+    );
+
+    await supabase.from('gears').update({ quantity: newQty }).eq('id', id);
   };
 
   const updateGear = async (id: string, updateData: any) => {
+    setGears((prev) =>
+      prev.map((g) => (g.id === id ? { ...g, ...updateData } : g))
+    );
+
     await supabase.from('gears').update(updateData).eq('id', id);
     fetchGears();
   };
 
   const deleteGear = async (id: string) => {
+    setGears((prev) => prev.filter((g) => g.id !== id));
     await supabase.from('gears').delete().eq('id', id);
     fetchGears();
   };
