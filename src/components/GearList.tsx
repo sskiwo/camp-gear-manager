@@ -69,54 +69,12 @@ export default function GearList({
   onDeleteGear,
   onDeleteAllGears,
   onResetAllPacked,
-  onReorderGears,
 }: Props) {
-  const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
-  const [sortOrders, setSortOrders] = useState<Record<string, 'default' | 'desc' | 'asc'>>({});
+  // ★ ドロップダウンでの並び替えステート (default:更新順, weight_desc:重い順, weight_asc:軽い順, price_desc:高値順, name_asc:名前順)
+  const [sortOrders, setSortOrders] = useState<Record<string, string>>({});
   const [filterMode, setFilterMode] = useState<'all' | 'unpacked'>('all');
 
   const [screenMode, setScreenMode] = useState<'packing' | 'edit'>('packing');
-
-  const toggleSortOrder = (catName: string) => {
-    setSortOrders((prev) => {
-      const current = prev[catName] || 'default';
-      const next = current === 'default' ? 'desc' : current === 'desc' ? 'asc' : 'default';
-      return { ...prev, [catName]: next };
-    });
-  };
-
-  // ★ ドラッグ開始処理 (dataTransferへIDをセットし確実に移動イベントを起こす)
-  const handleDragStart = (e: React.DragEvent, id: string) => {
-    setDraggedItemId(id);
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', id);
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-  };
-
-  const handleDrop = (targetId: string, categoryGears: GearItem[]) => {
-    if (!draggedItemId || draggedItemId === targetId) return;
-
-    const dragIndex = categoryGears.findIndex((g) => g.id === draggedItemId);
-    const dropIndex = categoryGears.findIndex((g) => g.id === targetId);
-
-    if (dragIndex === -1 || dropIndex === -1) return;
-
-    const newCatGears = [...categoryGears];
-    const [removed] = newCatGears.splice(dragIndex, 1);
-    newCatGears.splice(dropIndex, 0, removed);
-
-    const otherGears = gears.filter((g) => !categoryGears.some((cg) => cg.id === g.id));
-    const reorderedAll = [...otherGears, ...newCatGears];
-
-    if (onReorderGears) {
-      onReorderGears(reorderedAll);
-    }
-    setDraggedItemId(null);
-  };
 
   const selectedGears = gears.filter((g) => g.is_selected !== false);
   const packedCount = selectedGears.filter((g) => g.is_packed).length;
@@ -244,14 +202,23 @@ export default function GearList({
           let categoryGears = filteredGears.filter((g) => matchesCategory(g.category, catName));
           if (categoryGears.length === 0) return null;
 
+          // ★ 5種類のソート処理 (更新順 / 重い順 / 軽い順 / 高値順 / 名前順)
           const sortOrder = sortOrders[catName] || 'default';
-          if (sortOrder === 'desc') {
+          if (sortOrder === 'weight_desc') {
             categoryGears = [...categoryGears].sort(
               (a, b) => (b.weight || 0) * (b.quantity || 1) - (a.weight || 0) * (a.quantity || 1)
             );
-          } else if (sortOrder === 'asc') {
+          } else if (sortOrder === 'weight_asc') {
             categoryGears = [...categoryGears].sort(
               (a, b) => (a.weight || 0) * (a.quantity || 1) - (b.weight || 0) * (b.quantity || 1)
+            );
+          } else if (sortOrder === 'price_desc') {
+            categoryGears = [...categoryGears].sort(
+              (a, b) => (b.price || 0) * (b.quantity || 1) - (a.price || 0) * (a.quantity || 1)
+            );
+          } else if (sortOrder === 'name_asc') {
+            categoryGears = [...categoryGears].sort(
+              (a, b) => (a.name || '').localeCompare(b.name || '', 'ja')
             );
           }
 
@@ -292,13 +259,20 @@ export default function GearList({
                 </button>
 
                 <div className="flex items-center gap-2 shrink-0">
-                  {/* ★ 天秤アイコン(⚖️)を完全除去したソートボタン */}
-                  <button
-                    onClick={() => toggleSortOrder(catName)}
-                    className="text-[10px] font-bold px-2 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-300 hover:text-white transition cursor-pointer"
+                  {/* ★ ソート選択ドロップダウン (更新順, 重い順, 軽い順, 高値順, 名前順) */}
+                  <select
+                    value={sortOrder}
+                    onChange={(e) =>
+                      setSortOrders((prev) => ({ ...prev, [catName]: e.target.value }))
+                    }
+                    className="bg-[#27272A] text-zinc-200 text-[10px] font-bold px-2 py-1 rounded-lg border border-zinc-700 focus:outline-none focus:border-[#FF5500] cursor-pointer"
                   >
-                    {sortOrder === 'default' ? '登録順' : sortOrder === 'desc' ? '重い順' : '軽い順'}
-                  </button>
+                    <option value="default">更新順</option>
+                    <option value="weight_desc">重い順</option>
+                    <option value="weight_asc">軽い順</option>
+                    <option value="price_desc">高値順</option>
+                    <option value="name_asc">名前順</option>
+                  </select>
 
                   {screenMode === 'edit' && (
                     <button
@@ -321,10 +295,6 @@ export default function GearList({
                       catColor={catColor}
                       adoptionRate={getAdoptionRate(item.name)}
                       mode={screenMode}
-                      isDragging={draggedItemId === item.id}
-                      onDragStart={handleDragStart}
-                      onDragOver={handleDragOver}
-                      onDrop={(targetId) => handleDrop(targetId, categoryGears)}
                       onTogglePacked={onTogglePacked}
                       onToggleSelected={onToggleSelected}
                       onUpdateQuantity={onUpdateQuantity}

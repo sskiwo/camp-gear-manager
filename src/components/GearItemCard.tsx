@@ -26,10 +26,6 @@ type Props = {
   catColor: string;
   adoptionRate?: string;
   mode?: 'packing' | 'edit';
-  isDragging?: boolean;
-  onDragStart?: (e: React.DragEvent, id: string) => void;
-  onDragOver?: (e: React.DragEvent) => void;
-  onDrop?: (targetId: string) => void;
   onTogglePacked: (id: string, currentStatus: boolean) => void;
   onToggleSelected: (id: string, currentStatus: boolean) => void;
   onUpdateQuantity: (id: string, currentQty: number, delta: number) => void;
@@ -108,10 +104,6 @@ export default function GearItemCard({
   catColor,
   adoptionRate,
   mode = 'packing',
-  isDragging,
-  onDragStart,
-  onDragOver,
-  onDrop,
   onTogglePacked,
   onToggleSelected,
   onUpdateQuantity,
@@ -155,8 +147,6 @@ export default function GearItemCard({
   if (mode === 'packing') {
     return (
       <div
-        onDragOver={onDragOver}
-        onDrop={() => onDrop && onDrop(item.id)}
         className={`h-[48px] px-2 rounded-xl border transition-all duration-150 flex items-center justify-between gap-2 select-text ${
           !isSelected
             ? 'bg-[#18181B]/40 border-zinc-800/80 opacity-60'
@@ -228,35 +218,20 @@ export default function GearItemCard({
     );
   }
 
-  // ✏️ 【2】 ギア編集モード UI (2行構造)
+  // ✏️ 【2】 ギア編集モード UI (グリップ削除済み・スリム2行)
   return (
     <div
-      onDragOver={onDragOver}
-      onDrop={() => onDrop && onDrop(item.id)}
       className={`py-2 px-2.5 border-b border-zinc-800/80 transition-colors select-text hover:bg-[#1F1F23]/60 space-y-1.5 ${
-        isDragging ? 'opacity-30 bg-amber-950/20' : ''
-      } ${!isSelected ? 'opacity-50' : ''}`}
+        !isSelected ? 'opacity-50' : ''
+      }`}
     >
-      {/* ── 上段：識別ゾーン（ドラッグハンドル ➔ 持参アイコン ➔ ブランド ＋ 商品名 ➔ 最右端: 属性バッジ） ── */}
+      {/* ── 上段：識別ゾーン（持参アイコン ➔ ブランド ＋ 商品名 ➔ 最右端: 属性バッジ） ── */}
       <div className="flex items-center justify-between gap-2 min-w-0">
-        <div className="flex items-center gap-2 min-w-0 flex-1">
-          {/* ★ 最左端: ドラッグハンドル [⋮⋮] (button要素化 ＆ onDragStart連携で確実に動作) */}
-          <button
-            type="button"
-            draggable={true}
-            onDragStart={(e) => {
-              if (onDragStart) onDragStart(e, item.id);
-            }}
-            className="text-zinc-400 hover:text-white cursor-grab active:cursor-grabbing text-sm font-black select-none shrink-0 px-1 py-0.5 border-0 bg-transparent focus:outline-none touch-none"
-            title="ドラッグして上下に並び替え"
-          >
-            ⋮⋮
-          </button>
-
+        <div className="flex items-center gap-1.5 min-w-0 flex-1">
           {/* 持参・お休みトグルアイコン [🎒/💤] */}
           <button
             onClick={() => onToggleSelected(item.id, isSelected)}
-            className={`w-6 h-6 rounded-md text-xs transition flex items-center justify-center border shrink-0 cursor-pointer active:scale-95 ${
+            className={`w-7 h-7 rounded-lg text-xs transition flex items-center justify-center border shrink-0 cursor-pointer active:scale-95 ${
               isSelected
                 ? 'bg-[#FF5500]/20 border-[#FF5500]/60 text-[#FF5500]'
                 : 'bg-zinc-800/80 border-zinc-700 text-zinc-400'
@@ -295,7 +270,7 @@ export default function GearItemCard({
       {/* ── 下段：数値・操作ゾーン ── */}
       <div className="flex items-center justify-between gap-2 pt-0.5">
         {/* 左側: 重量 / 金額 */}
-        <div className="text-[11px] font-mono tabular-nums text-zinc-400 flex items-center gap-1.5 shrink-0">
+        <div className="text-[11px] font-mono tabular-nums text-zinc-400 flex items-center gap-1.5 shrink-0 pl-1">
           <span>{formatWeight(totalWeight)}</span>
           {totalPrice > 0 && (
             <span className="text-zinc-500">/ ¥{totalPrice.toLocaleString()}</span>
