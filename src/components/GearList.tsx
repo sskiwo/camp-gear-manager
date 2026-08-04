@@ -76,6 +76,9 @@ export default function GearList({
   const [sortOrders, setSortOrders] = useState<Record<string, 'default' | 'desc' | 'asc'>>({});
   const [filterMode, setFilterMode] = useState<'all' | 'unpacked'>('all');
 
+  // 🎛️ 表示モード切り替え ('detailed' | 'compact')
+  const [viewMode, setViewMode] = useState<'detailed' | 'compact'>('detailed');
+
   const toggleSortOrder = (catName: string) => {
     setSortOrders((prev) => {
       const current = prev[catName] || 'default';
@@ -137,15 +140,13 @@ export default function GearList({
       ? gears.filter((g) => g.is_selected !== false && !g.is_packed)
       : gears;
 
-  // ⛺ 採用数 (持参ONの数 / 全キャンプ数) を計算する関数
+  // ⛺ 採用数 (持参ONの数 / 全キャンプ数) を計算
   const getAdoptionRate = (gearName: string) => {
     if (!allGearsInUserAccount || allGearsInUserAccount.length === 0) {
       return `1/${allCampsCount}`;
     }
 
     const cleanName = (gearName || '').trim();
-
-    // 全ギアの中から同名かつ持参ON(is_selected !== false)のものをカウント
     const selectedCount = allGearsInUserAccount.filter(
       (g) => (g.name || '').trim() === cleanName && g.is_selected !== false
     ).length;
@@ -164,6 +165,32 @@ export default function GearList({
 
         {gears.length > 0 && (
           <div className="flex flex-wrap items-center gap-2">
+            {/* 🎛️ 表示モード切り替えスイッチ (提案1) */}
+            <div className="flex items-center bg-[#27272A] p-0.5 rounded-xl border border-zinc-700">
+              <button
+                onClick={() => setViewMode('detailed')}
+                className={`text-xs font-bold px-2.5 py-1 rounded-lg transition cursor-pointer ${
+                  viewMode === 'detailed'
+                    ? 'bg-[#FF5500] text-white shadow-sm'
+                    : 'text-zinc-400 hover:text-white'
+                }`}
+                title="詳細カード表示"
+              >
+                🎴 詳細
+              </button>
+              <button
+                onClick={() => setViewMode('compact')}
+                className={`text-xs font-bold px-2.5 py-1 rounded-lg transition cursor-pointer ${
+                  viewMode === 'compact'
+                    ? 'bg-[#FF5500] text-white shadow-sm'
+                    : 'text-zinc-400 hover:text-white'
+                }`}
+                title="1行コンパクト表示"
+              >
+                📄 コンパクト
+              </button>
+            </div>
+
             <button
               onClick={handleToggleAll}
               className="text-xs font-bold px-2.5 py-1.5 rounded-xl bg-[#27272A] border border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-700 transition cursor-pointer"
@@ -279,17 +306,25 @@ export default function GearList({
               : '🍱';
 
           return (
-            <div key={catName} id={`category-${catName}`} className="border rounded-xl overflow-hidden shadow-md scroll-mt-6" style={{ borderColor: `${catColor}50` }}>
+            <div
+              key={catName}
+              id={`category-${catName}`}
+              className="border rounded-xl overflow-hidden shadow-md scroll-mt-6"
+              style={{ borderColor: `${catColor}50` }}
+            >
+              {/* 📌 カテゴリーヘッダーの Sticky 固定化 (提案2) */}
               <div
-                style={{ backgroundColor: `${catColor}15`, borderColor: `${catColor}40` }}
-                className="w-full flex items-center justify-between px-4 py-2.5 border-b"
+                style={{ backgroundColor: '#18181B', borderColor: `${catColor}40` }}
+                className="sticky top-0 z-10 w-full flex items-center justify-between px-4 py-2.5 border-b backdrop-blur-md"
               >
                 <button
                   onClick={() => onToggleCategoryOpen(catName)}
                   className="flex items-center gap-2 text-left cursor-pointer flex-1 min-w-0"
                 >
                   <span className="text-base">{catIcon}</span>
-                  <span style={{ color: catColor }} className="font-extrabold text-sm tracking-wide truncate">{catName}</span>
+                  <span style={{ color: catColor }} className="font-extrabold text-sm tracking-wide truncate">
+                    {catName}
+                  </span>
                   <span className="text-xs text-zinc-400 font-normal shrink-0">({categoryGears.length}件)</span>
                 </button>
 
@@ -319,6 +354,7 @@ export default function GearList({
                       item={item}
                       catColor={catColor}
                       adoptionRate={getAdoptionRate(item.name)}
+                      viewMode={viewMode}
                       isDragging={draggedItemId === item.id}
                       onDragStart={handleDragStart}
                       onDragOver={handleDragOver}
