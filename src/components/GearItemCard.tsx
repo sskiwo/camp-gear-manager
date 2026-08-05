@@ -143,7 +143,7 @@ export default function GearItemCard({
     setIsEditing(false);
   };
 
-  // 🎒 【1】 パッキングモード UI (打ち消し線を削除)
+  // 🎒 【1】 パッキングモード UI
   if (mode === 'packing') {
     return (
       <div className="space-y-1">
@@ -189,7 +189,7 @@ export default function GearItemCard({
               </span>
             )}
 
-            {/* 商品名 (打ち消し線を廃止) */}
+            {/* 商品名 */}
             <button
               type="button"
               onClick={() => setIsEditing(!isEditing)}
@@ -228,7 +228,7 @@ export default function GearItemCard({
     );
   }
 
-  // ✏️ 【2】 ギア編集モード UI (打ち消し線を削除)
+  // ✏️ 【2】 ギア編集モード UI
   return (
     <div
       className={`py-2 px-2.5 border-b border-zinc-800/80 transition-colors select-text hover:bg-[#1F1F23]/60 space-y-1.5 ${
@@ -330,12 +330,13 @@ export default function GearItemCard({
     </div>
   );
 
+  // 編集フォーム（各項目の絵文字アイコンを削除）
   function renderEditForm() {
     return (
       <div className="mt-2 pt-2 border-t border-zinc-800 space-y-2.5 bg-[#18181B] p-3 rounded-xl animate-fade-in text-left">
         <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
           <div>
-            <label className="text-[10px] font-bold text-[#FF5500] block mb-0.5">📂 カテゴリー</label>
+            <label className="text-[10px] font-bold text-zinc-400 block mb-0.5">カテゴリー</label>
             <select
               value={editCategory}
               onChange={(e) => setEditCategory(e.target.value)}
@@ -393,7 +394,7 @@ export default function GearItemCard({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <div>
-            <label className="text-[10px] font-bold text-emerald-400 block mb-0.5">📅 購入時期</label>
+            <label className="text-[10px] font-bold text-zinc-400 block mb-0.5">購入時期</label>
             <input
               type="month"
               value={editPurchaseDate}
@@ -402,7 +403,7 @@ export default function GearItemCard({
             />
           </div>
           <div>
-            <label className="text-[10px] font-bold text-cyan-400 block mb-0.5">🔋 燃料・電源タイプ</label>
+            <label className="text-[10px] font-bold text-zinc-400 block mb-0.5">燃料・電源タイプ</label>
             <select
               value={editFuelType}
               onChange={(e) => setEditFuelType(e.target.value)}
@@ -418,7 +419,7 @@ export default function GearItemCard({
         </div>
 
         <div>
-          <label className="text-[10px] font-bold text-zinc-400 block mb-0.5">📝 メモ</label>
+          <label className="text-[10px] font-bold text-zinc-400 block mb-0.5">メモ</label>
           <input
             type="text"
             placeholder="例: リビング棚保管、コンテナA"

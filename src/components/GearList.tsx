@@ -104,10 +104,12 @@ export default function GearList({
 
   return (
     <section className="bg-[#18181B] p-4 md:p-6 rounded-2xl border border-zinc-800 space-y-4 shadow-xl">
-      {/* リストヘッダー */}
+      {/* リストヘッダー：編集モード時は「ギア選定 (11 / 25点)」表記に変更 */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-3">
         <h2 className="text-lg font-extrabold text-white flex items-center gap-1.5">
-          {screenMode === 'packing' ? '🎒 パッキングリスト' : '📋 持参するギアの選択'}
+          {screenMode === 'packing'
+            ? '🎒 パッキングリスト'
+            : `ギア選定 (${totalCount} / ${gears.length}点)`}
         </h2>
 
         {/* モード切替トグル */}
@@ -135,7 +137,7 @@ export default function GearList({
         </div>
       </div>
 
-      {/* パッキング進捗カード: アイコン削除・白文字化 */}
+      {/* パッキング進捗カード */}
       {screenMode === 'packing' && totalCount > 0 && (
         <div className="bg-[#27272A]/80 p-3.5 rounded-2xl border border-zinc-700/70 space-y-2 shadow-inner">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -149,7 +151,6 @@ export default function GearList({
             </div>
 
             <div className="flex items-center gap-1.5">
-              {/* アイコン削除「未チェックのみ」 */}
               <button
                 onClick={() => setFilterMode(filterMode === 'all' ? 'unpacked' : 'all')}
                 className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border transition cursor-pointer ${
@@ -161,13 +162,14 @@ export default function GearList({
                 {filterMode === 'unpacked' ? '全て表示' : '未チェックのみ'}
               </button>
 
+              {/* リセットボタン: 🔄 アイコン削除 & 白文字化 */}
               {onResetAllPacked && (
                 <button
                   onClick={onResetAllPacked}
-                  className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-zinc-800 border border-[#EF4444]/40 text-[#EF4444] hover:bg-[#EF4444]/10 hover:text-white transition cursor-pointer"
+                  className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-zinc-800 border border-[#EF4444]/60 text-white hover:bg-[#EF4444]/20 transition cursor-pointer"
                   title="当日のパッキング完了チェックをリセットします"
                 >
-                  🔄 リセット
+                  リセット
                 </button>
               )}
             </div>

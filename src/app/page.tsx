@@ -568,14 +568,14 @@ export default function Home() {
 
         <WeightsSummary gears={gears} onCategoryClick={scrollToCategory} />
         
-        {/* AI検索エリア ＆ ★ アイコン整理後の「みんなのギアから参照して追加する ➔」 */}
+        {/* ★ 白文字化した「みんなのギアから参照して追加する ➔」ボタン */}
         <div className="space-y-2">
           <GearSearch onAddGear={handleAddGear} />
           
           <div className="flex justify-end">
             <Link
               href="/community"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#09090B] hover:bg-[#FF5500]/10 text-[#FF5500] border border-[#FF5500] px-4 py-2.5 rounded-xl text-xs font-black transition shadow-sm group cursor-pointer"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#09090B] hover:bg-[#FF5500]/10 text-white border border-[#FF5500] px-4 py-2.5 rounded-xl text-xs font-black transition shadow-sm group cursor-pointer"
             >
               <span>みんなのギアから参照して追加する</span>
               <span className="group-hover:translate-x-1 transition-transform">➔</span>
