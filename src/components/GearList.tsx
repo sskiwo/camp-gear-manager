@@ -49,7 +49,6 @@ const CATEGORY_COLORS = {
   消耗品: '#00E676',
 };
 
-// ★ カテゴリー正規化関数（サマリー側と完全統一）
 const normalizeCategory = (gearCategory?: string, isConsumable?: boolean): 'ベース' | '調理' | '衣類' | 'その他' | '消耗品' => {
   if (isConsumable) return '消耗品';
   if (!gearCategory) return 'ベース';
@@ -84,7 +83,6 @@ export default function GearList({
   const selectedGears = gears.filter((g) => g.is_selected !== false);
   const packedCount = selectedGears.filter((g) => g.is_packed).length;
   const totalCount = selectedGears.length;
-  const remainingCount = totalCount - packedCount;
 
   const filteredGears =
     filterMode === 'unpacked'
@@ -106,24 +104,10 @@ export default function GearList({
 
   return (
     <section className="bg-[#18181B] p-4 md:p-6 rounded-2xl border border-zinc-800 space-y-4 shadow-xl">
-      {/* リストヘッダー */}
+      {/* リストヘッダー：タイトルのみのシンプルな表記 */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-3">
         <h2 className="text-lg font-extrabold text-white flex items-center gap-1.5">
-          {screenMode === 'packing' ? (
-            <>
-              🎒 パッキングリスト{' '}
-              <span className="text-zinc-400 font-normal text-sm font-mono">
-                (今回の荷物 {totalCount}点 / マイギア {gears.length}点)
-              </span>
-            </>
-          ) : (
-            <>
-              📋 持参するギアの選択{' '}
-              <span className="text-zinc-400 font-normal text-sm font-mono">
-                ({totalCount} / {gears.length}点 選択中)
-              </span>
-            </>
-          )}
+          {screenMode === 'packing' ? '🎒 パッキングリスト' : '📋 持参するギアの選択'}
         </h2>
 
         {/* モード切替スイッチ */}
@@ -151,19 +135,16 @@ export default function GearList({
         </div>
       </div>
 
-      {/* パッキング進捗カード */}
+      {/* パッキング進捗カード： 🎒 パッキング済み: X / Y 点 */}
       {screenMode === 'packing' && totalCount > 0 && (
         <div className="bg-[#27272A]/80 p-3.5 rounded-2xl border border-zinc-700/70 space-y-2 shadow-inner">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <span className="text-sm font-black text-white flex items-center gap-1.5">
-                🎒 準備完了:
+                🎒 パッキング済み:
               </span>
               <span className="text-sm font-black text-[#10B981] font-mono">
                 {packedCount} / {totalCount} 点
-              </span>
-              <span className="text-xs font-bold text-amber-400 font-mono">
-                (あと {remainingCount} 点)
               </span>
             </div>
 
