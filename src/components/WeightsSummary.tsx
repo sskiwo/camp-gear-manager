@@ -98,14 +98,11 @@ export default function WeightsSummary({ gears, onCategoryClick }: Props) {
 
   return (
     <section className="bg-[#18181B] border border-zinc-800 p-4 md:p-5 rounded-2xl shadow-xl space-y-3">
-      {/* 📊 タイトル ＆ 持参件数 */}
-      <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
+      {/* 📊 タイトル */}
+      <div className="border-b border-zinc-800 pb-2">
         <h2 className="text-sm font-extrabold text-white flex items-center gap-1.5">
           📊 パッキングサマリー
         </h2>
-        <span className="text-[11px] font-bold text-zinc-400 font-mono tabular-nums">
-          (持参対象: {selectedGears.length} / 全{gears.length}点)
-        </span>
       </div>
 
       {/* 🎯 目標重量 ＆ プログレスバーエリア */}
@@ -142,13 +139,9 @@ export default function WeightsSummary({ gears, onCategoryClick }: Props) {
             )}
           </div>
 
-          {/* シンプルな残り重量表記（％表示排除） */}
+          {/* ★ 残り重量表記（白文字化） */}
           {targetWeightGrams > 0 && (
-            <span
-              className={`text-xs font-bold font-mono tabular-nums shrink-0 ${
-                isOverTarget ? 'text-red-400 font-black animate-pulse' : 'text-[#FF5500]'
-              }`}
-            >
+            <span className="text-xs font-bold font-mono tabular-nums shrink-0 text-white">
               {isOverTarget
                 ? `⚠️ ${(diffGrams / 1000).toFixed(2)}kg オーバー`
                 : `残り ${(diffGrams / 1000).toFixed(2)}kg`}
@@ -156,7 +149,7 @@ export default function WeightsSummary({ gears, onCategoryClick }: Props) {
           )}
         </div>
 
-        {/* 目標プログレスバー (高さ: h-2.5 / 10px に設定) */}
+        {/* 目標プログレスバー */}
         <div className="w-full bg-zinc-800 rounded-full h-2.5 overflow-hidden border border-zinc-700">
           <div
             className={`h-2.5 rounded-full transition-all duration-300 ${
@@ -167,37 +160,37 @@ export default function WeightsSummary({ gears, onCategoryClick }: Props) {
         </div>
       </div>
 
-      {/* 🚀 主要数値の横1行集約 (行き / 帰り / 合計金額) */}
-      <div className="bg-[#27272A]/50 p-2.5 rounded-xl border border-zinc-700/60 flex flex-wrap items-center justify-between gap-2 text-xs font-bold divide-y sm:divide-y-0 sm:divide-x divide-zinc-700/60">
-        <div className="flex items-center gap-1.5 flex-1 min-w-[110px] justify-center pt-1 sm:pt-0">
-          <span className="text-zinc-400">🚀 行き:</span>
-          <span className="font-mono tabular-nums text-sm font-black text-white">
-            {(totalWeight / 1000).toFixed(2)} kg
+      {/* 🚀 主要数値（行き / 帰り / 合計） */}
+      <div className="bg-[#27272A]/50 p-2.5 rounded-xl border border-zinc-700/60 grid grid-cols-3 gap-1 text-[11px] sm:text-xs font-bold text-center">
+        <div className="flex items-center justify-center gap-1 truncate">
+          <span className="text-zinc-400 shrink-0">🚀 行き:</span>
+          <span className="font-mono tabular-nums text-white font-bold truncate">
+            {(totalWeight / 1000).toFixed(2)}kg
           </span>
         </div>
 
-        <div className="flex items-center gap-1.5 flex-1 min-w-[110px] justify-center pt-1 sm:pt-0">
-          <span className="text-zinc-400">🏠 帰り:</span>
-          <span className="font-mono tabular-nums text-sm font-black text-[#FF5500]">
-            {(baseWeight / 1000).toFixed(2)} kg
+        <div className="flex items-center justify-center gap-1 truncate border-x border-zinc-700/60 px-0.5">
+          <span className="text-zinc-400 shrink-0">🏠 帰り:</span>
+          <span className="font-mono tabular-nums text-white font-bold truncate">
+            {(baseWeight / 1000).toFixed(2)}kg
           </span>
         </div>
 
-        <div className="flex items-center gap-1.5 flex-1 min-w-[130px] justify-center pt-1 sm:pt-0">
-          <span className="text-zinc-400">💰 合計:</span>
-          <span className="font-mono tabular-nums text-sm font-black text-amber-400">
+        <div className="flex items-center justify-center gap-1 truncate">
+          <span className="text-zinc-400 shrink-0">💰 合計:</span>
+          <span className="font-mono tabular-nums text-white font-bold truncate">
             ¥{totalPrice.toLocaleString()}
           </span>
         </div>
       </div>
 
-      {/* 🎨 5カテゴリー積載バランスバー ＆ 内訳エリア */}
+      {/* 🎨 5カテゴリー積載バランスバー ＆ 1行完全横並び内訳エリア */}
       <div className="bg-[#27272A]/50 p-3 rounded-xl border border-zinc-700/60 space-y-2.5">
         <div className="flex items-center justify-between text-xs font-bold text-zinc-300">
-          <span>🎨 積載バランス</span>
+          <span>🎨 バランス</span>
         </div>
 
-        {/* 積載バランスバー (目標バーと高さ h-2.5 / 10px 完全統一) */}
+        {/* 積載バランスバー */}
         <div className="w-full bg-zinc-800 rounded-full h-2.5 overflow-hidden border border-zinc-700 flex shadow-inner">
           {CATEGORIES.map((cat) => {
             const weight = categoryWeights[cat] || 0;
@@ -222,8 +215,8 @@ export default function WeightsSummary({ gears, onCategoryClick }: Props) {
           )}
         </div>
 
-        {/* 5カテゴリー重量内訳 (0gカテゴリーはトーンダウン) */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 pt-1">
+        {/* 全カテゴリー完全1行横並び (grid-cols-5) */}
+        <div className="grid grid-cols-5 gap-1 pt-1">
           {CATEGORIES.map((cat) => {
             const weight = categoryWeights[cat] || 0;
             const color = CATEGORY_COLORS[cat] || '#FF5500';
@@ -235,21 +228,21 @@ export default function WeightsSummary({ gears, onCategoryClick }: Props) {
                 key={cat}
                 type="button"
                 onClick={() => onCategoryClick && onCategoryClick(cat)}
-                className={`p-2 rounded-lg border transition flex flex-col items-center justify-center text-center cursor-pointer group ${
+                className={`p-1.5 sm:p-2 rounded-lg border transition flex flex-col items-center justify-center text-center cursor-pointer group ${
                   isEmpty
                     ? 'bg-[#18181B]/40 border-zinc-800/60 opacity-60'
                     : 'bg-[#18181B]/80 hover:bg-[#18181B] border-zinc-800 hover:border-zinc-700'
                 }`}
               >
                 <div
-                  className="flex items-center gap-1 text-[11px] font-bold group-hover:scale-105 transition-transform"
+                  className="flex items-center justify-center gap-0.5 text-[10px] sm:text-[11px] font-bold group-hover:scale-105 transition-transform truncate w-full"
                   style={{ color: isEmpty ? '#71717A' : color }}
                 >
-                  <span>{icon}</span>
-                  <span>{cat}</span>
+                  <span className="shrink-0">{icon}</span>
+                  <span className="truncate">{cat}</span>
                 </div>
                 <span
-                  className={`text-xs font-mono tabular-nums font-extrabold mt-0.5 ${
+                  className={`text-[10px] sm:text-xs font-mono tabular-nums font-extrabold mt-0.5 truncate w-full ${
                     isEmpty ? 'text-zinc-600' : 'text-zinc-200'
                   }`}
                 >

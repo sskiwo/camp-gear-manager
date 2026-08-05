@@ -70,7 +70,6 @@ export default function GearList({
   onDeleteAllGears,
   onResetAllPacked,
 }: Props) {
-  // ★ ドロップダウンでの並び替えステート (default:更新順, weight_desc:重い順, weight_asc:軽い順, price_desc:高値順, name_asc:名前順)
   const [sortOrders, setSortOrders] = useState<Record<string, string>>({});
   const [filterMode, setFilterMode] = useState<'all' | 'unpacked'>('all');
 
@@ -79,7 +78,6 @@ export default function GearList({
   const selectedGears = gears.filter((g) => g.is_selected !== false);
   const packedCount = selectedGears.filter((g) => g.is_packed).length;
   const totalCount = selectedGears.length;
-  const progressPercent = totalCount > 0 ? Math.round((packedCount / totalCount) * 100) : 0;
 
   const filteredGears =
     filterMode === 'unpacked'
@@ -99,7 +97,6 @@ export default function GearList({
     return `${selectedCount}/${Math.max(1, allCampsCount)}`;
   };
 
-  // 旧名カテゴリー互換マッチング関数
   const matchesCategory = (gearCategory: string | undefined, catName: string) => {
     const cat = gearCategory || 'ベース';
     if (catName === 'ベース') return cat === 'ベース' || cat === 'ベースギア';
@@ -142,8 +139,8 @@ export default function GearList({
         </div>
       </div>
 
-      {/* 進捗プログレスバー */}
-      {totalCount > 0 && (
+      {/* ★ パッキングモード時のみ進捗プログレスバーを表示 */}
+      {screenMode === 'packing' && totalCount > 0 && (
         <div className="bg-[#27272A]/80 p-3.5 rounded-2xl border border-zinc-700/70 space-y-2 shadow-inner">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div className="flex items-center gap-2">
@@ -151,7 +148,7 @@ export default function GearList({
                 📊 パッキング進捗:
               </span>
               <span className="text-sm font-black text-[#00E676] font-mono">
-                {packedCount} / {totalCount} 点 ({progressPercent}%)
+                {packedCount} / {totalCount} 点
               </span>
             </div>
 
@@ -182,7 +179,7 @@ export default function GearList({
           <div className="w-full bg-zinc-800 rounded-full h-2.5 overflow-hidden border border-zinc-700">
             <div
               className="bg-[#00E676] h-2.5 rounded-full transition-all duration-300 shadow-sm"
-              style={{ width: `${progressPercent}%` }}
+              style={{ width: `${totalCount > 0 ? (packedCount / totalCount) * 100 : 0}%` }}
             />
           </div>
         </div>
@@ -202,7 +199,6 @@ export default function GearList({
           let categoryGears = filteredGears.filter((g) => matchesCategory(g.category, catName));
           if (categoryGears.length === 0) return null;
 
-          // ★ 5種類のソート処理 (更新順 / 重い順 / 軽い順 / 高値順 / 名前順)
           const sortOrder = sortOrders[catName] || 'default';
           if (sortOrder === 'weight_desc') {
             categoryGears = [...categoryGears].sort(
@@ -255,11 +251,10 @@ export default function GearList({
                   <span style={{ color: catColor }} className="font-extrabold text-xs sm:text-sm tracking-wide truncate">
                     {catName}
                   </span>
-                  <span className="text-[11px] text-zinc-400 font-normal shrink-0">({categoryGears.length}件)</span>
+                  <span className="text-[11px] text-zinc-400 font-normal shrink-0">({categoryGears.length}点)</span>
                 </button>
 
                 <div className="flex items-center gap-2 shrink-0">
-                  {/* ★ ソート選択ドロップダウン (更新順, 重い順, 軽い順, 高値順, 名前順) */}
                   <select
                     value={sortOrder}
                     onChange={(e) =>
