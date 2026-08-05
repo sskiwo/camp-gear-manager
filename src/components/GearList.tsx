@@ -49,6 +49,19 @@ const CATEGORY_COLORS = {
   消耗品: '#00E676',
 };
 
+// ★ カテゴリー正規化関数（サマリー側と完全統一）
+const normalizeCategory = (gearCategory?: string, isConsumable?: boolean): 'ベース' | '調理' | '衣類' | 'その他' | '消耗品' => {
+  if (isConsumable) return '消耗品';
+  if (!gearCategory) return 'ベース';
+  const cat = gearCategory.trim();
+  if (cat === 'ベース' || cat === 'ベースギア') return 'ベース';
+  if (cat === '調理' || cat === '調理ギア') return '調理';
+  if (cat === '衣類') return '衣類';
+  if (cat === '消耗品' || cat === '食料・消耗品' || cat === '食料') return '消耗品';
+  if (cat === 'その他' || cat === 'その他・日用品') return 'その他';
+  return 'その他';
+};
+
 export default function GearList({
   gears,
   allCampsCount = 1,
@@ -71,6 +84,7 @@ export default function GearList({
   const selectedGears = gears.filter((g) => g.is_selected !== false);
   const packedCount = selectedGears.filter((g) => g.is_packed).length;
   const totalCount = selectedGears.length;
+  const remainingCount = totalCount - packedCount;
 
   const filteredGears =
     filterMode === 'unpacked'
@@ -90,27 +104,29 @@ export default function GearList({
     return `${selectedCount}/${Math.max(1, allCampsCount)}`;
   };
 
-  const matchesCategory = (gearCategory: string | undefined, catName: string) => {
-    const cat = gearCategory || 'ベース';
-    if (catName === 'ベース') return cat === 'ベース' || cat === 'ベースギア';
-    if (catName === '調理') return cat === '調理' || cat === '調理ギア';
-    if (catName === '衣類') return cat === '衣類';
-    if (catName === 'その他') return cat === 'その他' || cat === 'その他・日用品';
-    if (catName === '消耗品') return cat === '消耗品' || cat === '食料・消耗品';
-    return cat === catName;
-  };
-
   return (
     <section className="bg-[#18181B] p-4 md:p-6 rounded-2xl border border-zinc-800 space-y-4 shadow-xl">
-      {/* リストヘッダー: 表記明確化 🎒 パッキングリスト (持参11点 / 全25点) */}
+      {/* リストヘッダー */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-3">
         <h2 className="text-lg font-extrabold text-white flex items-center gap-1.5">
-          🎒 パッキングリスト{' '}
-          <span className="text-zinc-400 font-normal text-sm font-mono">
-            (持参{totalCount}点 / 全{gears.length}点)
-          </span>
+          {screenMode === 'packing' ? (
+            <>
+              🎒 パッキングリスト{' '}
+              <span className="text-zinc-400 font-normal text-sm font-mono">
+                (今回の荷物 {totalCount}点 / マイギア {gears.length}点)
+              </span>
+            </>
+          ) : (
+            <>
+              📋 持参するギアの選択{' '}
+              <span className="text-zinc-400 font-normal text-sm font-mono">
+                ({totalCount} / {gears.length}点 選択中)
+              </span>
+            </>
+          )}
         </h2>
 
+        {/* モード切替スイッチ */}
         <div className="flex items-center bg-[#09090B] p-1 rounded-xl border border-zinc-800 self-start sm:self-auto">
           <button
             onClick={() => setScreenMode('packing')}
@@ -126,7 +142,7 @@ export default function GearList({
             onClick={() => setScreenMode('edit')}
             className={`px-3 py-1.5 rounded-lg text-xs font-black transition cursor-pointer flex items-center gap-1.5 ${
               screenMode === 'edit'
-                ? 'bg-[#FFB800] text-black shadow-md'
+                ? 'bg-[#FF5500] text-white shadow-md'
                 : 'text-zinc-400 hover:text-white'
             }`}
           >
@@ -135,16 +151,19 @@ export default function GearList({
         </div>
       </div>
 
-      {/* 🎒 荷造り完了: 10 / 11 点 (持参対象) - 「パッキング」モード時のみ表示 */}
+      {/* パッキング進捗カード */}
       {screenMode === 'packing' && totalCount > 0 && (
         <div className="bg-[#27272A]/80 p-3.5 rounded-2xl border border-zinc-700/70 space-y-2 shadow-inner">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <span className="text-sm font-black text-white flex items-center gap-1.5">
-                🎒 荷造り完了:
+                🎒 準備完了:
               </span>
-              <span className="text-sm font-black text-[#00E676] font-mono">
-                {packedCount} / {totalCount} 点 <span className="text-xs text-zinc-400 font-normal">(持参対象)</span>
+              <span className="text-sm font-black text-[#10B981] font-mono">
+                {packedCount} / {totalCount} 点
+              </span>
+              <span className="text-xs font-bold text-amber-400 font-mono">
+                (あと {remainingCount} 点)
               </span>
             </div>
 
@@ -153,7 +172,7 @@ export default function GearList({
                 onClick={() => setFilterMode(filterMode === 'all' ? 'unpacked' : 'all')}
                 className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border transition cursor-pointer ${
                   filterMode === 'unpacked'
-                    ? 'bg-amber-500 text-black border-amber-400 font-extrabold'
+                    ? 'bg-[#FF5500] text-white border-[#FF5500] font-extrabold'
                     : 'bg-zinc-800 text-zinc-300 border-zinc-700 hover:text-white'
                 }`}
               >
@@ -163,7 +182,7 @@ export default function GearList({
               {onResetAllPacked && (
                 <button
                   onClick={onResetAllPacked}
-                  className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-zinc-800 border border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-700 transition cursor-pointer"
+                  className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-zinc-800 border border-[#EF4444]/40 text-[#EF4444] hover:bg-[#EF4444]/10 hover:text-white transition cursor-pointer"
                   title="当日のパッキング完了チェックをリセットします"
                 >
                   🔄 リセット
@@ -174,7 +193,7 @@ export default function GearList({
 
           <div className="w-full bg-zinc-800 rounded-full h-2.5 overflow-hidden border border-zinc-700">
             <div
-              className="bg-[#00E676] h-2.5 rounded-full transition-all duration-300 shadow-sm"
+              className="bg-[#10B981] h-2.5 rounded-full transition-all duration-300 shadow-sm"
               style={{ width: `${totalCount > 0 ? (packedCount / totalCount) * 100 : 0}%` }}
             />
           </div>
@@ -187,12 +206,12 @@ export default function GearList({
         </p>
       ) : filterMode === 'unpacked' && filteredGears.length === 0 ? (
         <div className="bg-emerald-950/30 border border-emerald-800/60 p-6 rounded-2xl text-center space-y-2">
-          <p className="text-base font-black text-[#00E676]">🎉 本日のパッキング準備がすべて完了しました！</p>
+          <p className="text-base font-black text-[#10B981]">🎉 本日のパッキング準備がすべて完了しました！</p>
           <p className="text-xs text-zinc-400">持っていく予定のギアはすべてザックに入っています。行ってらっしゃい！⛺✨</p>
         </div>
       ) : (
         CATEGORIES.map((catName) => {
-          let categoryGears = filteredGears.filter((g) => matchesCategory(g.category, catName));
+          let categoryGears = filteredGears.filter((g) => normalizeCategory(g.category, g.is_consumable) === catName);
           if (categoryGears.length === 0) return null;
 
           const sortOrder = sortOrders[catName] || 'default';

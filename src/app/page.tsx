@@ -381,11 +381,12 @@ export default function Home() {
               🏕️ <span className="text-[#FF5500]">Camp Gear</span> Manager
             </h1>
 
+            {/* ★ 公開ステータスバッジ: 🌐 公開中はエメラルドグリーン (#10B981) */}
             <button
               onClick={handleTogglePublic}
-              className={`px-2.5 py-1 rounded-xl text-xs font-bold transition border cursor-pointer shrink-0 ${
+              className={`px-3 py-1 rounded-xl text-xs font-bold transition border cursor-pointer shrink-0 shadow-sm ${
                 currentSelectedCamp?.is_public
-                  ? 'bg-emerald-950/60 border-emerald-700 text-emerald-300 hover:bg-emerald-900'
+                  ? 'bg-[#10B981] text-white border-transparent hover:bg-emerald-600'
                   : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white'
               }`}
             >
@@ -428,7 +429,7 @@ export default function Home() {
 
               <button
                 onClick={handleDeleteCamp}
-                className="ml-2 w-9 h-9 flex items-center justify-center bg-red-950/30 hover:bg-red-900/60 text-red-400 hover:text-white rounded-xl text-xs transition border border-red-900/50 cursor-pointer"
+                className="ml-2 w-9 h-9 flex items-center justify-center bg-red-950/30 hover:bg-red-900/60 text-[#EF4444] hover:text-white rounded-xl text-xs transition border border-[#EF4444]/40 cursor-pointer"
                 title="このキャンプを削除"
               >
                 🗑️
@@ -438,7 +439,7 @@ export default function Home() {
         </header>
 
         {isEditCampOpen && (
-          <div className="bg-[#18181B] border border-[#FFB800]/50 p-4 rounded-2xl space-y-3 shadow-2xl animate-fade-in">
+          <div className="bg-[#18181B] border border-[#FF5500]/50 p-4 rounded-2xl space-y-3 shadow-2xl animate-fade-in">
             <h3 className="text-sm font-bold text-white">✏️ キャンプ名を変更</h3>
             <div className="flex gap-2">
               <input
@@ -447,7 +448,7 @@ export default function Home() {
                 onChange={(e) => setEditCampTitle(e.target.value)}
                 className="flex-1 bg-[#27272A] border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white"
               />
-              <button onClick={handleUpdateCampTitle} className="bg-[#FFB800] text-black px-4 py-2 rounded-xl text-xs font-bold cursor-pointer">
+              <button onClick={handleUpdateCampTitle} className="bg-[#FF5500] text-white px-4 py-2 rounded-xl text-xs font-bold cursor-pointer">
                 保存
               </button>
               <button onClick={() => setIsEditCampOpen(false)} className="bg-zinc-800 text-zinc-300 px-3 py-2 rounded-xl text-xs cursor-pointer">
@@ -568,17 +569,17 @@ export default function Home() {
 
         <WeightsSummary gears={gears} onCategoryClick={scrollToCategory} />
         
-        {/* 🔍 AI検索エリア ＆ ★ 強化された「みんなのギアから参照して追加する」カード型ボタン */}
+        {/* 🔍 AI検索エリア ＆ ★ アウトライン（ゴースト）ボタンに変更された「みんなのギア」 */}
         <div className="space-y-2">
           <GearSearch onAddGear={handleAddGear} />
           
           <div className="flex justify-end">
             <Link
               href="/community"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#18181B] hover:bg-[#27272A] text-white border border-[#FF5500]/60 hover:border-[#FF5500] px-4 py-2.5 rounded-xl text-xs font-black transition shadow-md group cursor-pointer"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#09090B] hover:bg-[#FF5500]/10 text-[#FF5500] border border-[#FF5500] px-4 py-2.5 rounded-xl text-xs font-black transition shadow-sm group cursor-pointer"
             >
               <span>👥 みんなのギアから参照して追加する</span>
-              <span className="text-[#FF5500] group-hover:translate-x-1 transition-transform">➔</span>
+              <span className="group-hover:translate-x-1 transition-transform">➔</span>
             </Link>
           </div>
         </div>

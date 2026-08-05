@@ -19,6 +19,7 @@ type Props = {
   onCategoryClick?: (catName: string) => void;
 };
 
+// 短縮カテゴリー定義
 const CATEGORIES = ['ベース', '調理', '衣類', 'その他', '消耗品'];
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -37,16 +38,21 @@ const CATEGORY_ICONS: Record<string, string> = {
   消耗品: '🍱',
 };
 
-const matchesCategory = (gearCategory: string | undefined, catName: string) => {
-  const cat = gearCategory || 'ベース';
-  if (catName === 'ベース') return cat === 'ベース' || cat === 'ベースギア';
-  if (catName === '調理') return cat === '調理' || cat === '調理ギア';
-  if (catName === '衣類') return cat === '衣類';
-  if (catName === 'その他') return cat === 'その他' || cat === 'その他・日用品';
-  if (catName === '消耗品') return cat === '消耗品' || cat === '食料・消耗品';
-  return cat === catName;
+// ★ 5標準カテゴリーへの正規化関数（未定義・旧名称・未知のカテゴリーも漏れなく必ず5色のいずれかに集約）
+const normalizeCategory = (gearCategory?: string, isConsumable?: boolean): 'ベース' | '調理' | '衣類' | 'その他' | '消耗品' => {
+  if (isConsumable) return '消耗品';
+  if (!gearCategory) return 'ベース';
+  const cat = gearCategory.trim();
+  if (cat === 'ベース' || cat === 'ベースギア') return 'ベース';
+  if (cat === '調理' || cat === '調理ギア') return '調理';
+  if (cat === '衣類') return '衣類';
+  if (cat === '消耗品' || cat === '食料・消耗品' || cat === '食料') return '消耗品';
+  if (cat === 'その他' || cat === 'その他・日用品') return 'その他';
+  // 上記以外の未知のカテゴリー（例: 照明、電化製品など）はすべて「その他」に安全集約
+  return 'その他';
 };
 
+// 重量フォーマット表示ルール (1,000g未満: 整数g / 1,000g以上: 小数点第2位kg)
 const formatWeightDisplay = (grams: number) => {
   if (grams === 0) return '0g';
   if (grams >= 1000) {
@@ -56,32 +62,33 @@ const formatWeightDisplay = (grams: number) => {
 };
 
 export default function WeightsSummary({ gears, onCategoryClick }: Props) {
+  // 目標重量ステート (デフォルト: 15.0 kg)
   const [targetWeightKg, setTargetWeightKg] = useState<number>(15.0);
   const [isEditingTarget, setIsEditingTarget] = useState<boolean>(false);
 
   const selectedGears = gears.filter((g) => g.is_selected !== false);
 
+  // ① 各カテゴリーごとに (重量 × 数量) を集計
   const categoryWeights = CATEGORIES.reduce((acc, catName) => {
     acc[catName] = selectedGears
-      .filter((g) => matchesCategory(g.category, catName))
+      .filter((g) => normalizeCategory(g.category, g.is_consumable) === catName)
       .reduce((sum, g) => sum + (g.weight || 0) * (g.quantity || 1), 0);
     return acc;
   }, {} as Record<string, number>);
 
-  const baseWeight = selectedGears
-    .filter((g) => !g.is_consumable && !matchesCategory(g.category, '消耗品'))
-    .reduce((sum, g) => sum + (g.weight || 0) * (g.quantity || 1), 0);
+  // ② 行き総重量は「5カテゴリー別重量の和」から直接算出（★これで計算ズレが100%発生しない構造に）
+  const totalWeight = Object.values(categoryWeights).reduce((a, b) => a + b, 0);
 
-  const totalWeight = selectedGears.reduce(
-    (sum, g) => sum + (g.weight || 0) * (g.quantity || 1),
-    0
-  );
+  // ③ 帰りの重量（消耗品以外の合計）
+  const baseWeight = totalWeight - (categoryWeights['消耗品'] || 0);
 
+  // ④ 総額
   const totalPrice = selectedGears.reduce(
     (sum, g) => sum + (g.price || 0) * (g.quantity || 1),
     0
   );
 
+  // 目標重量との比較計算
   const targetWeightGrams = targetWeightKg * 1000;
   const targetPercent = targetWeightGrams > 0 ? (totalWeight / targetWeightGrams) * 100 : 0;
   const isOverTarget = targetWeightGrams > 0 && totalWeight > targetWeightGrams;
@@ -89,13 +96,14 @@ export default function WeightsSummary({ gears, onCategoryClick }: Props) {
 
   return (
     <section className="bg-[#18181B] border border-zinc-800 p-4 md:p-5 rounded-2xl shadow-xl space-y-3">
+      {/* 📊 タイトル */}
       <div className="border-b border-zinc-800 pb-2">
         <h2 className="text-sm font-extrabold text-white flex items-center gap-1.5">
           📊 パッキングサマリー
         </h2>
       </div>
 
-      {/* 🎯 目標重量 ＆ プログレスバー */}
+      {/* 🎯 目標重量 ＆ プログレスバーエリア */}
       <div className="bg-[#27272A]/50 p-3 rounded-xl border border-zinc-700/60 space-y-2">
         <div className="flex items-center justify-between gap-2 text-xs">
           <div className="flex items-center gap-1 font-bold text-zinc-200">
@@ -129,6 +137,7 @@ export default function WeightsSummary({ gears, onCategoryClick }: Props) {
             )}
           </div>
 
+          {/* 残り重量表記 */}
           {targetWeightGrams > 0 && (
             <span className="text-xs font-bold font-mono tabular-nums shrink-0 text-white">
               {isOverTarget
@@ -138,6 +147,7 @@ export default function WeightsSummary({ gears, onCategoryClick }: Props) {
           )}
         </div>
 
+        {/* 目標プログレスバー */}
         <div className="w-full bg-zinc-800 rounded-full h-2.5 overflow-hidden border border-zinc-700">
           <div
             className={`h-2.5 rounded-full transition-all duration-300 ${
@@ -172,12 +182,13 @@ export default function WeightsSummary({ gears, onCategoryClick }: Props) {
         </div>
       </div>
 
-      {/* 🎨 5カテゴリー積載バランスバー ＆ 縦積み内訳（文字切れ完全解消） */}
+      {/* 🎨 5カテゴリー積載バランスバー ＆ 1行完全横並び内訳エリア */}
       <div className="bg-[#27272A]/50 p-3 rounded-xl border border-zinc-700/60 space-y-2.5">
         <div className="flex items-center justify-between text-xs font-bold text-zinc-300">
           <span>🎨 バランス</span>
         </div>
 
+        {/* 積載バランスバー */}
         <div className="w-full bg-zinc-800 rounded-full h-2.5 overflow-hidden border border-zinc-700 flex shadow-inner">
           {CATEGORIES.map((cat) => {
             const weight = categoryWeights[cat] || 0;
@@ -202,7 +213,7 @@ export default function WeightsSummary({ gears, onCategoryClick }: Props) {
           )}
         </div>
 
-        {/* 上段：アイコン＋カテゴリー名 / 下段：重量数値（2行縦積み配置） */}
+        {/* 全カテゴリー完全1行横並び (grid-cols-5) */}
         <div className="grid grid-cols-5 gap-1 pt-1">
           {CATEGORIES.map((cat) => {
             const weight = categoryWeights[cat] || 0;

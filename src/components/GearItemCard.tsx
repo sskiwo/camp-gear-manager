@@ -143,7 +143,7 @@ export default function GearItemCard({
     setIsEditing(false);
   };
 
-  // 🎒 【1】 パッキングモード UI (持参OFF時のデザイン強化: opacity-40 ＆ 打ち消し線 ＆ [-])
+  // 🎒 【1】 パッキングモード UI (打ち消し線を削除)
   if (mode === 'packing') {
     return (
       <div className="space-y-1">
@@ -157,7 +157,7 @@ export default function GearItemCard({
           }`}
         >
           <div className="flex items-center gap-1.5 min-w-0 flex-1">
-            {/* ① 持参/お休み */}
+            {/* 持参/お休み */}
             <button
               onClick={() => onToggleSelected(item.id, isSelected)}
               className={`w-8 h-8 rounded-lg text-sm transition flex items-center justify-center border shrink-0 cursor-pointer active:scale-95 ${
@@ -170,13 +170,13 @@ export default function GearItemCard({
               {isSelected ? '🎒' : '💤'}
             </button>
 
-            {/* ② パッキング完了チェック (持参OFF時は [-] 表示) */}
+            {/* パッキング完了チェック */}
             {isSelected ? (
               <button
                 onClick={() => onTogglePacked(item.id, item.is_packed)}
                 className={`w-8 h-8 rounded-lg text-sm transition flex items-center justify-center border shrink-0 cursor-pointer active:scale-95 ${
                   item.is_packed
-                    ? 'bg-emerald-950/80 border-emerald-700 text-emerald-300'
+                    ? 'bg-[#10B981] border-[#10B981] text-white shadow-sm'
                     : 'bg-zinc-800 border-zinc-700 text-zinc-400'
                 }`}
                 title={item.is_packed ? '完了済み（タップで未完了に変更）' : '未完了（タップで完了に変更）'}
@@ -189,7 +189,7 @@ export default function GearItemCard({
               </span>
             )}
 
-            {/* ③ 商品名 (持参OFF時は打ち消し線 ＆ 灰色化) */}
+            {/* 商品名 (打ち消し線を廃止) */}
             <button
               type="button"
               onClick={() => setIsEditing(!isEditing)}
@@ -197,12 +197,12 @@ export default function GearItemCard({
               title="タップしてギア情報を編集"
             >
               <span
-                className={`text-xs font-bold truncate block transition-colors ${
+                className={`text-xs truncate block transition-colors ${
                   !isSelected
-                    ? 'line-through text-zinc-500'
+                    ? 'text-zinc-500 font-medium'
                     : item.is_packed
-                    ? 'text-zinc-400 group-hover:text-[#FF5500]'
-                    : 'text-white group-hover:text-[#FF5500]'
+                    ? 'text-zinc-400 font-medium group-hover:text-white'
+                    : 'text-white font-extrabold group-hover:text-[#FF5500]'
                 }`}
               >
                 {cleanName}
@@ -228,7 +228,7 @@ export default function GearItemCard({
     );
   }
 
-  // ✏️ 【2】 ギア編集モード UI (持参OFF時は opacity-40)
+  // ✏️ 【2】 ギア編集モード UI (打ち消し線を削除)
   return (
     <div
       className={`py-2 px-2.5 border-b border-zinc-800/80 transition-colors select-text hover:bg-[#1F1F23]/60 space-y-1.5 ${
@@ -262,7 +262,7 @@ export default function GearItemCard({
             )}
             <span
               className={`font-bold truncate group-hover:text-[#FF5500] transition-colors ${
-                !isSelected ? 'line-through text-zinc-500' : 'text-white'
+                !isSelected ? 'text-zinc-500' : 'text-white'
               }`}
             >
               {cleanName}
@@ -308,7 +308,7 @@ export default function GearItemCard({
             onClick={() => setIsEditing(!isEditing)}
             className={`w-7 h-7 flex items-center justify-center rounded-lg text-xs transition border cursor-pointer ${
               isEditing
-                ? 'bg-amber-500/20 border-amber-500 text-amber-300'
+                ? 'bg-[#FF5500]/20 border-[#FF5500] text-white'
                 : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border-zinc-700'
             }`}
             title="ギア詳細を編集"
@@ -318,7 +318,7 @@ export default function GearItemCard({
 
           <button
             onClick={() => onDeleteGear(item.id)}
-            className="ml-2 w-7 h-7 flex items-center justify-center text-red-400 hover:text-white hover:bg-red-950/60 rounded-lg text-xs transition border border-red-900/40 cursor-pointer"
+            className="ml-2 w-7 h-7 flex items-center justify-center text-[#EF4444] hover:text-white hover:bg-[#EF4444]/20 rounded-lg text-xs transition border border-[#EF4444]/40 cursor-pointer"
             title="ギアを削除"
           >
             🗑️
@@ -431,7 +431,7 @@ export default function GearItemCard({
         <div className="flex justify-end gap-2 pt-1">
           <button
             onClick={handleSaveEdit}
-            className="bg-[#00E676] hover:bg-emerald-400 text-black text-xs font-bold px-4 py-1.5 rounded-xl cursor-pointer transition active:scale-95"
+            className="bg-[#10B981] hover:bg-emerald-600 text-white text-xs font-bold px-4 py-1.5 rounded-xl cursor-pointer transition active:scale-95"
           >
             保存
           </button>
