@@ -22,18 +22,15 @@ export default function Home() {
   const [gears, setGears] = useState<any[]>([]);
   const [allGearsInAccount, setAllGearsInAccount] = useState<any[]>([]);
 
-  // 新規キャンプ作成モーダル用ステート
   const [isAddCampOpen, setIsAddCampOpen] = useState(false);
   const [newCampTitle, setNewCampTitle] = useState('');
   const [copyOption, setCopyOption] = useState<'latest' | 'select' | 'none'>('latest');
   const [selectedSourceCampId, setSelectedSourceCampId] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // 編集モーダルステート
   const [isEditCampOpen, setIsEditCampOpen] = useState(false);
   const [editCampTitle, setEditCampTitle] = useState('');
 
-  // 短縮カテゴリー名ステート
   const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({
     ベース: false,
     調理: false,
@@ -42,7 +39,6 @@ export default function Home() {
     消耗品: false,
   });
 
-  // 1. 全キャンプ一覧の取得
   const fetchCamps = async () => {
     const { data, error } = await supabase
       .from('camps')
@@ -78,7 +74,6 @@ export default function Home() {
     }
   };
 
-  // 2. 選択中キャンプのギア & 全ギアの取得
   const fetchGears = async () => {
     if (!selectedCampId) return;
 
@@ -108,7 +103,6 @@ export default function Home() {
     }
   }, [selectedCampId]);
 
-  // モーダルオープン時の初期化
   const handleOpenAddCampModal = () => {
     setNewCampTitle('');
     setCopyOption(camps.length > 0 ? 'latest' : 'none');
@@ -118,12 +112,10 @@ export default function Home() {
     setIsAddCampOpen(true);
   };
 
-  // キャンプごとのギア数を算出
   const getCampGearCount = (campId: string) => {
     return allGearsInAccount.filter((g) => g.camp_id === campId).length;
   };
 
-  // ⛺ 新規キャンプ作成（引き継ぎ処理含む）
   const handleCreateCamp = async () => {
     if (!newCampTitle.trim()) {
       alert('キャンプ名を入力してください！');
@@ -132,7 +124,6 @@ export default function Home() {
 
     setIsSubmitting(true);
 
-    // ① 新規キャンプを作成
     const { data: newCamp, error: createErr } = await supabase
       .from('camps')
       .insert([{ title: newCampTitle.trim(), is_public: false }])
@@ -145,7 +136,6 @@ export default function Home() {
       return;
     }
 
-    // ② ギアリストの引き継ぎ（複製）処理
     let targetSourceId = '';
     if (copyOption === 'latest' && camps.length > 0) {
       targetSourceId = camps[0].id;
@@ -154,14 +144,12 @@ export default function Home() {
     }
 
     if (targetSourceId) {
-      // 引き継ぎ元キャンプのギアを取得
       const { data: sourceGears } = await supabase
         .from('gears')
         .select('*')
         .eq('camp_id', targetSourceId);
 
       if (sourceGears && sourceGears.length > 0) {
-        // パッキング完了状態 (is_packed) を false にリセットして複製データ構築
         const clonedGears = sourceGears.map((g) => ({
           camp_id: newCamp.id,
           name: g.name,
@@ -172,7 +160,7 @@ export default function Home() {
           weight: Number(g.weight) || 0,
           price: Number(g.price) || 0,
           quantity: Number(g.quantity) || 1,
-          is_packed: false, // ★ 次回荷造りのため未チェックへリセット
+          is_packed: false,
           is_selected: g.is_selected !== false,
           is_consumable: g.is_consumable || false,
           product_url: g.product_url || '',
@@ -196,7 +184,6 @@ export default function Home() {
     fetchGears();
   };
 
-  // キャンプ名変更
   const handleUpdateCampTitle = async () => {
     if (!editCampTitle.trim() || !selectedCampId) return;
 
@@ -224,7 +211,6 @@ export default function Home() {
     }
   };
 
-  // 公開・非公開トグル
   const handleTogglePublic = async () => {
     const currentCamp = camps.find((c) => c.id === selectedCampId);
     if (!currentCamp) return;
@@ -247,7 +233,6 @@ export default function Home() {
     alert(newPublicStatus ? '🌐 コミュニティに公開しました！' : '🔒 非公開に設定しました。');
   };
 
-  // キャンプ削除
   const handleDeleteCamp = async () => {
     if (!selectedCampId) return;
     if (camps.length <= 1) {
@@ -270,7 +255,6 @@ export default function Home() {
     setSelectedCampId(remaining[0].id);
   };
 
-  // ギア全削除
   const handleDeleteAllGears = async () => {
     if (!selectedCampId) return;
     const confirmed = window.confirm('このキャンプのギアをすべて削除してもよろしいですか？');
@@ -280,7 +264,6 @@ export default function Home() {
     fetchGears();
   };
 
-  // パッキング全解除
   const handleResetAllPacked = async () => {
     if (!selectedCampId) return;
     const confirmed = window.confirm('当日のパッキング完了チェックをリセットして0%にしますか？');
@@ -427,7 +410,6 @@ export default function Home() {
             </div>
 
             <div className="flex items-center gap-1 shrink-0">
-              {/* ① 新規作成ボタン */}
               <button
                 onClick={handleOpenAddCampModal}
                 className="w-9 h-9 flex items-center justify-center bg-[#FF5500] hover:bg-[#E04B00] text-white text-base font-black rounded-xl transition shrink-0 cursor-pointer shadow-sm"
@@ -436,7 +418,6 @@ export default function Home() {
                 +
               </button>
 
-              {/* ② 編集アイコン */}
               <button
                 onClick={startEditCampTitle}
                 className="w-9 h-9 flex items-center justify-center bg-[#27272A] hover:bg-zinc-700 text-zinc-300 rounded-xl text-xs transition border border-zinc-700 cursor-pointer"
@@ -445,7 +426,6 @@ export default function Home() {
                 ✏️
               </button>
 
-              {/* ③ 削除アイコン */}
               <button
                 onClick={handleDeleteCamp}
                 className="ml-2 w-9 h-9 flex items-center justify-center bg-red-950/30 hover:bg-red-900/60 text-red-400 hover:text-white rounded-xl text-xs transition border border-red-900/50 cursor-pointer"
@@ -457,7 +437,6 @@ export default function Home() {
           </div>
         </header>
 
-        {/* ✏️ キャンプ名変更モーダル */}
         {isEditCampOpen && (
           <div className="bg-[#18181B] border border-[#FFB800]/50 p-4 rounded-2xl space-y-3 shadow-2xl animate-fade-in">
             <h3 className="text-sm font-bold text-white">✏️ キャンプ名を変更</h3>
@@ -478,14 +457,12 @@ export default function Home() {
           </div>
         )}
 
-        {/* ⛺ 新規キャンプ追加モーダル（引き継ぎオプション付き） */}
         {isAddCampOpen && (
           <div className="bg-[#18181B] border border-[#FF5500]/50 p-5 rounded-2xl space-y-4 shadow-2xl animate-fade-in">
             <h3 className="text-sm font-extrabold text-white flex items-center gap-1.5">
               ⛺ 新しいキャンプを追加
             </h3>
 
-            {/* キャンプ名入力 */}
             <div className="space-y-1">
               <label className="text-[10px] font-bold text-zinc-400 block">キャンプ名（必須）</label>
               <input
@@ -497,12 +474,10 @@ export default function Home() {
               />
             </div>
 
-            {/* 引き継ぎオプション */}
             <div className="space-y-2.5 pt-1 border-t border-zinc-800">
               <label className="text-[10px] font-bold text-zinc-400 block">ギアリストの引き継ぎ</label>
 
               <div className="space-y-2 text-xs">
-                {/* ① 直近のキャンプから引き継ぐ */}
                 <label className={`flex items-start gap-2.5 p-2.5 rounded-xl border cursor-pointer transition ${
                   copyOption === 'latest' ? 'bg-[#FF5500]/10 border-[#FF5500] text-white' : 'bg-[#27272A]/40 border-zinc-800 text-zinc-300 hover:bg-[#27272A]'
                 }`}>
@@ -527,7 +502,6 @@ export default function Home() {
                   </div>
                 </label>
 
-                {/* ② 過去のリストから選択 */}
                 <label className={`flex items-start gap-2.5 p-2.5 rounded-xl border cursor-pointer transition ${
                   copyOption === 'select' ? 'bg-[#FF5500]/10 border-[#FF5500] text-white' : 'bg-[#27272A]/40 border-zinc-800 text-zinc-300 hover:bg-[#27272A]'
                 }`}>
@@ -558,7 +532,6 @@ export default function Home() {
                   </div>
                 </label>
 
-                {/* ③ 空のリストで作成する */}
                 <label className={`flex items-center gap-2.5 p-2.5 rounded-xl border cursor-pointer transition ${
                   copyOption === 'none' ? 'bg-[#FF5500]/10 border-[#FF5500] text-white' : 'bg-[#27272A]/40 border-zinc-800 text-zinc-300 hover:bg-[#27272A]'
                 }`}>
@@ -575,7 +548,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* 操作ボタン */}
             <div className="flex justify-end gap-2 pt-2 border-t border-zinc-800">
               <button
                 onClick={handleCreateCamp}
@@ -596,16 +568,17 @@ export default function Home() {
 
         <WeightsSummary gears={gears} onCategoryClick={scrollToCategory} />
         
-        {/* AI検索エリア ＆ 直下の「みんなのギアから追加する →」ボタン */}
+        {/* 🔍 AI検索エリア ＆ ★ 強化された「みんなのギアから参照して追加する」カード型ボタン */}
         <div className="space-y-2">
           <GearSearch onAddGear={handleAddGear} />
           
           <div className="flex justify-end">
             <Link
               href="/community"
-              className="inline-flex items-center gap-1.5 bg-[#18181B] hover:bg-[#27272A] text-zinc-300 hover:text-white border border-zinc-800 hover:border-zinc-700 px-3.5 py-2 rounded-xl text-xs font-bold transition shadow-sm"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#18181B] hover:bg-[#27272A] text-white border border-[#FF5500]/60 hover:border-[#FF5500] px-4 py-2.5 rounded-xl text-xs font-black transition shadow-md group cursor-pointer"
             >
-              🌐 みんなのギアから追加する →
+              <span>👥 みんなのギアから参照して追加する</span>
+              <span className="text-[#FF5500] group-hover:translate-x-1 transition-transform">➔</span>
             </Link>
           </div>
         </div>

@@ -33,10 +33,8 @@ type Props = {
   onDeleteGear: (id: string) => void;
 };
 
-// カテゴリー選択肢
 const CATEGORY_OPTIONS = ['ベース', '調理', '衣類', 'その他', '消耗品'];
 
-// 属性バッジ(燃料・電源タイプ) マッピング
 const getBadgeStyle = (fuelType?: string) => {
   if (!fuelType || fuelType === '不要/なし') return null;
 
@@ -73,14 +71,12 @@ const getBadgeStyle = (fuelType?: string) => {
   return { label: fuelType, className: 'bg-zinc-800 text-zinc-300 border border-zinc-700' };
 };
 
-// メーカー名重複トリミング関数
 const getCleanItemName = (fullName: string, brandName?: string): string => {
   if (!brandName || !brandName.trim()) return fullName;
   const regex = new RegExp(`^${brandName.trim()}\\s*`, 'i');
   return fullName.replace(regex, '');
 };
 
-// 重量表示フォーマット関数 (1000g未満: g整数 / 1000g以上: 小数点第2位kg)
 const formatWeight = (grams: number) => {
   if (grams >= 1000) {
     return `${(grams / 1000).toFixed(2)}kg`;
@@ -115,7 +111,6 @@ export default function GearItemCard({
 }: Props) {
   const [isEditing, setIsEditing] = useState(false);
 
-  // 編集フォーム用ステート (★ editCategory を追加)
   const [editBrand, setEditBrand] = useState(item.brand || '');
   const [editName, setEditName] = useState(item.name);
   const [editCategory, setEditCategory] = useState(item.category || 'ベース');
@@ -138,7 +133,7 @@ export default function GearItemCard({
       brand: editBrand,
       name: editName,
       product_name: editName,
-      category: editCategory, // ★ カテゴリー更新
+      category: editCategory,
       weight: Number(editWeight),
       price: Number(editPrice),
       purchase_date: editPurchaseDate,
@@ -148,14 +143,14 @@ export default function GearItemCard({
     setIsEditing(false);
   };
 
-  // 🎒 【1】 パッキングモード UI (名前タップで編集フォーム起動可能)
+  // 🎒 【1】 パッキングモード UI (持参OFF時のデザイン強化: opacity-40 ＆ 打ち消し線 ＆ [-])
   if (mode === 'packing') {
     return (
       <div className="space-y-1">
         <div
           className={`h-[48px] px-2 rounded-xl border transition-all duration-150 flex items-center justify-between gap-2 select-text ${
             !isSelected
-              ? 'bg-[#18181B]/40 border-zinc-800/80 opacity-60'
+              ? 'bg-[#18181B]/40 border-zinc-800/80 opacity-40'
               : item.is_packed
               ? 'bg-[#1F1F23] border-zinc-800'
               : 'bg-[#27272A] border-zinc-700/80 shadow-sm'
@@ -175,7 +170,7 @@ export default function GearItemCard({
               {isSelected ? '🎒' : '💤'}
             </button>
 
-            {/* ② パッキング完了チェック */}
+            {/* ② パッキング完了チェック (持参OFF時は [-] 表示) */}
             {isSelected ? (
               <button
                 onClick={() => onTogglePacked(item.id, item.is_packed)}
@@ -189,10 +184,12 @@ export default function GearItemCard({
                 {item.is_packed ? '✅' : '⬜'}
               </button>
             ) : (
-              <span className="w-8 h-8 flex items-center justify-center text-xs text-zinc-600 select-none shrink-0">-</span>
+              <span className="w-8 h-8 flex items-center justify-center text-xs text-zinc-600 font-mono font-bold select-none shrink-0">
+                [-]
+              </span>
             )}
 
-            {/* ★ ③ 商品名 (タップで編集画面を展開) */}
+            {/* ③ 商品名 (持参OFF時は打ち消し線 ＆ 灰色化) */}
             <button
               type="button"
               onClick={() => setIsEditing(!isEditing)}
@@ -200,12 +197,12 @@ export default function GearItemCard({
               title="タップしてギア情報を編集"
             >
               <span
-                className={`text-xs font-bold truncate block group-hover:text-[#FF5500] transition-colors ${
+                className={`text-xs font-bold truncate block transition-colors ${
                   !isSelected
                     ? 'line-through text-zinc-500'
                     : item.is_packed
-                    ? 'text-zinc-400'
-                    : 'text-white'
+                    ? 'text-zinc-400 group-hover:text-[#FF5500]'
+                    : 'text-white group-hover:text-[#FF5500]'
                 }`}
               >
                 {cleanName}
@@ -214,37 +211,32 @@ export default function GearItemCard({
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            {/* 数量表示: 2個以上の時だけ ×2 */}
             {qty > 1 && (
               <span className="text-[11px] font-mono font-black text-[#FFB800] bg-[#FFB800]/15 border border-[#FFB800]/40 px-1.5 py-0.5 rounded shrink-0">
                 ×{qty}
               </span>
             )}
 
-            {/* 重量 */}
             <span className="text-xs font-mono tabular-nums font-bold text-zinc-300 shrink-0 min-w-[55px] text-right">
               {formatWeight(totalWeight)}
             </span>
           </div>
         </div>
 
-        {/* パッキングモード時のタップ展開インライン編集フォーム */}
         {isEditing && renderEditForm()}
       </div>
     );
   }
 
-  // ✏️ 【2】 ギア編集モード UI
+  // ✏️ 【2】 ギア編集モード UI (持参OFF時は opacity-40)
   return (
     <div
       className={`py-2 px-2.5 border-b border-zinc-800/80 transition-colors select-text hover:bg-[#1F1F23]/60 space-y-1.5 ${
-        !isSelected ? 'opacity-50' : ''
+        !isSelected ? 'opacity-40' : ''
       }`}
     >
-      {/* ── 上段：識別ゾーン ── */}
       <div className="flex items-center justify-between gap-2 min-w-0">
         <div className="flex items-center gap-1.5 min-w-0 flex-1">
-          {/* 持参・お休みトグルアイコン [🎒/💤] */}
           <button
             onClick={() => onToggleSelected(item.id, isSelected)}
             className={`w-7 h-7 rounded-lg text-xs transition flex items-center justify-center border shrink-0 cursor-pointer active:scale-95 ${
@@ -257,7 +249,6 @@ export default function GearItemCard({
             {isSelected ? '🎒' : '💤'}
           </button>
 
-          {/* ブランド名 ＋ 商品名 (タップでも編集可能) */}
           <button
             type="button"
             onClick={() => setIsEditing(!isEditing)}
@@ -279,7 +270,6 @@ export default function GearItemCard({
           </button>
         </div>
 
-        {/* 最右端: 属性バッジ */}
         {badge && (
           <span className={`text-[10px] px-1.5 py-0.5 rounded ${badge.className} shrink-0`}>
             {badge.label}
@@ -287,9 +277,7 @@ export default function GearItemCard({
         )}
       </div>
 
-      {/* ── 下段：数値・操作ゾーン ── */}
       <div className="flex items-center justify-between gap-2 pt-0.5">
-        {/* 左側: 重量 / 金額 */}
         <div className="text-[11px] font-mono tabular-nums text-zinc-400 flex items-center gap-1.5 shrink-0 pl-1">
           <span>{formatWeight(totalWeight)}</span>
           {totalPrice > 0 && (
@@ -297,9 +285,7 @@ export default function GearItemCard({
           )}
         </div>
 
-        {/* 右側: 数量コントロール ＋ ✏️ ＋ 🗑️ */}
         <div className="flex items-center gap-1.5 shrink-0">
-          {/* 数量コントロール [- 1 +] */}
           <div className="flex items-center bg-[#18181B] rounded-lg border border-zinc-700/80">
             <button
               onClick={() => onUpdateQuantity(item.id, qty, -1)}
@@ -318,7 +304,6 @@ export default function GearItemCard({
             </button>
           </div>
 
-          {/* ✏️ 編集ボタン */}
           <button
             onClick={() => setIsEditing(!isEditing)}
             className={`w-7 h-7 flex items-center justify-center rounded-lg text-xs transition border cursor-pointer ${
@@ -331,7 +316,6 @@ export default function GearItemCard({
             ✏️
           </button>
 
-          {/* 🗑️ 削除ボタン */}
           <button
             onClick={() => onDeleteGear(item.id)}
             className="ml-2 w-7 h-7 flex items-center justify-center text-red-400 hover:text-white hover:bg-red-950/60 rounded-lg text-xs transition border border-red-900/40 cursor-pointer"
@@ -342,17 +326,14 @@ export default function GearItemCard({
         </div>
       </div>
 
-      {/* ── 詳細インライン編集フォーム ── */}
       {isEditing && renderEditForm()}
     </div>
   );
 
-  // ✏️ 共通編集フォーム（カテゴリー変更ドロップダウンを追加）
   function renderEditForm() {
     return (
       <div className="mt-2 pt-2 border-t border-zinc-800 space-y-2.5 bg-[#18181B] p-3 rounded-xl animate-fade-in text-left">
         <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
-          {/* ★ カテゴリー変更ドロップダウン */}
           <div>
             <label className="text-[10px] font-bold text-[#FF5500] block mb-0.5">📂 カテゴリー</label>
             <select
@@ -385,7 +366,7 @@ export default function GearItemCard({
               type="text"
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
-              className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white focus:border-[#FF5500] focus:outline-none"
+              className="w-full bg-[#27272A] border border-[#FF5500] rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none"
             />
           </div>
 

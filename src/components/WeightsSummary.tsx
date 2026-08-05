@@ -19,7 +19,6 @@ type Props = {
   onCategoryClick?: (catName: string) => void;
 };
 
-// 短縮カテゴリー定義
 const CATEGORIES = ['ベース', '調理', '衣類', 'その他', '消耗品'];
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -38,7 +37,6 @@ const CATEGORY_ICONS: Record<string, string> = {
   消耗品: '🍱',
 };
 
-// 旧名互換判定関数
 const matchesCategory = (gearCategory: string | undefined, catName: string) => {
   const cat = gearCategory || 'ベース';
   if (catName === 'ベース') return cat === 'ベース' || cat === 'ベースギア';
@@ -49,7 +47,6 @@ const matchesCategory = (gearCategory: string | undefined, catName: string) => {
   return cat === catName;
 };
 
-// 重量フォーマット表示ルール (1,000g未満: 整数g / 1,000g以上: 小数点第2位kg)
 const formatWeightDisplay = (grams: number) => {
   if (grams === 0) return '0g';
   if (grams >= 1000) {
@@ -59,13 +56,11 @@ const formatWeightDisplay = (grams: number) => {
 };
 
 export default function WeightsSummary({ gears, onCategoryClick }: Props) {
-  // 目標重量ステート (デフォルト: 15.0 kg)
   const [targetWeightKg, setTargetWeightKg] = useState<number>(15.0);
   const [isEditingTarget, setIsEditingTarget] = useState<boolean>(false);
 
   const selectedGears = gears.filter((g) => g.is_selected !== false);
 
-  // 各カテゴリーごとの合計重量算出
   const categoryWeights = CATEGORIES.reduce((acc, catName) => {
     acc[catName] = selectedGears
       .filter((g) => matchesCategory(g.category, catName))
@@ -73,24 +68,20 @@ export default function WeightsSummary({ gears, onCategoryClick }: Props) {
     return acc;
   }, {} as Record<string, number>);
 
-  // 帰りの重量 (消耗品以外)
   const baseWeight = selectedGears
     .filter((g) => !g.is_consumable && !matchesCategory(g.category, '消耗品'))
     .reduce((sum, g) => sum + (g.weight || 0) * (g.quantity || 1), 0);
 
-  // 行きの重量 (総重量)
   const totalWeight = selectedGears.reduce(
     (sum, g) => sum + (g.weight || 0) * (g.quantity || 1),
     0
   );
 
-  // 総額
   const totalPrice = selectedGears.reduce(
     (sum, g) => sum + (g.price || 0) * (g.quantity || 1),
     0
   );
 
-  // 目標重量との比較計算
   const targetWeightGrams = targetWeightKg * 1000;
   const targetPercent = targetWeightGrams > 0 ? (totalWeight / targetWeightGrams) * 100 : 0;
   const isOverTarget = targetWeightGrams > 0 && totalWeight > targetWeightGrams;
@@ -98,14 +89,13 @@ export default function WeightsSummary({ gears, onCategoryClick }: Props) {
 
   return (
     <section className="bg-[#18181B] border border-zinc-800 p-4 md:p-5 rounded-2xl shadow-xl space-y-3">
-      {/* 📊 タイトル */}
       <div className="border-b border-zinc-800 pb-2">
         <h2 className="text-sm font-extrabold text-white flex items-center gap-1.5">
           📊 パッキングサマリー
         </h2>
       </div>
 
-      {/* 🎯 目標重量 ＆ プログレスバーエリア */}
+      {/* 🎯 目標重量 ＆ プログレスバー */}
       <div className="bg-[#27272A]/50 p-3 rounded-xl border border-zinc-700/60 space-y-2">
         <div className="flex items-center justify-between gap-2 text-xs">
           <div className="flex items-center gap-1 font-bold text-zinc-200">
@@ -139,7 +129,6 @@ export default function WeightsSummary({ gears, onCategoryClick }: Props) {
             )}
           </div>
 
-          {/* ★ 残り重量表記（白文字化） */}
           {targetWeightGrams > 0 && (
             <span className="text-xs font-bold font-mono tabular-nums shrink-0 text-white">
               {isOverTarget
@@ -149,7 +138,6 @@ export default function WeightsSummary({ gears, onCategoryClick }: Props) {
           )}
         </div>
 
-        {/* 目標プログレスバー */}
         <div className="w-full bg-zinc-800 rounded-full h-2.5 overflow-hidden border border-zinc-700">
           <div
             className={`h-2.5 rounded-full transition-all duration-300 ${
@@ -184,13 +172,12 @@ export default function WeightsSummary({ gears, onCategoryClick }: Props) {
         </div>
       </div>
 
-      {/* 🎨 5カテゴリー積載バランスバー ＆ 1行完全横並び内訳エリア */}
+      {/* 🎨 5カテゴリー積載バランスバー ＆ 縦積み内訳（文字切れ完全解消） */}
       <div className="bg-[#27272A]/50 p-3 rounded-xl border border-zinc-700/60 space-y-2.5">
         <div className="flex items-center justify-between text-xs font-bold text-zinc-300">
           <span>🎨 バランス</span>
         </div>
 
-        {/* 積載バランスバー */}
         <div className="w-full bg-zinc-800 rounded-full h-2.5 overflow-hidden border border-zinc-700 flex shadow-inner">
           {CATEGORIES.map((cat) => {
             const weight = categoryWeights[cat] || 0;
@@ -215,7 +202,7 @@ export default function WeightsSummary({ gears, onCategoryClick }: Props) {
           )}
         </div>
 
-        {/* 全カテゴリー完全1行横並び (grid-cols-5) */}
+        {/* 上段：アイコン＋カテゴリー名 / 下段：重量数値（2行縦積み配置） */}
         <div className="grid grid-cols-5 gap-1 pt-1">
           {CATEGORIES.map((cat) => {
             const weight = categoryWeights[cat] || 0;
@@ -228,21 +215,24 @@ export default function WeightsSummary({ gears, onCategoryClick }: Props) {
                 key={cat}
                 type="button"
                 onClick={() => onCategoryClick && onCategoryClick(cat)}
-                className={`p-1.5 sm:p-2 rounded-lg border transition flex flex-col items-center justify-center text-center cursor-pointer group ${
+                className={`p-1.5 rounded-lg border transition flex flex-col items-center justify-center text-center cursor-pointer group ${
                   isEmpty
-                    ? 'bg-[#18181B]/40 border-zinc-800/60 opacity-60'
+                    ? 'bg-[#18181B]/40 border-zinc-800/60 opacity-50'
                     : 'bg-[#18181B]/80 hover:bg-[#18181B] border-zinc-800 hover:border-zinc-700'
                 }`}
               >
+                {/* 上段: アイコン ＋ 名前 */}
                 <div
-                  className="flex items-center justify-center gap-0.5 text-[10px] sm:text-[11px] font-bold group-hover:scale-105 transition-transform truncate w-full"
+                  className="flex items-center justify-center gap-0.5 text-[10px] sm:text-[11px] font-bold group-hover:scale-105 transition-transform w-full"
                   style={{ color: isEmpty ? '#71717A' : color }}
                 >
                   <span className="shrink-0">{icon}</span>
                   <span className="truncate">{cat}</span>
                 </div>
+
+                {/* 下段: 重量数値 */}
                 <span
-                  className={`text-[10px] sm:text-xs font-mono tabular-nums font-extrabold mt-0.5 truncate w-full ${
+                  className={`text-[10px] sm:text-xs font-mono tabular-nums font-extrabold mt-0.5 w-full ${
                     isEmpty ? 'text-zinc-600' : 'text-zinc-200'
                   }`}
                 >

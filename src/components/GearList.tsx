@@ -39,14 +39,7 @@ type Props = {
   onReorderGears?: (reorderedGears: GearItem[]) => void;
 };
 
-// 短縮カテゴリー定義
-const CATEGORIES = [
-  'ベース',
-  '調理',
-  '衣類',
-  'その他',
-  '消耗品',
-];
+const CATEGORIES = ['ベース', '調理', '衣類', 'その他', '消耗品'];
 
 const CATEGORY_COLORS = {
   ベース: '#FF5500',
@@ -109,10 +102,13 @@ export default function GearList({
 
   return (
     <section className="bg-[#18181B] p-4 md:p-6 rounded-2xl border border-zinc-800 space-y-4 shadow-xl">
-      {/* モード切替トグル */}
+      {/* リストヘッダー: 表記明確化 🎒 パッキングリスト (持参11点 / 全25点) */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-3">
         <h2 className="text-lg font-extrabold text-white flex items-center gap-1.5">
-          🎒 パッキングリスト <span className="text-zinc-400 font-normal text-sm">({gears.length}点)</span>
+          🎒 パッキングリスト{' '}
+          <span className="text-zinc-400 font-normal text-sm font-mono">
+            (持参{totalCount}点 / 全{gears.length}点)
+          </span>
         </h2>
 
         <div className="flex items-center bg-[#09090B] p-1 rounded-xl border border-zinc-800 self-start sm:self-auto">
@@ -139,16 +135,16 @@ export default function GearList({
         </div>
       </div>
 
-      {/* ★ パッキングモード時のみ進捗プログレスバーを表示 */}
+      {/* 🎒 荷造り完了: 10 / 11 点 (持参対象) - 「パッキング」モード時のみ表示 */}
       {screenMode === 'packing' && totalCount > 0 && (
         <div className="bg-[#27272A]/80 p-3.5 rounded-2xl border border-zinc-700/70 space-y-2 shadow-inner">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <span className="text-sm font-black text-white flex items-center gap-1.5">
-                📊 パッキング進捗:
+                🎒 荷造り完了:
               </span>
               <span className="text-sm font-black text-[#00E676] font-mono">
-                {packedCount} / {totalCount} 点
+                {packedCount} / {totalCount} 点 <span className="text-xs text-zinc-400 font-normal">(持参対象)</span>
               </span>
             </div>
 
@@ -170,7 +166,7 @@ export default function GearList({
                   className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-zinc-800 border border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-700 transition cursor-pointer"
                   title="当日のパッキング完了チェックをリセットします"
                 >
-                  🔄 チェックをリセット
+                  🔄 リセット
                 </button>
               )}
             </div>
