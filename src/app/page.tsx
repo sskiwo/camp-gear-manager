@@ -22,14 +22,18 @@ export default function Home() {
   const [gears, setGears] = useState<any[]>([]);
   const [allGearsInAccount, setAllGearsInAccount] = useState<any[]>([]);
 
-  // モーダルステート
+  // 新規キャンプ作成モーダル用ステート
   const [isAddCampOpen, setIsAddCampOpen] = useState(false);
   const [newCampTitle, setNewCampTitle] = useState('');
+  const [copyOption, setCopyOption] = useState<'latest' | 'select' | 'none'>('latest');
+  const [selectedSourceCampId, setSelectedSourceCampId] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // 編集モーダルステート
   const [isEditCampOpen, setIsEditCampOpen] = useState(false);
   const [editCampTitle, setEditCampTitle] = useState('');
 
-  // ★ 短縮カテゴリー名ステート
+  // 短縮カテゴリー名ステート
   const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({
     ベース: false,
     調理: false,
@@ -104,7 +108,22 @@ export default function Home() {
     }
   }, [selectedCampId]);
 
-  // キャンプ追加
+  // モーダルオープン時の初期化
+  const handleOpenAddCampModal = () => {
+    setNewCampTitle('');
+    setCopyOption(camps.length > 0 ? 'latest' : 'none');
+    if (camps.length > 0) {
+      setSelectedSourceCampId(camps[0].id);
+    }
+    setIsAddCampOpen(true);
+  };
+
+  // キャンプごとのギア数を算出
+  const getCampGearCount = (campId: string) => {
+    return allGearsInAccount.filter((g) => g.camp_id === campId).length;
+  };
+
+  // ⛺ 新規キャンプ作成（引き継ぎ処理含む）
   const handleCreateCamp = async () => {
     if (!newCampTitle.trim()) {
       alert('キャンプ名を入力してください！');
@@ -112,24 +131,69 @@ export default function Home() {
     }
 
     setIsSubmitting(true);
-    const { data, error } = await supabase
+
+    // ① 新規キャンプを作成
+    const { data: newCamp, error: createErr } = await supabase
       .from('camps')
       .insert([{ title: newCampTitle.trim(), is_public: false }])
       .select()
       .single();
-    setIsSubmitting(false);
 
-    if (error) {
-      alert(`保存に失敗しました:\n${error.message}`);
+    if (createErr || !newCamp) {
+      alert(`保存に失敗しました:\n${createErr?.message}`);
+      setIsSubmitting(false);
       return;
     }
 
-    if (data) {
-      setCamps((prev) => [data, ...prev]);
-      setSelectedCampId(data.id);
-      setNewCampTitle('');
-      setIsAddCampOpen(false);
+    // ② ギアリストの引き継ぎ（複製）処理
+    let targetSourceId = '';
+    if (copyOption === 'latest' && camps.length > 0) {
+      targetSourceId = camps[0].id;
+    } else if (copyOption === 'select' && selectedSourceCampId) {
+      targetSourceId = selectedSourceCampId;
     }
+
+    if (targetSourceId) {
+      // 引き継ぎ元キャンプのギアを取得
+      const { data: sourceGears } = await supabase
+        .from('gears')
+        .select('*')
+        .eq('camp_id', targetSourceId);
+
+      if (sourceGears && sourceGears.length > 0) {
+        // パッキング完了状態 (is_packed) を false にリセットして複製データ構築
+        const clonedGears = sourceGears.map((g) => ({
+          camp_id: newCamp.id,
+          name: g.name,
+          brand: g.brand || '',
+          model_number: g.model_number || '',
+          product_name: g.product_name || g.name,
+          category: g.category || 'ベース',
+          weight: Number(g.weight) || 0,
+          price: Number(g.price) || 0,
+          quantity: Number(g.quantity) || 1,
+          is_packed: false, // ★ 次回荷造りのため未チェックへリセット
+          is_selected: g.is_selected !== false,
+          is_consumable: g.is_consumable || false,
+          product_url: g.product_url || '',
+          purchase_date: g.purchase_date || '',
+          fuel_type: g.fuel_type || '',
+          memo: g.memo || '',
+        }));
+
+        const { error: cloneErr } = await supabase.from('gears').insert(clonedGears);
+        if (cloneErr) {
+          console.error('Clone Gears Error:', cloneErr);
+        }
+      }
+    }
+
+    setIsSubmitting(false);
+    setCamps((prev) => [newCamp, ...prev]);
+    setSelectedCampId(newCamp.id);
+    setNewCampTitle('');
+    setIsAddCampOpen(false);
+    fetchGears();
   };
 
   // キャンプ名変更
@@ -160,7 +224,7 @@ export default function Home() {
     }
   };
 
-  // 公開・非公開
+  // 公開・非公開トグル
   const handleTogglePublic = async () => {
     const currentCamp = camps.find((c) => c.id === selectedCampId);
     if (!currentCamp) return;
@@ -363,14 +427,16 @@ export default function Home() {
             </div>
 
             <div className="flex items-center gap-1 shrink-0">
+              {/* ① 新規作成ボタン */}
               <button
-                onClick={() => setIsAddCampOpen(true)}
+                onClick={handleOpenAddCampModal}
                 className="w-9 h-9 flex items-center justify-center bg-[#FF5500] hover:bg-[#E04B00] text-white text-base font-black rounded-xl transition shrink-0 cursor-pointer shadow-sm"
                 title="新しいキャンプを追加"
               >
                 +
               </button>
 
+              {/* ② 編集アイコン */}
               <button
                 onClick={startEditCampTitle}
                 className="w-9 h-9 flex items-center justify-center bg-[#27272A] hover:bg-zinc-700 text-zinc-300 rounded-xl text-xs transition border border-zinc-700 cursor-pointer"
@@ -379,6 +445,7 @@ export default function Home() {
                 ✏️
               </button>
 
+              {/* ③ 削除アイコン */}
               <button
                 onClick={handleDeleteCamp}
                 className="ml-2 w-9 h-9 flex items-center justify-center bg-red-950/30 hover:bg-red-900/60 text-red-400 hover:text-white rounded-xl text-xs transition border border-red-900/50 cursor-pointer"
@@ -390,9 +457,9 @@ export default function Home() {
           </div>
         </header>
 
-        {/* 編集・追加モーダル */}
+        {/* ✏️ キャンプ名変更モーダル */}
         {isEditCampOpen && (
-          <div className="bg-[#18181B] border border-[#FFB800]/50 p-4 rounded-2xl space-y-3 shadow-2xl">
+          <div className="bg-[#18181B] border border-[#FFB800]/50 p-4 rounded-2xl space-y-3 shadow-2xl animate-fade-in">
             <h3 className="text-sm font-bold text-white">✏️ キャンプ名を変更</h3>
             <div className="flex gap-2">
               <input
@@ -401,31 +468,126 @@ export default function Home() {
                 onChange={(e) => setEditCampTitle(e.target.value)}
                 className="flex-1 bg-[#27272A] border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white"
               />
-              <button onClick={handleUpdateCampTitle} className="bg-[#FFB800] text-black px-4 py-2 rounded-xl text-xs font-bold">
+              <button onClick={handleUpdateCampTitle} className="bg-[#FFB800] text-black px-4 py-2 rounded-xl text-xs font-bold cursor-pointer">
                 保存
               </button>
-              <button onClick={() => setIsEditCampOpen(false)} className="bg-zinc-800 text-zinc-300 px-3 py-2 rounded-xl text-xs">
+              <button onClick={() => setIsEditCampOpen(false)} className="bg-zinc-800 text-zinc-300 px-3 py-2 rounded-xl text-xs cursor-pointer">
                 中止
               </button>
             </div>
           </div>
         )}
 
+        {/* ⛺ 新規キャンプ追加モーダル（引き継ぎオプション付き） */}
         {isAddCampOpen && (
-          <div className="bg-[#18181B] border border-[#FF5500]/50 p-4 rounded-2xl space-y-3 shadow-2xl">
-            <h3 className="text-sm font-bold text-white">⛺ 新しいキャンプを追加</h3>
-            <div className="flex gap-2">
+          <div className="bg-[#18181B] border border-[#FF5500]/50 p-5 rounded-2xl space-y-4 shadow-2xl animate-fade-in">
+            <h3 className="text-sm font-extrabold text-white flex items-center gap-1.5">
+              ⛺ 新しいキャンプを追加
+            </h3>
+
+            {/* キャンプ名入力 */}
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-zinc-400 block">キャンプ名（必須）</label>
               <input
                 type="text"
                 placeholder="例: 2026年8月 ふもとっぱらソロキャン"
                 value={newCampTitle}
                 onChange={(e) => setNewCampTitle(e.target.value)}
-                className="flex-1 bg-[#27272A] border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white"
+                className="w-full bg-[#27272A] border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:border-[#FF5500] focus:outline-none"
               />
-              <button onClick={handleCreateCamp} disabled={isSubmitting} className="bg-[#FF5500] text-white px-4 py-2 rounded-xl text-xs font-bold">
-                作成
+            </div>
+
+            {/* 引き継ぎオプション */}
+            <div className="space-y-2.5 pt-1 border-t border-zinc-800">
+              <label className="text-[10px] font-bold text-zinc-400 block">ギアリストの引き継ぎ</label>
+
+              <div className="space-y-2 text-xs">
+                {/* ① 直近のキャンプから引き継ぐ */}
+                <label className={`flex items-start gap-2.5 p-2.5 rounded-xl border cursor-pointer transition ${
+                  copyOption === 'latest' ? 'bg-[#FF5500]/10 border-[#FF5500] text-white' : 'bg-[#27272A]/40 border-zinc-800 text-zinc-300 hover:bg-[#27272A]'
+                }`}>
+                  <input
+                    type="radio"
+                    name="copyOption"
+                    value="latest"
+                    checked={copyOption === 'latest'}
+                    onChange={() => setCopyOption('latest')}
+                    disabled={camps.length === 0}
+                    className="mt-0.5 accent-[#FF5500]"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <span className="font-bold block">直近のキャンプから引き継ぐ</span>
+                    {camps.length > 0 ? (
+                      <span className="text-[11px] text-zinc-400 block truncate font-mono mt-0.5">
+                        直近: {camps[0].title} ({getCampGearCount(camps[0].id)}点)
+                      </span>
+                    ) : (
+                      <span className="text-[11px] text-zinc-500 block mt-0.5">※過去のキャンプが存在しません</span>
+                    )}
+                  </div>
+                </label>
+
+                {/* ② 過去のリストから選択 */}
+                <label className={`flex items-start gap-2.5 p-2.5 rounded-xl border cursor-pointer transition ${
+                  copyOption === 'select' ? 'bg-[#FF5500]/10 border-[#FF5500] text-white' : 'bg-[#27272A]/40 border-zinc-800 text-zinc-300 hover:bg-[#27272A]'
+                }`}>
+                  <input
+                    type="radio"
+                    name="copyOption"
+                    value="select"
+                    checked={copyOption === 'select'}
+                    onChange={() => setCopyOption('select')}
+                    disabled={camps.length === 0}
+                    className="mt-0.5 accent-[#FF5500]"
+                  />
+                  <div className="flex-1 min-w-0 space-y-2">
+                    <span className="font-bold block">過去のリストから選択</span>
+                    {copyOption === 'select' && (
+                      <select
+                        value={selectedSourceCampId}
+                        onChange={(e) => setSelectedSourceCampId(e.target.value)}
+                        className="w-full bg-[#18181B] border border-zinc-700 text-white text-xs font-bold px-2.5 py-1.5 rounded-lg focus:outline-none focus:border-[#FF5500]"
+                      >
+                        {camps.map((camp) => (
+                          <option key={camp.id} value={camp.id}>
+                            {camp.title} ({getCampGearCount(camp.id)}点)
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                </label>
+
+                {/* ③ 空のリストで作成する */}
+                <label className={`flex items-center gap-2.5 p-2.5 rounded-xl border cursor-pointer transition ${
+                  copyOption === 'none' ? 'bg-[#FF5500]/10 border-[#FF5500] text-white' : 'bg-[#27272A]/40 border-zinc-800 text-zinc-300 hover:bg-[#27272A]'
+                }`}>
+                  <input
+                    type="radio"
+                    name="copyOption"
+                    value="none"
+                    checked={copyOption === 'none'}
+                    onChange={() => setCopyOption('none')}
+                    className="accent-[#FF5500]"
+                  />
+                  <span className="font-bold">空のリストで作成する (ギア0件)</span>
+                </label>
+              </div>
+            </div>
+
+            {/* 操作ボタン */}
+            <div className="flex justify-end gap-2 pt-2 border-t border-zinc-800">
+              <button
+                onClick={handleCreateCamp}
+                disabled={isSubmitting}
+                className="bg-[#FF5500] hover:bg-[#E04B00] text-white px-5 py-2 rounded-xl text-xs font-bold transition shadow-sm cursor-pointer disabled:opacity-50"
+              >
+                {isSubmitting ? '作成中...' : '作成'}
               </button>
-              <button onClick={() => setIsAddCampOpen(false)} className="bg-zinc-800 text-zinc-300 px-3 py-2 rounded-xl text-xs">
+              <button
+                onClick={() => setIsAddCampOpen(false)}
+                className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-4 py-2 rounded-xl text-xs font-bold cursor-pointer transition"
+              >
                 中止
               </button>
             </div>
