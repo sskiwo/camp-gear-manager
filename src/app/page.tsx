@@ -381,7 +381,6 @@ export default function Home() {
               🏕️ <span className="text-[#FF5500]">Camp Gear</span> Manager
             </h1>
 
-            {/* ★ 公開ステータスバッジ: 🌐 公開中はエメラルドグリーン (#10B981) */}
             <button
               onClick={handleTogglePublic}
               className={`px-3 py-1 rounded-xl text-xs font-bold transition border cursor-pointer shrink-0 shadow-sm ${
@@ -569,7 +568,7 @@ export default function Home() {
 
         <WeightsSummary gears={gears} onCategoryClick={scrollToCategory} />
         
-        {/* 🔍 AI検索エリア ＆ ★ アウトライン（ゴースト）ボタンに変更された「みんなのギア」 */}
+        {/* AI検索エリア ＆ ★ アイコン整理後の「みんなのギアから参照して追加する ➔」 */}
         <div className="space-y-2">
           <GearSearch onAddGear={handleAddGear} />
           
@@ -578,7 +577,7 @@ export default function Home() {
               href="/community"
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#09090B] hover:bg-[#FF5500]/10 text-[#FF5500] border border-[#FF5500] px-4 py-2.5 rounded-xl text-xs font-black transition shadow-sm group cursor-pointer"
             >
-              <span>👥 みんなのギアから参照して追加する</span>
+              <span>みんなのギアから参照して追加する</span>
               <span className="group-hover:translate-x-1 transition-transform">➔</span>
             </Link>
           </div>

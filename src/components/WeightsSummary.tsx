@@ -38,7 +38,7 @@ const CATEGORY_ICONS: Record<string, string> = {
   消耗品: '🍱',
 };
 
-// ★ 5標準カテゴリーへの正規化関数（未定義・旧名称・未知のカテゴリーも漏れなく必ず5色のいずれかに集約）
+// 5標準カテゴリーへの正規化関数
 const normalizeCategory = (gearCategory?: string, isConsumable?: boolean): 'ベース' | '調理' | '衣類' | 'その他' | '消耗品' => {
   if (isConsumable) return '消耗品';
   if (!gearCategory) return 'ベース';
@@ -48,7 +48,6 @@ const normalizeCategory = (gearCategory?: string, isConsumable?: boolean): 'ベ�
   if (cat === '衣類') return '衣類';
   if (cat === '消耗品' || cat === '食料・消耗品' || cat === '食料') return '消耗品';
   if (cat === 'その他' || cat === 'その他・日用品') return 'その他';
-  // 上記以外の未知のカテゴリー（例: 照明、電化製品など）はすべて「その他」に安全集約
   return 'その他';
 };
 
@@ -62,13 +61,11 @@ const formatWeightDisplay = (grams: number) => {
 };
 
 export default function WeightsSummary({ gears, onCategoryClick }: Props) {
-  // 目標重量ステート (デフォルト: 15.0 kg)
   const [targetWeightKg, setTargetWeightKg] = useState<number>(15.0);
   const [isEditingTarget, setIsEditingTarget] = useState<boolean>(false);
 
   const selectedGears = gears.filter((g) => g.is_selected !== false);
 
-  // ① 各カテゴリーごとに (重量 × 数量) を集計
   const categoryWeights = CATEGORIES.reduce((acc, catName) => {
     acc[catName] = selectedGears
       .filter((g) => normalizeCategory(g.category, g.is_consumable) === catName)
@@ -76,19 +73,14 @@ export default function WeightsSummary({ gears, onCategoryClick }: Props) {
     return acc;
   }, {} as Record<string, number>);
 
-  // ② 行き総重量は「5カテゴリー別重量の和」から直接算出（★これで計算ズレが100%発生しない構造に）
   const totalWeight = Object.values(categoryWeights).reduce((a, b) => a + b, 0);
-
-  // ③ 帰りの重量（消耗品以外の合計）
   const baseWeight = totalWeight - (categoryWeights['消耗品'] || 0);
 
-  // ④ 総額
   const totalPrice = selectedGears.reduce(
     (sum, g) => sum + (g.price || 0) * (g.quantity || 1),
     0
   );
 
-  // 目標重量との比較計算
   const targetWeightGrams = targetWeightKg * 1000;
   const targetPercent = targetWeightGrams > 0 ? (totalWeight / targetWeightGrams) * 100 : 0;
   const isOverTarget = targetWeightGrams > 0 && totalWeight > targetWeightGrams;
@@ -96,18 +88,18 @@ export default function WeightsSummary({ gears, onCategoryClick }: Props) {
 
   return (
     <section className="bg-[#18181B] border border-zinc-800 p-4 md:p-5 rounded-2xl shadow-xl space-y-3">
-      {/* 📊 タイトル */}
+      {/* サマリータイトル (絵文字アイコン削除) */}
       <div className="border-b border-zinc-800 pb-2">
-        <h2 className="text-sm font-extrabold text-white flex items-center gap-1.5">
-          📊 パッキングサマリー
+        <h2 className="text-sm font-extrabold text-white tracking-wide">
+          パッキングサマリー
         </h2>
       </div>
 
-      {/* 🎯 目標重量 ＆ プログレスバーエリア */}
+      {/* 目標重量 ＆ プログレスバー (アイコン削除・白文字化) */}
       <div className="bg-[#27272A]/50 p-3 rounded-xl border border-zinc-700/60 space-y-2">
         <div className="flex items-center justify-between gap-2 text-xs">
-          <div className="flex items-center gap-1 font-bold text-zinc-200">
-            <span>🎯 目標:</span>
+          <div className="flex items-center gap-1 font-bold text-white">
+            <span>目標:</span>
             {isEditingTarget ? (
               <div className="flex items-center gap-1">
                 <input
@@ -117,7 +109,7 @@ export default function WeightsSummary({ gears, onCategoryClick }: Props) {
                   onChange={(e) => setTargetWeightKg(Number(e.target.value))}
                   className="w-16 bg-[#18181B] border border-[#FF5500] rounded px-1.5 py-0.5 text-xs font-mono tabular-nums text-white focus:outline-none"
                 />
-                <span className="text-xs text-zinc-300">kg</span>
+                <span className="text-xs text-white">kg</span>
                 <button
                   onClick={() => setIsEditingTarget(false)}
                   className="text-[10px] bg-[#FF5500] text-white px-2 py-0.5 rounded font-bold cursor-pointer hover:bg-[#E04B00]"
@@ -128,7 +120,7 @@ export default function WeightsSummary({ gears, onCategoryClick }: Props) {
             ) : (
               <span
                 onClick={() => setIsEditingTarget(true)}
-                className="font-mono tabular-nums text-xs font-bold text-zinc-100 cursor-pointer hover:underline flex items-center gap-1"
+                className="font-mono tabular-nums text-xs font-bold text-white cursor-pointer hover:underline flex items-center gap-1"
                 title="タップして目標重量を変更"
               >
                 {targetWeightKg.toFixed(2)} kg
@@ -137,7 +129,7 @@ export default function WeightsSummary({ gears, onCategoryClick }: Props) {
             )}
           </div>
 
-          {/* 残り重量表記 */}
+          {/* 残り重量表記 (白文字統一) */}
           {targetWeightGrams > 0 && (
             <span className="text-xs font-bold font-mono tabular-nums shrink-0 text-white">
               {isOverTarget
@@ -147,7 +139,7 @@ export default function WeightsSummary({ gears, onCategoryClick }: Props) {
           )}
         </div>
 
-        {/* 目標プログレスバー */}
+        {/* プログレスバー */}
         <div className="w-full bg-zinc-800 rounded-full h-2.5 overflow-hidden border border-zinc-700">
           <div
             className={`h-2.5 rounded-full transition-all duration-300 ${
@@ -158,37 +150,36 @@ export default function WeightsSummary({ gears, onCategoryClick }: Props) {
         </div>
       </div>
 
-      {/* 🚀 主要数値（行き / 帰り / 合計） */}
+      {/* 主要数値（行き / 帰り / 合計金額）: 全白文字・絵文字削り */}
       <div className="bg-[#27272A]/50 p-2.5 rounded-xl border border-zinc-700/60 grid grid-cols-3 gap-1 text-[11px] sm:text-xs font-bold text-center">
         <div className="flex items-center justify-center gap-1 truncate">
-          <span className="text-zinc-400 shrink-0">🚀 行き:</span>
+          <span className="text-zinc-300 shrink-0">行き:</span>
           <span className="font-mono tabular-nums text-white font-bold truncate">
             {(totalWeight / 1000).toFixed(2)}kg
           </span>
         </div>
 
         <div className="flex items-center justify-center gap-1 truncate border-x border-zinc-700/60 px-0.5">
-          <span className="text-zinc-400 shrink-0">🏠 帰り:</span>
+          <span className="text-zinc-300 shrink-0">帰り:</span>
           <span className="font-mono tabular-nums text-white font-bold truncate">
             {(baseWeight / 1000).toFixed(2)}kg
           </span>
         </div>
 
         <div className="flex items-center justify-center gap-1 truncate">
-          <span className="text-zinc-400 shrink-0">💰 合計:</span>
+          <span className="text-zinc-300 shrink-0">合計金額:</span>
           <span className="font-mono tabular-nums text-white font-bold truncate">
             ¥{totalPrice.toLocaleString()}
           </span>
         </div>
       </div>
 
-      {/* 🎨 5カテゴリー積載バランスバー ＆ 1行完全横並び内訳エリア */}
+      {/* バランスバー ＆ 5カテゴリー内訳エリア (絵文字削り) */}
       <div className="bg-[#27272A]/50 p-3 rounded-xl border border-zinc-700/60 space-y-2.5">
-        <div className="flex items-center justify-between text-xs font-bold text-zinc-300">
-          <span>🎨 バランス</span>
+        <div className="flex items-center justify-between text-xs font-bold text-white">
+          <span>バランス</span>
         </div>
 
-        {/* 積載バランスバー */}
         <div className="w-full bg-zinc-800 rounded-full h-2.5 overflow-hidden border border-zinc-700 flex shadow-inner">
           {CATEGORIES.map((cat) => {
             const weight = categoryWeights[cat] || 0;
@@ -213,7 +204,7 @@ export default function WeightsSummary({ gears, onCategoryClick }: Props) {
           )}
         </div>
 
-        {/* 全カテゴリー完全1行横並び (grid-cols-5) */}
+        {/* 5カテゴリー縦積み内訳 */}
         <div className="grid grid-cols-5 gap-1 pt-1">
           {CATEGORIES.map((cat) => {
             const weight = categoryWeights[cat] || 0;
@@ -232,7 +223,6 @@ export default function WeightsSummary({ gears, onCategoryClick }: Props) {
                     : 'bg-[#18181B]/80 hover:bg-[#18181B] border-zinc-800 hover:border-zinc-700'
                 }`}
               >
-                {/* 上段: アイコン ＋ 名前 */}
                 <div
                   className="flex items-center justify-center gap-0.5 text-[10px] sm:text-[11px] font-bold group-hover:scale-105 transition-transform w-full"
                   style={{ color: isEmpty ? '#71717A' : color }}
@@ -241,7 +231,6 @@ export default function WeightsSummary({ gears, onCategoryClick }: Props) {
                   <span className="truncate">{cat}</span>
                 </div>
 
-                {/* 下段: 重量数値 */}
                 <span
                   className={`text-[10px] sm:text-xs font-mono tabular-nums font-extrabold mt-0.5 w-full ${
                     isEmpty ? 'text-zinc-600' : 'text-zinc-200'

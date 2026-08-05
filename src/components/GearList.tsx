@@ -104,13 +104,13 @@ export default function GearList({
 
   return (
     <section className="bg-[#18181B] p-4 md:p-6 rounded-2xl border border-zinc-800 space-y-4 shadow-xl">
-      {/* リストヘッダー：タイトルのみのシンプルな表記 */}
+      {/* リストヘッダー */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-3">
         <h2 className="text-lg font-extrabold text-white flex items-center gap-1.5">
           {screenMode === 'packing' ? '🎒 パッキングリスト' : '📋 持参するギアの選択'}
         </h2>
 
-        {/* モード切替スイッチ */}
+        {/* モード切替トグル */}
         <div className="flex items-center bg-[#09090B] p-1 rounded-xl border border-zinc-800 self-start sm:self-auto">
           <button
             onClick={() => setScreenMode('packing')}
@@ -135,20 +135,21 @@ export default function GearList({
         </div>
       </div>
 
-      {/* パッキング進捗カード： 🎒 パッキング済み: X / Y 点 */}
+      {/* パッキング進捗カード: アイコン削除・白文字化 */}
       {screenMode === 'packing' && totalCount > 0 && (
         <div className="bg-[#27272A]/80 p-3.5 rounded-2xl border border-zinc-700/70 space-y-2 shadow-inner">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-black text-white flex items-center gap-1.5">
-                🎒 パッキング済み:
+              <span className="text-sm font-black text-white">
+                パッキング済み:
               </span>
-              <span className="text-sm font-black text-[#10B981] font-mono">
+              <span className="text-sm font-black text-white font-mono">
                 {packedCount} / {totalCount} 点
               </span>
             </div>
 
             <div className="flex items-center gap-1.5">
+              {/* アイコン削除「未チェックのみ」 */}
               <button
                 onClick={() => setFilterMode(filterMode === 'all' ? 'unpacked' : 'all')}
                 className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border transition cursor-pointer ${
@@ -157,7 +158,7 @@ export default function GearList({
                     : 'bg-zinc-800 text-zinc-300 border-zinc-700 hover:text-white'
                 }`}
               >
-                {filterMode === 'unpacked' ? '👁️ 全て表示' : '📦 未チェックのみ'}
+                {filterMode === 'unpacked' ? '全て表示' : '未チェックのみ'}
               </button>
 
               {onResetAllPacked && (
@@ -174,7 +175,7 @@ export default function GearList({
 
           <div className="w-full bg-zinc-800 rounded-full h-2.5 overflow-hidden border border-zinc-700">
             <div
-              className="bg-[#10B981] h-2.5 rounded-full transition-all duration-300 shadow-sm"
+              className="bg-[#FF5500] h-2.5 rounded-full transition-all duration-300 shadow-sm"
               style={{ width: `${totalCount > 0 ? (packedCount / totalCount) * 100 : 0}%` }}
             />
           </div>
