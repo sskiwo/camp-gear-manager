@@ -372,18 +372,22 @@ export default function Home() {
   const currentSelectedCamp = camps.find((c) => c.id === selectedCampId);
 
   return (
-    <main className="min-h-screen bg-[#09090B] text-zinc-100 p-4 md:p-8 font-sans">
-      <div className="max-w-5xl mx-auto space-y-6">
-        {/* ヘッダーエリア */}
-        <header className="border-b border-zinc-800 pb-4 space-y-3">
+    <main className="min-h-screen bg-[#09090B] text-zinc-100 p-3 sm:p-4 md:p-8 font-sans">
+      <div className="max-w-5xl mx-auto space-y-4">
+        
+        {/* ヘッダーエリア（パディング・余白を詰め、ロゴ行を確実に1行化） */}
+        <header className="border-b border-zinc-800 pb-2.5 space-y-2">
           <div className="flex items-center justify-between gap-2">
-            <h1 className="text-lg md:text-2xl font-black text-white tracking-tight flex items-center gap-1.5">
-              🏕️ <span className="text-[#FF5500]">Camp Gear</span> Manager
+            <h1 className="text-sm sm:text-lg md:text-xl font-black text-white tracking-tight flex items-center gap-1.5 whitespace-nowrap overflow-hidden truncate">
+              <span>⛺</span>
+              <span className="truncate">
+                <span className="text-[#FF5500]">Camp Gear</span> Manager
+              </span>
             </h1>
 
             <button
               onClick={handleTogglePublic}
-              className={`px-3 py-1 rounded-xl text-xs font-bold transition border cursor-pointer shrink-0 shadow-sm ${
+              className={`px-2.5 py-1 rounded-xl text-[11px] font-bold transition border cursor-pointer shrink-0 shadow-sm ${
                 currentSelectedCamp?.is_public
                   ? 'bg-[#10B981] text-white border-transparent hover:bg-emerald-600'
                   : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white'
@@ -393,13 +397,14 @@ export default function Home() {
             </button>
           </div>
 
-          <div className="flex items-center justify-between gap-1.5 bg-[#18181B] p-2 rounded-2xl border border-zinc-800">
+          {/* キャンプ場選択・操作エリア（カード余白とボタンサイズ・間隔をスリム化） */}
+          <div className="flex items-center justify-between gap-1.5 bg-[#18181B] px-2 py-1.5 rounded-xl border border-zinc-800">
             <div className="flex items-center gap-1.5 flex-1 min-w-0">
-              <span className="text-sm font-bold text-[#FF5500] pl-1 shrink-0">⛺</span>
+              <span className="text-xs font-bold text-[#FF5500] pl-0.5 shrink-0">⛺</span>
               <select
                 value={selectedCampId}
                 onChange={(e) => setSelectedCampId(e.target.value)}
-                className="w-full bg-[#27272A] text-white text-xs font-bold px-2.5 py-2 rounded-xl border border-zinc-700 focus:outline-none focus:border-[#FF5500] cursor-pointer truncate"
+                className="w-full bg-[#27272A] text-white text-xs font-bold px-2 py-1.5 rounded-lg border border-zinc-700 focus:outline-none focus:border-[#FF5500] cursor-pointer truncate"
               >
                 {camps.map((camp) => (
                   <option key={camp.id} value={camp.id}>
@@ -412,7 +417,7 @@ export default function Home() {
             <div className="flex items-center gap-1 shrink-0">
               <button
                 onClick={handleOpenAddCampModal}
-                className="w-9 h-9 flex items-center justify-center bg-[#FF5500] hover:bg-[#E04B00] text-white text-base font-black rounded-xl transition shrink-0 cursor-pointer shadow-sm"
+                className="w-8 h-8 flex items-center justify-center bg-[#FF5500] hover:bg-[#E04B00] text-white text-sm font-black rounded-lg transition shrink-0 cursor-pointer shadow-sm"
                 title="新しいキャンプを追加"
               >
                 +
@@ -420,7 +425,7 @@ export default function Home() {
 
               <button
                 onClick={startEditCampTitle}
-                className="w-9 h-9 flex items-center justify-center bg-[#27272A] hover:bg-zinc-700 text-zinc-300 rounded-xl text-xs transition border border-zinc-700 cursor-pointer"
+                className="w-8 h-8 flex items-center justify-center bg-[#27272A] hover:bg-zinc-700 text-zinc-300 rounded-lg text-xs transition border border-zinc-700 cursor-pointer"
                 title="キャンプ名を編集"
               >
                 ✏️
@@ -428,7 +433,7 @@ export default function Home() {
 
               <button
                 onClick={handleDeleteCamp}
-                className="ml-2 w-9 h-9 flex items-center justify-center bg-red-950/30 hover:bg-red-900/60 text-[#EF4444] hover:text-white rounded-xl text-xs transition border border-[#EF4444]/40 cursor-pointer"
+                className="ml-1 w-8 h-8 flex items-center justify-center bg-red-950/30 hover:bg-red-900/60 text-[#EF4444] hover:text-white rounded-lg text-xs transition border border-[#EF4444]/40 cursor-pointer"
                 title="このキャンプを削除"
               >
                 🗑️
@@ -569,7 +574,7 @@ export default function Home() {
         {/* 1段目: パッキングサマリー */}
         <WeightsSummary gears={gears} onCategoryClick={scrollToCategory} />
         
-        {/* 2段目: ギアを追加 (GearSearchコンポーネント内でカード枠・見出し・ボタンを完結) */}
+        {/* 2段目: ギアを追加 */}
         <GearSearch onAddGear={handleAddGear} />
 
         {/* 3段目: パッキングリスト */}
