@@ -104,11 +104,11 @@ export default function GearList({
 
   return (
     <section className="bg-[#18181B] p-4 md:p-6 rounded-2xl border border-zinc-800 space-y-4 shadow-xl">
-      {/* リストヘッダー */}
+      {/* リストヘッダー：絵文字を取り除き、テキストのみに変更 */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-3">
-        <h2 className="text-lg font-extrabold text-white flex items-center gap-1.5">
+        <h2 className="text-lg font-bold text-zinc-100 flex items-center gap-1.5">
           {screenMode === 'packing'
-            ? '🎒 パッキングリスト'
+            ? 'パッキングリスト'
             : `ギア選定 (${totalCount} / ${gears.length}点)`}
         </h2>
 
@@ -162,6 +162,7 @@ export default function GearList({
                 {filterMode === 'unpacked' ? '全て表示' : '未チェックのみ'}
               </button>
 
+              {/* リセットボタン */}
               {onResetAllPacked && (
                 <button
                   onClick={onResetAllPacked}
@@ -189,20 +190,13 @@ export default function GearList({
         </p>
       ) : filterMode === 'unpacked' && filteredGears.length === 0 ? (
         <div className="bg-emerald-950/30 border border-emerald-800/60 p-6 rounded-2xl text-center space-y-2">
-          {/* ★ 「本日の」を削除 */}
-          <p className="text-base font-black text-[#10B981]">🎉 パッキング準備がすべて完了しました！</p>
+          <p className="text-base font-black text-[#10B981]">🎉 本日のパッキング準備がすべて完了しました！</p>
           <p className="text-xs text-zinc-400">持っていく予定のギアはすべてザックに入っています。行ってらっしゃい！⛺✨</p>
         </div>
       ) : (
         CATEGORIES.map((catName) => {
           let categoryGears = filteredGears.filter((g) => normalizeCategory(g.category, g.is_consumable) === catName);
           if (categoryGears.length === 0) return null;
-
-          // ★ カテゴリーごとの持参対象数・チェック済み数を算出
-          const catAllGears = gears.filter((g) => normalizeCategory(g.category, g.is_consumable) === catName);
-          const catSelectedGears = catAllGears.filter((g) => g.is_selected !== false);
-          const catPackedCount = catSelectedGears.filter((g) => g.is_packed).length;
-          const catSelectedCount = catSelectedGears.length;
 
           const sortOrder = sortOrders[catName] || 'default';
           if (sortOrder === 'weight_desc') {
@@ -256,12 +250,7 @@ export default function GearList({
                   <span style={{ color: catColor }} className="font-extrabold text-xs sm:text-sm tracking-wide truncate">
                     {catName}
                   </span>
-                  {/* ★ パッキングモード時は (チェック済数/持参数点) を表示 */}
-                  <span className="text-[11px] text-zinc-400 font-normal shrink-0">
-                    {screenMode === 'packing'
-                      ? `(${catPackedCount}/${catSelectedCount}点)`
-                      : `(${categoryGears.length}点)`}
-                  </span>
+                  <span className="text-[11px] text-zinc-400 font-normal shrink-0">({categoryGears.length}点)</span>
                 </button>
 
                 <div className="flex items-center gap-2 shrink-0">
