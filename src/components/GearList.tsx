@@ -41,7 +41,7 @@ type Props = {
 
 const CATEGORIES = ['ベース', '調理', '衣類', 'その他', '消耗品'];
 
-// 🎨 カラーパレット更新 (ベースを赤 #EF4444 へ変更)
+// 🎨 カラーパレット (ベース: 赤 #EF4444)
 const CATEGORY_COLORS = {
   ベース: '#EF4444',
   調理: '#FFB800',
@@ -163,7 +163,6 @@ export default function GearList({
                 {filterMode === 'unpacked' ? '全て表示' : '未チェックのみ'}
               </button>
 
-              {/* リセットボタン */}
               {onResetAllPacked && (
                 <button
                   onClick={onResetAllPacked}
@@ -196,8 +195,13 @@ export default function GearList({
         </div>
       ) : (
         CATEGORIES.map((catName) => {
+          const categoryAllGears = gears.filter((g) => normalizeCategory(g.category, g.is_consumable) === catName);
+          if (categoryAllGears.length === 0 && screenMode === 'packing') return null;
+
           let categoryGears = filteredGears.filter((g) => normalizeCategory(g.category, g.is_consumable) === catName);
-          if (categoryGears.length === 0) return null;
+          if (categoryGears.length === 0 && screenMode === 'packing' && filterMode === 'unpacked') {
+            return null;
+          }
 
           const sortOrder = sortOrders[catName] || 'default';
           if (sortOrder === 'weight_desc') {
@@ -221,6 +225,14 @@ export default function GearList({
           const catColor = CATEGORY_COLORS[catName as keyof typeof CATEGORY_COLORS] || '#EF4444';
           const isOpen = screenMode === 'packing' ? true : openCategories[catName] !== false;
 
+          // 🎯 モードに応じた点数表記（カウンタ）の動的計算
+          const selectedGearsInCat = categoryAllGears.filter((g) => g.is_selected !== false);
+          const packedGearsInCat = selectedGearsInCat.filter((g) => g.is_packed);
+
+          const countText = screenMode === 'packing'
+            ? `${packedGearsInCat.length} / ${selectedGearsInCat.length}`   // パッキングモード: [チェック済数] / [持参数] (例: 3 / 5)
+            : `${selectedGearsInCat.length} / ${categoryAllGears.length}`; // ギア編集モード: [持参数] / [所持品総数] (例: 5 / 8)
+
           const catIcon =
             catName === 'ベース'
               ? '⛺'
@@ -239,28 +251,31 @@ export default function GearList({
               className="border rounded-xl overflow-hidden shadow-md scroll-mt-6"
               style={{ borderColor: `${catColor}50` }}
             >
+              {/* 各カテゴリー見出し行 */}
               <div
                 style={{ backgroundColor: '#18181B', borderColor: `${catColor}40` }}
-                className="sticky top-0 z-10 w-full flex items-center justify-between px-4 py-2 border-b backdrop-blur-md"
+                className="sticky top-0 z-10 w-full flex items-center justify-between px-3 sm:px-4 py-2 border-b backdrop-blur-md gap-2"
               >
                 <button
                   onClick={() => onToggleCategoryOpen(catName)}
-                  className="flex items-center gap-2 text-left cursor-pointer flex-1 min-w-0"
+                  className="flex items-center gap-1.5 sm:gap-2 text-left cursor-pointer flex-1 min-w-0"
                 >
-                  <span className="text-sm">{catIcon}</span>
+                  <span className="text-sm shrink-0">{catIcon}</span>
                   <span style={{ color: catColor }} className="font-extrabold text-xs sm:text-sm tracking-wide truncate">
                     {catName}
                   </span>
-                  <span className="text-[11px] text-zinc-400 font-normal shrink-0">({categoryGears.length}点)</span>
+                  <span className="text-[11px] text-zinc-300 font-semibold shrink-0 font-mono">
+                    ({countText})
+                  </span>
                 </button>
 
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-1.5 shrink-0">
                   <select
                     value={sortOrder}
                     onChange={(e) =>
                       setSortOrders((prev) => ({ ...prev, [catName]: e.target.value }))
                     }
-                    className="bg-[#27272A] text-zinc-200 text-[10px] font-bold px-2 py-1 rounded-lg border border-zinc-700 focus:outline-none focus:border-[#FF5500] cursor-pointer"
+                    className="bg-[#27272A] text-zinc-200 text-[10px] font-bold px-1.5 sm:px-2 py-1 rounded-lg border border-zinc-700 focus:outline-none focus:border-[#FF5500] cursor-pointer"
                   >
                     <option value="default">更新順</option>
                     <option value="weight_desc">重い順</option>
@@ -273,7 +288,7 @@ export default function GearList({
                     <button
                       onClick={() => onToggleCategoryOpen(catName)}
                       style={{ color: catColor }}
-                      className="text-xs font-bold cursor-pointer pl-1"
+                      className="text-xs font-bold cursor-pointer pl-0.5"
                     >
                       {isOpen ? '▲' : '▼'}
                     </button>
@@ -281,22 +296,28 @@ export default function GearList({
                 </div>
               </div>
 
-              {isOpen && (
+              {(isOpen || screenMode === 'packing') && (
                 <div className="p-1.5 space-y-1 bg-[#121215]">
-                  {categoryGears.map((item) => (
-                    <GearItemCard
-                      key={item.id}
-                      item={item}
-                      catColor={catColor}
-                      adoptionRate={getAdoptionRate(item.name)}
-                      mode={screenMode}
-                      onTogglePacked={onTogglePacked}
-                      onToggleSelected={onToggleSelected}
-                      onUpdateQuantity={onUpdateQuantity}
-                      onUpdateGear={onUpdateGear}
-                      onDeleteGear={onDeleteGear}
-                    />
-                  ))}
+                  {categoryGears.length === 0 ? (
+                    <p className="text-center text-zinc-600 py-3 text-[11px]">
+                      このカテゴリーのギアはありません
+                    </p>
+                  ) : (
+                    categoryGears.map((item) => (
+                      <GearItemCard
+                        key={item.id}
+                        item={item}
+                        catColor={catColor}
+                        adoptionRate={getAdoptionRate(item.name)}
+                        mode={screenMode}
+                        onTogglePacked={onTogglePacked}
+                        onToggleSelected={onToggleSelected}
+                        onUpdateQuantity={onUpdateQuantity}
+                        onUpdateGear={onUpdateGear}
+                        onDeleteGear={onDeleteGear}
+                      />
+                    ))
+                  )}
                 </div>
               )}
             </div>
