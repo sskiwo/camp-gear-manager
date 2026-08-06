@@ -41,8 +41,9 @@ type Props = {
 
 const CATEGORIES = ['ベース', '調理', '衣類', 'その他', '消耗品'];
 
+// 🎨 カラーパレット更新 (ベースを赤 #EF4444 へ変更)
 const CATEGORY_COLORS = {
-  ベース: '#FF5500',
+  ベース: '#EF4444',
   調理: '#FFB800',
   衣類: '#00E5FF',
   その他: '#E040FB',
@@ -104,7 +105,7 @@ export default function GearList({
 
   return (
     <section className="bg-[#18181B] p-4 md:p-6 rounded-2xl border border-zinc-800 space-y-4 shadow-xl">
-      {/* リストヘッダー：絵文字を取り除き、テキストのみに変更 */}
+      {/* リストヘッダー */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-3">
         <h2 className="text-lg font-bold text-zinc-100 flex items-center gap-1.5">
           {screenMode === 'packing'
@@ -217,7 +218,7 @@ export default function GearList({
             );
           }
 
-          const catColor = CATEGORY_COLORS[catName as keyof typeof CATEGORY_COLORS] || '#FF5500';
+          const catColor = CATEGORY_COLORS[catName as keyof typeof CATEGORY_COLORS] || '#EF4444';
           const isOpen = screenMode === 'packing' ? true : openCategories[catName] !== false;
 
           const catIcon =

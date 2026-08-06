@@ -22,8 +22,9 @@ type Props = {
 // 短縮カテゴリー定義
 const CATEGORIES = ['ベース', '調理', '衣類', 'その他', '消耗品'];
 
+// 🎨 カラーパレット更新 (ベースを赤 #EF4444 へ変更)
 const CATEGORY_COLORS: Record<string, string> = {
-  ベース: '#FF5500',
+  ベース: '#EF4444',
   調理: '#FFB800',
   衣類: '#00E5FF',
   その他: '#E040FB',
@@ -88,7 +89,7 @@ export default function WeightsSummary({ gears, onCategoryClick }: Props) {
 
   return (
     <section className="bg-[#18181B] border border-zinc-800 p-4 md:p-5 rounded-2xl shadow-xl space-y-3">
-      {/* 統一見出し: パッキングサマリー (白文字・太字・「ギアを追加」と同サイズ) */}
+      {/* 統一見出し: パッキングサマリー */}
       <div className="border-b border-zinc-800 pb-2">
         <h2 className="text-zinc-100 font-bold text-lg">
           パッキングサマリー
@@ -139,7 +140,7 @@ export default function WeightsSummary({ gears, onCategoryClick }: Props) {
           )}
         </div>
 
-        {/* プログレスバー */}
+        {/* プログレスバー（主要UIアクセントカラー: #FF5500） */}
         <div className="w-full bg-zinc-800 rounded-full h-2.5 overflow-hidden border border-zinc-700">
           <div
             className={`h-2.5 rounded-full transition-all duration-300 ${
@@ -185,7 +186,7 @@ export default function WeightsSummary({ gears, onCategoryClick }: Props) {
             const weight = categoryWeights[cat] || 0;
             if (weight === 0 || totalWeight === 0) return null;
             const percent = (weight / totalWeight) * 100;
-            const color = CATEGORY_COLORS[cat] || '#FF5500';
+            const color = CATEGORY_COLORS[cat] || '#EF4444';
 
             return (
               <div
@@ -208,7 +209,7 @@ export default function WeightsSummary({ gears, onCategoryClick }: Props) {
         <div className="grid grid-cols-5 gap-1 pt-1">
           {CATEGORIES.map((cat) => {
             const weight = categoryWeights[cat] || 0;
-            const color = CATEGORY_COLORS[cat] || '#FF5500';
+            const color = CATEGORY_COLORS[cat] || '#EF4444';
             const icon = CATEGORY_ICONS[cat] || '📦';
             const isEmpty = weight === 0;
 
