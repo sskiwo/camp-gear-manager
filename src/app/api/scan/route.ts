@@ -18,6 +18,7 @@ export async function POST(request: Request) {
     let queryHint = (formData.get('queryHint') as string | null)?.trim() || '';
     const exclude = (formData.get('exclude') as string | null)?.trim() || '';
 
+    // Data URLなどの入力事故を防ぐため1,000文字までに制限
     if (queryHint.startsWith('data:')) {
       queryHint = '';
     }
@@ -25,6 +26,7 @@ export async function POST(request: Request) {
       queryHint = queryHint.substring(0, 1000);
     }
 
+    // どちらも入力されていない場合はエラー
     if (!file && !queryHint) {
       return NextResponse.json(
         { error: '検索キーワードを入力するか、画像を選択してください' },
@@ -32,15 +34,19 @@ export async function POST(request: Request) {
       );
     }
 
+    // --- プロンプト（AIへの指示文）の動的構築 ---
     let promptText = `あなたはキャンプギアの専門データベースAIです。`;
 
     if (file && queryHint) {
+      // パターン③: テキスト + 画像
       promptText += `\n【解析モード: 画像 ＋ 補助テキスト】`;
       promptText += `\n提供された画像と、ユーザーからの入力キーワード「${queryHint}」（型番・メーカー名・Amazon URL等）の両方を組み合わせ、該当する商品およびそのバリエーション・定番同等品を特定してください。`;
     } else if (file) {
+      // パターン②: 画像のみ
       promptText += `\n【解析モード: 画像のみ】`;
       promptText += `\n提供された画像（キャンプギア現物・パッケージ箱・購入レシートなど）を視覚的に解析し、商品を特定してください。`;
     } else {
+      // パターン①: テキストのみ
       promptText += `\n【解析モード: テキスト検索】`;
       promptText += `\nユーザーが入力した「${queryHint}」（型番・商品名・メーカー・Amazon URL等）から該当するキャンプギアを特定してください。`;
     }
@@ -54,6 +60,7 @@ export async function POST(request: Request) {
       promptText += `\n\n※以下の商品は除外して別の関連候補を提案してください: ${exclude}`;
     }
 
+    // Structured Outputs (JSONレスポンス定義)
     const config = {
       responseMimeType: 'application/json',
       responseSchema: {
@@ -84,6 +91,7 @@ export async function POST(request: Request) {
 
     const parts: any[] = [];
 
+    // 画像が存在する場合はBase64に変換して添付
     if (file) {
       if (file.size > 10 * 1024 * 1024) {
         return NextResponse.json(
@@ -95,6 +103,7 @@ export async function POST(request: Request) {
       const buffer = Buffer.from(arrayBuffer);
       const base64Data = buffer.toString('base64');
 
+      // MIMEタイプの判定と補正
       let mimeType = file.type;
       if (!mimeType || mimeType === 'application/octet-stream' || !mimeType.startsWith('image/')) {
         mimeType = 'image/jpeg';
@@ -108,24 +117,43 @@ export async function POST(request: Request) {
       });
     }
 
+    // テキストプロンプトを追加
     parts.push({ text: promptText });
 
     const contents = [{ role: 'user', parts }];
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents,
-      config,
-    });
+    // 💡 複数モデルを順番に試行するフォールバック機構
+    const candidateModels = [
+      'gemini-flash-latest',
+      'gemini-2.5-flash',
+      'gemini-2.0-flash',
+      'gemini-1.5-flash'
+    ];
 
-    const responseText = response.text;
-    if (!responseText) {
-      return NextResponse.json(
-        { error: 'AIからの応答を取得できませんでした' },
-        { status: 500 }
-      );
+    let response: any = null;
+    let lastError: any = null;
+
+    for (const modelName of candidateModels) {
+      try {
+        response = await ai.models.generateContent({
+          model: modelName,
+          contents,
+          config,
+        });
+        if (response && response.text) {
+          break; // 成功したらループを抜ける
+        }
+      } catch (err: any) {
+        console.warn(`モデル [${modelName}] での試行に失敗しました。次を試します...`, err.message);
+        lastError = err;
+      }
     }
 
+    if (!response || !response.text) {
+      throw lastError || new Error('すべてのGeminiモデルでの応答取得に失敗しました');
+    }
+
+    const responseText = response.text;
     const jsonResult = JSON.parse(responseText);
 
     return NextResponse.json({
