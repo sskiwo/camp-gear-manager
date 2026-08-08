@@ -1,8 +1,43 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenAI, Type } from '@google/genai';
 
+// 🛡️ 簡易レートリミット管理（メモリキャッシュ用）
+// ※ Vercelのサーバーレス関数ではインスタンスごとに初期化されますが、短時間の連打攻撃には十分に効果を発揮します
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1分間
+const MAX_REQUESTS_PER_WINDOW = 5;    // 1分間に最大5回まで
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const record = rateLimitMap.get(ip);
+
+  if (!record || now > record.resetTime) {
+    rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+    return true;
+  }
+
+  if (record.count >= MAX_REQUESTS_PER_WINDOW) {
+    return false; // 制限超過
+  }
+
+  record.count += 1;
+  return true;
+}
+
 export async function POST(request: Request) {
   try {
+    // 🌐 クライアントのIPアドレスを取得（Vercelヘッダー対応）
+    const forwardedFor = request.headers.get('x-forwarded-for');
+    const clientIp = forwardedFor ? forwardedFor.split(',')[0].trim() : '127.0.0.1';
+
+    // レートリミット判定
+    if (!checkRateLimit(clientIp)) {
+      return NextResponse.json(
+        { error: 'リクエストが多すぎます。しばらく時間を置いてから再度お試しください。（連打防止制限）' },
+        { status: 429 }
+      );
+    }
+
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       return NextResponse.json(
@@ -38,15 +73,12 @@ export async function POST(request: Request) {
     let promptText = `あなたはキャンプギアの専門データベースAIです。`;
 
     if (file && queryHint) {
-      // パターン③: テキスト + 画像
       promptText += `\n【解析モード: 画像 ＋ 補助テキスト】`;
       promptText += `\n提供された画像と、ユーザーからの入力キーワード「${queryHint}」（型番・メーカー名・Amazon URL等）の両方を組み合わせ、該当する商品およびそのバリエーション・定番同等品を特定してください。`;
     } else if (file) {
-      // パターン②: 画像のみ
       promptText += `\n【解析モード: 画像のみ】`;
       promptText += `\n提供された画像（キャンプギア現物・パッケージ箱・購入レシートなど）を視覚的に解析し、商品を特定してください。`;
     } else {
-      // パターン①: テキストのみ
       promptText += `\n【解析モード: テキスト検索】`;
       promptText += `\nユーザーが入力した「${queryHint}」（型番・商品名・メーカー・Amazon URL等）から該当するキャンプギアを特定してください。`;
     }
@@ -103,7 +135,6 @@ export async function POST(request: Request) {
       const buffer = Buffer.from(arrayBuffer);
       const base64Data = buffer.toString('base64');
 
-      // MIMEタイプの判定と補正
       let mimeType = file.type;
       if (!mimeType || mimeType === 'application/octet-stream' || !mimeType.startsWith('image/')) {
         mimeType = 'image/jpeg';
@@ -117,12 +148,11 @@ export async function POST(request: Request) {
       });
     }
 
-    // テキストプロンプトを追加
     parts.push({ text: promptText });
 
     const contents = [{ role: 'user', parts }];
 
-    // 💡 複数モデルを順番に試行するフォールバック機構
+    // 複数モデルを順番に試行するフォールバック機構
     const candidateModels = [
       'gemini-flash-latest',
       'gemini-2.5-flash',
@@ -141,7 +171,7 @@ export async function POST(request: Request) {
           config,
         });
         if (response && response.text) {
-          break; // 成功したらループを抜ける
+          break;
         }
       } catch (err: any) {
         console.warn(`モデル [${modelName}] での試行に失敗しました。次を試します...`, err.message);
