@@ -41,7 +41,6 @@ type Props = {
 
 const CATEGORIES = ['ベース', '調理', '衣類', 'その他', '消耗品'];
 
-// 🎨 カラーパレット (ベース: 赤 #EF4444)
 const CATEGORY_COLORS = {
   ベース: '#EF4444',
   調理: '#FFB800',
@@ -85,8 +84,9 @@ export default function GearList({
   const packedCount = selectedGears.filter((g) => g.is_packed).length;
   const totalCount = selectedGears.length;
 
+  // 💡 修正: パッキングモードかつ「未チェックのみ」選択時のみフィルターをかけ、編集モード時はフィルターを無効化して全件表示
   const filteredGears =
-    filterMode === 'unpacked'
+    screenMode === 'packing' && filterMode === 'unpacked'
       ? gears.filter((g) => g.is_selected !== false && !g.is_packed)
       : gears;
 
@@ -188,7 +188,7 @@ export default function GearList({
         <p className="text-center text-zinc-500 py-6 font-medium bg-[#27272A]/50 rounded-xl border border-zinc-800 text-xs">
           ギアや食料がまだ登録されていません。
         </p>
-      ) : filterMode === 'unpacked' && filteredGears.length === 0 ? (
+      ) : screenMode === 'packing' && filterMode === 'unpacked' && filteredGears.length === 0 ? (
         <div className="bg-emerald-950/30 border border-emerald-800/60 p-6 rounded-2xl text-center space-y-2">
           <p className="text-base font-black text-[#10B981]">🎉 本日のパッキング準備がすべて完了しました！</p>
           <p className="text-xs text-zinc-400">持っていく予定のギアはすべてザックに入っています。行ってらっしゃい！⛺✨</p>
@@ -225,13 +225,12 @@ export default function GearList({
           const catColor = CATEGORY_COLORS[catName as keyof typeof CATEGORY_COLORS] || '#EF4444';
           const isOpen = screenMode === 'packing' ? true : openCategories[catName] !== false;
 
-          // 🎯 モードに応じた点数表記（カウンタ）の動的計算
           const selectedGearsInCat = categoryAllGears.filter((g) => g.is_selected !== false);
           const packedGearsInCat = selectedGearsInCat.filter((g) => g.is_packed);
 
           const countText = screenMode === 'packing'
-            ? `${packedGearsInCat.length} / ${selectedGearsInCat.length}`   // パッキングモード: [チェック済数] / [持参数] (例: 3 / 5)
-            : `${selectedGearsInCat.length} / ${categoryAllGears.length}`; // ギア編集モード: [持参数] / [所持品総数] (例: 5 / 8)
+            ? `${packedGearsInCat.length} / ${selectedGearsInCat.length}`
+            : `${selectedGearsInCat.length} / ${categoryAllGears.length}`;
 
           const catIcon =
             catName === 'ベース'
@@ -251,7 +250,6 @@ export default function GearList({
               className="border rounded-xl overflow-hidden shadow-md scroll-mt-6"
               style={{ borderColor: `${catColor}50` }}
             >
-              {/* 各カテゴリー見出し行 */}
               <div
                 style={{ backgroundColor: '#18181B', borderColor: `${catColor}40` }}
                 className="sticky top-0 z-10 w-full flex items-center justify-between px-3 sm:px-4 py-2 border-b backdrop-blur-md gap-2"
