@@ -2,7 +2,7 @@
 
 import React, { useState, useRef } from 'react';
 import Link from 'next/link';
-import { Camera, Plus, X, Loader2, Lightbulb, RefreshCw, RotateCcw } from 'lucide-react';
+import { Camera, Plus, X, Loader2, Lightbulb, RefreshCw, RotateCcw, Edit2 } from 'lucide-react';
 
 interface ScannedItem {
   product_name: string;
@@ -18,7 +18,6 @@ interface GearSearchProps {
   onSearchQueryChange?: (query: string) => void;
 }
 
-// 💡 高画質写真を自動リサイズ・軽量化＆MIMEタイプ補正関数
 const compressImage = (file: File, maxWidth = 1024, maxHeight = 1024, quality = 0.8): Promise<File> => {
   return new Promise((resolve) => {
     const reader = new FileReader();
@@ -74,6 +73,8 @@ const compressImage = (file: File, maxWidth = 1024, maxHeight = 1024, quality = 
   });
 };
 
+const CATEGORIES = ['ベース', '調理', '衣類', 'その他', '消耗品'];
+
 export default function GearSearch({ onAddGear, onOpenManualInput, onSearchQueryChange }: GearSearchProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isScanning, setIsScanning] = useState(false);
@@ -94,11 +95,9 @@ export default function GearSearch({ onAddGear, onOpenManualInput, onSearchQuery
     }
   };
 
-  // 🚀 共通AI検索・解析実行関数
   const runAiSearch = async (file?: File | null, query?: string, isRefresh = false) => {
     let targetQuery = query !== undefined ? query : searchQuery;
 
-    // Data URLなどの貼り付け事故防止
     if (targetQuery.startsWith('data:')) {
       targetQuery = '';
     }
@@ -129,7 +128,6 @@ export default function GearSearch({ onAddGear, onOpenManualInput, onSearchQuery
       formData.append('queryHint', targetQuery.trim());
     }
 
-    // 💡 更新（別候補表示）の場合は、現在画面に出ている候補商品名を除外リストとして渡す
     if (isRefresh && scannedResults.length > 0) {
       const excludeNames = scannedResults.map((item) => item.product_name).join(', ');
       formData.append('exclude', excludeNames);
@@ -162,14 +160,12 @@ export default function GearSearch({ onAddGear, onOpenManualInput, onSearchQuery
     }
   };
 
-  // 🔍 フォーム送信（「検索」ボタン押下時）
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setLastSelectedFile(null);
     runAiSearch(null, searchQuery, false);
   };
 
-  // 📷 画像選択時（カメラ/ライブラリ選択時）
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -180,14 +176,21 @@ export default function GearSearch({ onAddGear, onOpenManualInput, onSearchQuery
     if (e.target) e.target.value = '';
   };
 
-  // 🔄 別候補の取得（更新）
   const handleRefreshResults = () => {
     runAiSearch(lastSelectedFile, searchQuery, true);
   };
 
+  const handleResultChange = (index: number, field: keyof ScannedItem, value: any) => {
+    const updated = [...scannedResults];
+    updated[index] = {
+      ...updated[index],
+      [field]: value,
+    };
+    setScannedResults(updated);
+  };
+
   return (
     <div className="bg-[#18181B] border border-zinc-800 rounded-2xl p-5 shadow-lg space-y-4">
-      {/* カード見出し ＆ 撮影のコツガイドボタン */}
       <div className="flex items-center justify-between">
         <h2 className="text-white font-bold text-lg">ギアを追加</h2>
         <button
@@ -208,7 +211,6 @@ export default function GearSearch({ onAddGear, onOpenManualInput, onSearchQuery
         className="hidden"
       />
 
-      {/* 検索・スキャンフォームエリア */}
       <form onSubmit={handleFormSubmit} className="flex gap-2 items-center">
         <div className="relative flex-1">
           <input
@@ -220,7 +222,6 @@ export default function GearSearch({ onAddGear, onOpenManualInput, onSearchQuery
           />
         </div>
 
-        {/* 検索ボタン (オレンジベタ塗り) */}
         <button
           type="submit"
           disabled={isScanning || isRefreshing}
@@ -233,7 +234,6 @@ export default function GearSearch({ onAddGear, onOpenManualInput, onSearchQuery
           )}
         </button>
 
-        {/* カメラ・写真選択ボタン */}
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
@@ -245,11 +245,10 @@ export default function GearSearch({ onAddGear, onOpenManualInput, onSearchQuery
         </button>
       </form>
 
-      {/* みんなのギアから追加 ボタン */}
-      <div className="pt-1">
+      <div className="pt-2 pb-2">
         <Link
           href="/community"
-          className="w-full inline-flex items-center justify-center gap-2 bg-transparent hover:bg-[#FF5500]/10 text-white border border-[#FF5500] px-4 py-2.5 rounded-xl text-xs font-bold transition shadow-sm group cursor-pointer"
+          className="w-full inline-flex items-center justify-center gap-2 bg-transparent hover:bg-[#FF5500]/10 text-white border border-[#FF5500] px-4 py-3 rounded-xl text-xs font-bold transition shadow-sm group cursor-pointer"
         >
           <span>みんなのギアから追加</span>
           <span className="group-hover:translate-x-1 transition-transform">➔</span>
@@ -260,7 +259,6 @@ export default function GearSearch({ onAddGear, onOpenManualInput, onSearchQuery
         <p className="text-xs text-red-500 font-medium">{errorMessage}</p>
       )}
 
-      {/* 💡 撮影のコツ モーダル (厳選4項目) */}
       {showTipsModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="bg-[#18181B] border border-zinc-800 w-full max-w-sm rounded-2xl shadow-2xl p-5 space-y-4 text-zinc-100">
@@ -325,14 +323,16 @@ export default function GearSearch({ onAddGear, onOpenManualInput, onSearchQuery
         </div>
       )}
 
-      {/* AIスキャン・検索結果モーダル */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="bg-[#18181B] border border-zinc-800 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
             <div className="px-5 py-4 border-b border-zinc-800 flex items-center justify-between">
               <div>
-                <h3 className="text-zinc-100 font-bold text-lg">AI検索・解析結果</h3>
-                <p className="text-zinc-400 text-xs">リストに追加する項目を選んでください</p>
+                <h3 className="text-zinc-100 font-bold text-lg flex items-center gap-1.5">
+                  <Edit2 className="w-4 h-4 text-[#FF5500]" />
+                  <span>AI解析結果の微調整</span>
+                </h3>
+                <p className="text-zinc-400 text-xs">内容を確認・修正してから追加してください</p>
               </div>
               <button
                 onClick={() => setShowModal(false)}
@@ -342,7 +342,6 @@ export default function GearSearch({ onAddGear, onOpenManualInput, onSearchQuery
               </button>
             </div>
 
-            {/* 候補カードエリア */}
             <div className="p-4 overflow-y-auto space-y-3 flex-1">
               {isRefreshing ? (
                 <div className="py-12 flex flex-col items-center justify-center gap-3 text-zinc-400">
@@ -353,36 +352,73 @@ export default function GearSearch({ onAddGear, onOpenManualInput, onSearchQuery
                 scannedResults.map((item, index) => (
                   <div
                     key={index}
-                    className="bg-[#27272A]/60 border border-zinc-700/60 rounded-xl p-4 flex flex-col gap-2"
+                    className="bg-[#27272A]/60 border border-zinc-700/60 rounded-xl p-4 space-y-3"
                   >
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <span className="text-[10px] uppercase font-semibold px-2 py-0.5 bg-[#FF5500]/10 text-[#FF5500] rounded-full border border-[#FF5500]/20">
-                          {item.category || 'その他'}
-                        </span>
-                        <h4 className="text-zinc-100 font-semibold text-base mt-1">
-                          {item.product_name}
-                        </h4>
-                        {item.brand && (
-                          <p className="text-zinc-400 text-xs">ブランド: {item.brand}</p>
-                        )}
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[10px] font-bold text-zinc-400">候補 #{index + 1}</span>
+                      <select
+                        value={item.category || 'その他'}
+                        onChange={(e) => handleResultChange(index, 'category', e.target.value)}
+                        className="bg-[#18181B] text-[#FF5500] border border-zinc-700 rounded-lg px-2 py-1 text-xs font-bold focus:outline-none focus:border-[#FF5500] cursor-pointer"
+                      >
+                        {CATEGORIES.map((cat) => (
+                          <option key={cat} value={cat}>{cat}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] text-zinc-400 font-bold block">商品名・型番</label>
+                      <input
+                        type="text"
+                        value={item.product_name}
+                        onChange={(e) => handleResultChange(index, 'product_name', e.target.value)}
+                        className="w-full bg-[#18181B] border border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-[#FF5500]"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] text-zinc-400 font-bold block">ブランド・メーカー</label>
+                      <input
+                        type="text"
+                        value={item.brand || ''}
+                        onChange={(e) => handleResultChange(index, 'brand', e.target.value)}
+                        className="w-full bg-[#18181B] border border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-[#FF5500]"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <label className="text-[10px] text-zinc-400 font-bold block">重量 (g)</label>
+                        <input
+                          type="number"
+                          value={item.weight}
+                          onChange={(e) => handleResultChange(index, 'weight', Number(e.target.value))}
+                          className="w-full bg-[#18181B] border border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-[#FF5500]"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] text-zinc-400 font-bold block">価格 (円)</label>
+                        <input
+                          type="number"
+                          value={item.price}
+                          onChange={(e) => handleResultChange(index, 'price', Number(e.target.value))}
+                          className="w-full bg-[#18181B] border border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-[#FF5500]"
+                        />
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between pt-2 border-t border-zinc-700/40 text-xs text-zinc-300">
-                      <div className="flex items-center gap-4">
-                        <span>⚖️ {item.weight || 0}g</span>
-                        <span>💰 ¥{(item.price || 0).toLocaleString()}</span>
-                      </div>
+                    <div className="flex justify-end pt-2">
                       <button
                         onClick={() => {
                           onAddGear(item);
                           setShowModal(false);
                         }}
-                        className="px-3 py-1.5 bg-[#FF5500] hover:bg-[#e04c00] text-white font-medium rounded-lg shadow transition flex items-center gap-1 text-xs cursor-pointer"
+                        className="w-full py-2 bg-[#FF5500] hover:bg-[#e04c00] text-white font-bold rounded-xl shadow transition flex items-center justify-center gap-1.5 text-xs cursor-pointer"
                       >
-                        <Plus className="w-3.5 h-3.5" />
-                        <span>追加</span>
+                        <Plus className="w-4 h-4" />
+                        <span>この内容でリストに追加</span>
                       </button>
                     </div>
                   </div>
@@ -390,7 +426,6 @@ export default function GearSearch({ onAddGear, onOpenManualInput, onSearchQuery
               )}
             </div>
 
-            {/* モーダル下部フッター操作エリア（写真選び直し ＆ 別の候補表示） */}
             <div className="p-3 border-t border-zinc-800 bg-[#18181B] flex flex-col sm:flex-row gap-2 items-center justify-between">
               <button
                 type="button"
