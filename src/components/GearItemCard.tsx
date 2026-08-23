@@ -4,6 +4,7 @@ import { useState } from 'react';
 
 export type GearItem = {
   id: string;
+  camp_id?: string;
   name: string;
   brand?: string;
   model_number?: string;
@@ -133,7 +134,6 @@ export default function GearItemCard({
   const qty = item.quantity || 1;
   const totalWeight = item.weight * qty;
 
-  // 🎯 稼働率バッジの判定ロジック
   const broughtCount = item.total_brought_count || 0;
   const usedCount = item.total_used_count || 0;
   const usageRate = broughtCount > 0 ? (usedCount / broughtCount) * 100 : 0;
@@ -150,7 +150,7 @@ export default function GearItemCard({
     if (usageRate >= 75) {
       return (
         <span
-          className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-950/60 text-emerald-400 border border-emerald-800/60 font-mono"
+          className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-950/60 text-emerald-400 border border-emerald-800/60 font-mono tabular-nums text-right"
           title={`高稼働: 使用率 ${usageRate.toFixed(0)}% (${usedCount}/${broughtCount}回)`}
         >
           🔥 {usedCount}/{broughtCount}回
@@ -161,7 +161,7 @@ export default function GearItemCard({
     if (usageRate <= 39 && broughtCount >= 2) {
       return (
         <span
-          className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-950/60 text-amber-400 border border-amber-800/60 font-mono"
+          className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-950/60 text-amber-400 border border-amber-800/60 font-mono tabular-nums text-right"
           title={`低稼働 (お留守番候補): 使用率 ${usageRate.toFixed(0)}% (${usedCount}/${broughtCount}回)`}
         >
           💤 {usedCount}/{broughtCount}回
@@ -171,7 +171,7 @@ export default function GearItemCard({
 
     return (
       <span
-        className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-zinc-800 text-zinc-300 border border-zinc-700 font-mono"
+        className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-zinc-800 text-zinc-300 border border-zinc-700 font-mono tabular-nums text-right"
         title={`通常: 使用率 ${usageRate.toFixed(0)}% (${usedCount}/${broughtCount}回)`}
       >
         {usedCount}/{broughtCount}回
@@ -194,7 +194,6 @@ export default function GearItemCard({
     setIsEditing(false);
   };
 
-  // 🎒 【1】 パッキングモード UI
   if (mode === 'packing') {
     return (
       <div className="space-y-1">
@@ -208,7 +207,6 @@ export default function GearItemCard({
           }`}
         >
           <div className="flex items-center gap-1.5 min-w-0 flex-1">
-            {/* 持参/お休み */}
             {onToggleSelected && (
               <button
                 onClick={() => onToggleSelected(item.id, isSelected)}
@@ -223,7 +221,6 @@ export default function GearItemCard({
               </button>
             )}
 
-            {/* パッキング完了チェック */}
             {isSelected && onTogglePacked ? (
               <button
                 onClick={() => onTogglePacked(item.id, item.is_packed)}
@@ -242,7 +239,6 @@ export default function GearItemCard({
               </span>
             )}
 
-            {/* 商品名 */}
             <button
               type="button"
               onClick={() => setIsEditing(!isEditing)}
@@ -281,7 +277,6 @@ export default function GearItemCard({
     );
   }
 
-  // ⛺ 【2】 振り返りモード UI
   if (mode === 'review') {
     return (
       <div className="space-y-1">
@@ -293,7 +288,6 @@ export default function GearItemCard({
           }`}
         >
           <div className="flex items-center gap-1.5 min-w-0 flex-1">
-            {/* 未使用トグルボタン */}
             {onToggleUnusedInReview && (
               <button
                 onClick={() => onToggleUnusedInReview(item.id)}
@@ -332,7 +326,6 @@ export default function GearItemCard({
     );
   }
 
-  // ✏️ 【3】 ギア編集モード UI
   return (
     <div
       className={`py-2 px-2.5 border-b border-zinc-800/80 transition-colors select-text hover:bg-[#1F1F23]/60 space-y-1.5 ${
@@ -386,7 +379,6 @@ export default function GearItemCard({
       <div className="flex items-center justify-between gap-2 pt-0.5">
         <div className="text-[11px] font-mono tabular-nums text-zinc-400 flex items-center gap-1.5 shrink-0 pl-1">
           <span>{formatWeight(totalWeight)}</span>
-          {/* 🎯 価格の代わりに稼働率バッジを表示 */}
           <span className="text-zinc-600 font-sans">/</span>
           {renderUsageBadge()}
         </div>
@@ -440,7 +432,6 @@ export default function GearItemCard({
     </div>
   );
 
-  // 編集フォーム（モーダル/アコーディオン内）
   function renderEditForm() {
     return (
       <div className="mt-2 pt-2 border-t border-zinc-800 space-y-2.5 bg-[#18181B] p-3 rounded-xl animate-fade-in text-left">
@@ -485,9 +476,10 @@ export default function GearItemCard({
             <label className="text-[10px] font-bold text-zinc-400 block mb-0.5">重量(g)</label>
             <input
               type="number"
+              step="10"
               value={editWeight}
               onChange={(e) => setEditWeight(Number(e.target.value))}
-              className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white focus:border-[#FF5500] focus:outline-none"
+              className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white focus:border-[#FF5500] focus:outline-none font-mono tabular-nums text-right"
             />
           </div>
 
@@ -495,9 +487,10 @@ export default function GearItemCard({
             <label className="text-[10px] font-bold text-zinc-400 block mb-0.5">価格(円)</label>
             <input
               type="number"
+              step="100"
               value={editPrice}
               onChange={(e) => setEditPrice(Number(e.target.value))}
-              className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white focus:border-[#FF5500] focus:outline-none"
+              className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white focus:border-[#FF5500] focus:outline-none font-mono tabular-nums text-right"
             />
           </div>
         </div>
