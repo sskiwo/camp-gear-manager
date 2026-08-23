@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import GearItemCard, { GearItem } from './GearItemCard';
 import { CheckCircle2, Sparkles, Loader2 } from 'lucide-react';
 
@@ -21,7 +21,7 @@ type Props = {
   onDeleteGear: (id: string) => void;
   onDeleteAllGears?: () => void;
   onResetAllPacked?: () => void;
-  onReorderGears?: (reorderedGears: any[]) => void;
+  onReorderGears?: (reorderedGears: GearItem[]) => void;
 };
 
 const CATEGORIES = ['ベース', '調理', '衣類', 'その他', '消耗品'];
@@ -33,6 +33,8 @@ const CATEGORY_COLORS = {
   その他: '#E040FB',
   消耗品: '#00E676',
 };
+
+const STORAGE_KEY_SORT_ORDERS = 'camp_gear_sort_orders';
 
 const normalizeCategory = (
   gearCategory?: string,
@@ -76,6 +78,31 @@ export default function GearList({
   const [sortOrders, setSortOrders] = useState<Record<string, string>>({});
   const [filterMode, setFilterMode] = useState<'all' | 'unpacked'>('all');
 
+  // 💾 localStorage から前回のソート設定を復元
+  useEffect(() => {
+    try {
+      const savedSortOrders = localStorage.getItem(STORAGE_KEY_SORT_ORDERS);
+      if (savedSortOrders) {
+        setSortOrders(JSON.parse(savedSortOrders));
+      }
+    } catch (err) {
+      console.warn('Failed to load sort orders from localStorage:', err);
+    }
+  }, []);
+
+  // 💾 ソート順変更ハンドラー (localStorage への永続化)
+  const handleSortChange = (catName: string, newSort: string) => {
+    setSortOrders((prev) => {
+      const updated = { ...prev, [catName]: newSort };
+      try {
+        localStorage.setItem(STORAGE_KEY_SORT_ORDERS, JSON.stringify(updated));
+      } catch (err) {
+        console.warn('Failed to save sort orders to localStorage:', err);
+      }
+      return updated;
+    });
+  };
+
   // ⛺ 3モード管理 (Props連携 or 内部State)
   const [internalScreenMode, setInternalScreenMode] = useState<'packing' | 'edit' | 'review'>('packing');
   const screenMode = externalScreenMode !== undefined ? externalScreenMode : internalScreenMode;
@@ -103,7 +130,6 @@ export default function GearList({
   const packedCount = selectedGears.filter((g) => g.is_packed).length;
   const totalCount = selectedGears.length;
 
-  // 表示対象ギアの絞り込み
   const getFilteredGears = () => {
     if (screenMode === 'packing') {
       return filterMode === 'unpacked'
@@ -131,7 +157,6 @@ export default function GearList({
     return `${selectedCount}/${Math.max(1, allCampsCount)}`;
   };
 
-  // 振り返りモード: 未使用チェックのトグル
   const handleToggleUnused = (gearId: string) => {
     if (onToggleUnusedGear) {
       onToggleUnusedGear(gearId);
@@ -148,7 +173,6 @@ export default function GearList({
     }
   };
 
-  // 振り返り完了処理
   const handleCompleteReview = async () => {
     if (selectedGears.length === 0 || isSubmittingReview) return;
     setIsSubmittingReview(true);
@@ -312,8 +336,22 @@ export default function GearList({
             return null;
           }
 
+          // 🗂️ ソート処理（更新順 / 使用率順 / 重い順 / 軽い順 / 高値順）
           const sortOrder = sortOrders[catName] || 'default';
-          if (sortOrder === 'weight_desc') {
+          if (sortOrder === 'usage_desc') {
+            categoryGears = [...categoryGears].sort((a, b) => {
+              const broughtA = a.total_brought_count || 0;
+              const usedA = a.total_used_count || 0;
+              const rateA = broughtA > 0 ? usedA / broughtA : -1;
+
+              const broughtB = b.total_brought_count || 0;
+              const usedB = b.total_used_count || 0;
+              const rateB = broughtB > 0 ? usedB / broughtB : -1;
+
+              if (rateB !== rateA) return rateB - rateA;
+              return usedB - usedA;
+            });
+          } else if (sortOrder === 'weight_desc') {
             categoryGears = [...categoryGears].sort(
               (a, b) => (b.weight || 0) * (b.quantity || 1) - (a.weight || 0) * (a.quantity || 1)
             );
@@ -324,10 +362,6 @@ export default function GearList({
           } else if (sortOrder === 'price_desc') {
             categoryGears = [...categoryGears].sort(
               (a, b) => (b.price || 0) * (b.quantity || 1) - (a.price || 0) * (a.quantity || 1)
-            );
-          } else if (sortOrder === 'name_asc') {
-            categoryGears = [...categoryGears].sort(
-              (a, b) => (a.name || '').localeCompare(b.name || '', 'ja')
             );
           }
 
@@ -379,19 +413,18 @@ export default function GearList({
                   </span>
                 </button>
 
+                {/* 🗂️ ソート選択プルダウン */}
                 <div className="flex items-center gap-1.5 shrink-0">
                   <select
                     value={sortOrder}
-                    onChange={(e) =>
-                      setSortOrders((prev) => ({ ...prev, [catName]: e.target.value }))
-                    }
+                    onChange={(e) => handleSortChange(catName, e.target.value)}
                     className="bg-[#27272A] text-zinc-200 text-[10px] font-bold px-1.5 sm:px-2 py-1 rounded-lg border border-zinc-700 focus:outline-none focus:border-[#FF5500] cursor-pointer"
                   >
                     <option value="default">更新順</option>
+                    <option value="usage_desc">使用率順</option>
                     <option value="weight_desc">重い順</option>
                     <option value="weight_asc">軽い順</option>
                     <option value="price_desc">高値順</option>
-                    <option value="name_asc">名前順</option>
                   </select>
 
                   {screenMode === 'edit' && (
