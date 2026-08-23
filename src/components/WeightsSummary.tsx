@@ -1,22 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { ChevronUp, ChevronDown } from 'lucide-react';
-
-type GearItem = {
-  id: string;
-  name: string;
-  weight: number;
-  price: number;
-  quantity?: number;
-  is_packed: boolean;
-  is_selected?: boolean;
-  is_consumable: boolean;
-  category?: string;
-};
+import { GearItem } from './GearItemCard';
 
 type Props = {
   gears: GearItem[];
+  screenMode?: 'packing' | 'edit' | 'review';
+  unusedGearIds?: Set<string>;
   onCategoryClick?: (catName: string) => void;
 };
 
@@ -41,7 +32,10 @@ const CATEGORY_ICONS: Record<string, string> = {
 };
 
 // 5標準カテゴリーへの正規化関数
-const normalizeCategory = (gearCategory?: string, isConsumable?: boolean): 'ベース' | '調理' | '衣類' | 'その他' | '消耗品' => {
+const normalizeCategory = (
+  gearCategory?: string,
+  isConsumable?: boolean
+): 'ベース' | '調理' | '衣類' | 'その他' | '消耗品' => {
   if (isConsumable) return '消耗品';
   if (!gearCategory) return 'ベース';
   const cat = gearCategory.trim();
@@ -62,13 +56,26 @@ const formatWeightDisplay = (grams: number) => {
   return `${Math.round(grams)}g`;
 };
 
-export default function WeightsSummary({ gears, onCategoryClick }: Props) {
+const formatUnusedWeight = (grams: number): string => {
+  if (grams >= 1000) {
+    return `未使用: ${(grams / 1000).toFixed(2)}kg`;
+  }
+  return `未使用: ${Math.round(grams)}g`;
+};
+
+export default function WeightsSummary({
+  gears,
+  screenMode = 'packing',
+  unusedGearIds = new Set(),
+  onCategoryClick,
+}: Props) {
   const [isOpen, setIsOpen] = useState<boolean>(true);
   const [targetWeightKg, setTargetWeightKg] = useState<number>(15.0);
   const [isEditingTarget, setIsEditingTarget] = useState<boolean>(false);
 
   const selectedGears = gears.filter((g) => g.is_selected !== false);
 
+  // カテゴリーごとの総重量集計
   const categoryWeights = CATEGORIES.reduce((acc, catName) => {
     acc[catName] = selectedGears
       .filter((g) => normalizeCategory(g.category, g.is_consumable) === catName)
@@ -76,8 +83,25 @@ export default function WeightsSummary({ gears, onCategoryClick }: Props) {
     return acc;
   }, {} as Record<string, number>);
 
+  // カテゴリーごとの未使用重量集計
+  const categoryUnusedWeights = CATEGORIES.reduce((acc, catName) => {
+    acc[catName] = selectedGears
+      .filter((g) => normalizeCategory(g.category, g.is_consumable) === catName)
+      .reduce((sum, g) => {
+        if (unusedGearIds.has(g.id)) {
+          return sum + (g.weight || 0) * (g.quantity || 1);
+        }
+        return sum;
+      }, 0);
+    return acc;
+  }, {} as Record<string, number>);
+
   const totalWeight = Object.values(categoryWeights).reduce((a, b) => a + b, 0);
   const baseWeight = totalWeight - (categoryWeights['消耗品'] || 0);
+
+  // 未使用重量と実使用重量の集計
+  const totalUnusedWeight = Object.values(categoryUnusedWeights).reduce((a, b) => a + b, 0);
+  const actualUsedWeight = Math.max(0, totalWeight - totalUnusedWeight);
 
   const totalPrice = selectedGears.reduce(
     (sum, g) => sum + (g.price || 0) * (g.quantity || 1),
@@ -92,11 +116,18 @@ export default function WeightsSummary({ gears, onCategoryClick }: Props) {
   return (
     <div className="sticky top-3 z-40 transition-all duration-200 shadow-2xl">
       <section className="bg-[#18181B]/95 backdrop-blur-md border border-zinc-800 p-4 md:p-5 rounded-2xl space-y-3 shadow-2xl">
-        {/* ヘッダー部分（常時表示） */}
+        {/* ヘッダー部分 */}
         <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
-          <h2 className="text-zinc-100 font-bold text-base sm:text-lg">
-            パッキングサマリー
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-zinc-100 font-bold text-base sm:text-lg">
+              パッキングサマリー
+            </h2>
+            {screenMode === 'review' && (
+              <span className="text-[11px] font-bold text-amber-400 bg-amber-950/60 border border-amber-800/60 px-2 py-0.5 rounded-md">
+                ⛺ 振り返り集計中
+              </span>
+            )}
+          </div>
 
           <button
             type="button"
@@ -108,15 +139,19 @@ export default function WeightsSummary({ gears, onCategoryClick }: Props) {
           </button>
         </div>
 
-        {/* 折りたたみ時でも「目標プログレスバー」まで表示 */}
+        {/* 折りたたみ時 */}
         {!isOpen && (
           <div className="bg-[#27272A]/50 p-2.5 rounded-xl border border-zinc-700/60 space-y-1.5">
-            <div className="flex items-center justify-between text-[11px] text-zinc-300 font-bold">
+            <div className="flex items-center justify-between text-[11px] text-zinc-300 font-bold font-mono tabular-nums">
               <span>目標: {targetWeightKg.toFixed(2)}kg</span>
               <span>
-                {isOverTarget
-                  ? `⚠️ ${(diffGrams / 1000).toFixed(2)}kg オーバー`
-                  : `残り ${(diffGrams / 1000).toFixed(2)}kg`}
+                {screenMode === 'review' ? (
+                  <span className="text-amber-400">{formatUnusedWeight(totalUnusedWeight)}</span>
+                ) : isOverTarget ? (
+                  `⚠️ ${(diffGrams / 1000).toFixed(2)}kg オーバー`
+                ) : (
+                  `残り ${(diffGrams / 1000).toFixed(2)}kg`
+                )}
               </span>
             </div>
             <div className="w-full bg-zinc-800 rounded-full h-2 overflow-hidden border border-zinc-700">
@@ -130,12 +165,12 @@ export default function WeightsSummary({ gears, onCategoryClick }: Props) {
           </div>
         )}
 
-        {/* 展開時（isOpen: true）のフルサマリーコンテンツ */}
+        {/* 展開時 */}
         {isOpen && (
           <div className="space-y-3 pt-1">
             {/* 目標重量 ＆ プログレスバー */}
             <div className="bg-[#27272A]/50 p-3 rounded-xl border border-zinc-700/60 space-y-2">
-              <div className="flex items-center justify-between gap-2 text-xs">
+              <div className="flex items-center justify-between gap-2 text-xs font-mono tabular-nums">
                 <div className="flex items-center gap-1 font-bold text-white">
                   <span>目標:</span>
                   {isEditingTarget ? (
@@ -167,17 +202,21 @@ export default function WeightsSummary({ gears, onCategoryClick }: Props) {
                   )}
                 </div>
 
-                {/* 残り重量表記 */}
-                {targetWeightGrams > 0 && (
-                  <span className="text-xs font-bold font-mono tabular-nums shrink-0 text-white">
-                    {isOverTarget
-                      ? `⚠️ ${(diffGrams / 1000).toFixed(2)}kg オーバー`
-                      : `残り ${(diffGrams / 1000).toFixed(2)}kg`}
-                  </span>
-                )}
+                <div className="text-right">
+                  {screenMode === 'review' ? (
+                    <span className="font-bold text-amber-400 font-mono tabular-nums text-right">
+                      {formatUnusedWeight(totalUnusedWeight)}
+                    </span>
+                  ) : targetWeightGrams > 0 ? (
+                    <span className={`text-xs font-bold font-mono tabular-nums shrink-0 ${isOverTarget ? 'text-[#EF4444]' : 'text-white'}`}>
+                      {isOverTarget
+                        ? `⚠️ ${(diffGrams / 1000).toFixed(2)}kg オーバー`
+                        : `残り ${(diffGrams / 1000).toFixed(2)}kg`}
+                    </span>
+                  ) : null}
+                </div>
               </div>
 
-              {/* プログレスバー */}
               <div className="w-full bg-zinc-800 rounded-full h-2.5 overflow-hidden border border-zinc-700">
                 <div
                   className={`h-2.5 rounded-full transition-all duration-300 ${
@@ -188,44 +227,93 @@ export default function WeightsSummary({ gears, onCategoryClick }: Props) {
               </div>
             </div>
 
-            {/* 行き / 帰り / 合計金額 3カラムカードレイアウト */}
+            {/* 行き / 帰り / 合計金額 3カラムカード */}
             <div className="grid grid-cols-3 gap-2">
               <div className="bg-[#27272A]/50 p-2.5 rounded-xl border border-zinc-700/60 flex flex-col items-center justify-center text-center">
-                <span className="text-[10px] sm:text-xs text-zinc-400 font-bold block">行き</span>
-                <span className="text-xs sm:text-sm font-mono tabular-nums text-white font-extrabold mt-0.5 truncate w-full">
-                  {(totalWeight / 1000).toFixed(2)}kg
+                <span className="text-[10px] sm:text-xs text-zinc-400 font-bold block">
+                  {screenMode === 'review' ? '実使用重量' : '行き'}
+                </span>
+                <span className="text-xs sm:text-sm font-mono tabular-nums text-white font-extrabold mt-0.5 truncate w-full text-right sm:text-center">
+                  {screenMode === 'review'
+                    ? formatWeightDisplay(actualUsedWeight)
+                    : formatWeightDisplay(totalWeight)}
                 </span>
               </div>
 
               <div className="bg-[#27272A]/50 p-2.5 rounded-xl border border-zinc-700/60 flex flex-col items-center justify-center text-center">
-                <span className="text-[10px] sm:text-xs text-zinc-400 font-bold block">帰り</span>
-                <span className="text-xs sm:text-sm font-mono tabular-nums text-white font-extrabold mt-0.5 truncate w-full">
-                  {(baseWeight / 1000).toFixed(2)}kg
+                <span className="text-[10px] sm:text-xs text-zinc-400 font-bold block">
+                  {screenMode === 'review' ? '未使用重量' : '帰り'}
+                </span>
+                <span
+                  className={`text-xs sm:text-sm font-mono tabular-nums font-extrabold mt-0.5 truncate w-full text-right sm:text-center ${
+                    screenMode === 'review' ? 'text-amber-400' : 'text-white'
+                  }`}
+                >
+                  {screenMode === 'review'
+                    ? formatWeightDisplay(totalUnusedWeight)
+                    : formatWeightDisplay(baseWeight)}
                 </span>
               </div>
 
               <div className="bg-[#27272A]/50 p-2.5 rounded-xl border border-zinc-700/60 flex flex-col items-center justify-center text-center">
                 <span className="text-[10px] sm:text-xs text-zinc-400 font-bold block">合計金額</span>
-                <span className="text-xs sm:text-sm font-mono tabular-nums text-white font-extrabold mt-0.5 truncate w-full">
+                <span className="text-xs sm:text-sm font-mono tabular-nums text-white font-extrabold mt-0.5 truncate w-full text-right sm:text-center">
                   ¥{totalPrice.toLocaleString()}
                 </span>
               </div>
             </div>
 
-            {/* バランスバー ＆ 5カテゴリー別内訳 */}
+            {/* バランスバー ＆ 5カテゴリー内訳 */}
             <div className="bg-[#27272A]/50 p-3 rounded-xl border border-zinc-700/60 space-y-2.5">
               <div className="flex items-center justify-between text-xs font-bold text-white">
                 <span>積載バランス</span>
+                {screenMode === 'review' && totalUnusedWeight > 0 && (
+                  <span className="text-[10px] text-zinc-400 font-normal">
+                    ※ 斜線部分は各カテゴリーの未使用分
+                  </span>
+                )}
               </div>
 
-              {/* 積載バランスバー */}
               <div className="w-full bg-zinc-800 rounded-full h-2.5 overflow-hidden border border-zinc-700 flex shadow-inner">
                 {CATEGORIES.map((cat) => {
                   const weight = categoryWeights[cat] || 0;
+                  const unused = categoryUnusedWeights[cat] || 0;
+                  const used = Math.max(0, weight - unused);
+
                   if (weight === 0 || totalWeight === 0) return null;
-                  const percent = (weight / totalWeight) * 100;
                   const color = CATEGORY_COLORS[cat] || '#EF4444';
 
+                  if (screenMode === 'review') {
+                    const usedPercent = (used / totalWeight) * 100;
+                    const unusedPercent = (unused / totalWeight) * 100;
+
+                    return (
+                      <React.Fragment key={cat}>
+                        {usedPercent > 0 && (
+                          <div
+                            style={{ width: `${usedPercent}%`, backgroundColor: color }}
+                            className="h-2.5 transition-all duration-300 cursor-pointer hover:opacity-80"
+                            onClick={() => onCategoryClick && onCategoryClick(cat)}
+                            title={`${cat} (使用): ${formatWeightDisplay(used)}`}
+                          />
+                        )}
+                        {unusedPercent > 0 && (
+                          <div
+                            style={{
+                              width: `${unusedPercent}%`,
+                              backgroundImage:
+                                'repeating-linear-gradient(45deg, #3f3f46, #3f3f46 3px, #27272a 3px, #27272a 6px)',
+                            }}
+                            className="h-2.5 transition-all duration-300 cursor-pointer border-l border-zinc-900 hover:opacity-80"
+                            onClick={() => onCategoryClick && onCategoryClick(cat)}
+                            title={`${cat} (未使用): ${formatWeightDisplay(unused)}`}
+                          />
+                        )}
+                      </React.Fragment>
+                    );
+                  }
+
+                  const percent = (weight / totalWeight) * 100;
                   return (
                     <div
                       key={cat}
@@ -243,10 +331,10 @@ export default function WeightsSummary({ gears, onCategoryClick }: Props) {
                 )}
               </div>
 
-              {/* 5カテゴリーバッジグリッド */}
               <div className="grid grid-cols-5 gap-1 pt-1">
                 {CATEGORIES.map((cat) => {
                   const weight = categoryWeights[cat] || 0;
+                  const unused = categoryUnusedWeights[cat] || 0;
                   const color = CATEGORY_COLORS[cat] || '#EF4444';
                   const icon = CATEGORY_ICONS[cat] || '📦';
                   const isEmpty = weight === 0;
@@ -271,11 +359,15 @@ export default function WeightsSummary({ gears, onCategoryClick }: Props) {
                       </div>
 
                       <span
-                        className={`text-[10px] sm:text-xs font-mono tabular-nums font-extrabold mt-0.5 w-full ${
+                        className={`text-[10px] sm:text-xs font-mono tabular-nums text-right font-extrabold mt-0.5 w-full ${
                           isEmpty ? 'text-zinc-600' : 'text-zinc-200'
                         }`}
                       >
-                        {formatWeightDisplay(weight)}
+                        {screenMode === 'review' && unused > 0 ? (
+                          <span className="text-amber-400">-{formatWeightDisplay(unused)}</span>
+                        ) : (
+                          formatWeightDisplay(weight)
+                        )}
                       </span>
                     </button>
                   );
