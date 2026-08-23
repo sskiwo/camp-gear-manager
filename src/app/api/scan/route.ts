@@ -152,12 +152,10 @@ export async function POST(request: Request) {
 
     const contents = [{ role: 'user', parts }];
 
-    // 複数モデルを順番に試行するフォールバック機構
+    // 💡 試行するモデルを gemini-flash-latest と gemini-2.5-flash の2つのみに限定
     const candidateModels = [
       'gemini-flash-latest',
-      'gemini-2.5-flash',
-      'gemini-2.0-flash',
-      'gemini-1.5-flash'
+      'gemini-2.5-flash'
     ];
 
     let response: any = null;
