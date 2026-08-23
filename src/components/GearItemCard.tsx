@@ -134,6 +134,7 @@ export default function GearItemCard({
   const qty = item.quantity || 1;
   const totalWeight = item.weight * qty;
 
+  // 🎯 稼働率バッジ判定ロジック
   const broughtCount = item.total_brought_count || 0;
   const usedCount = item.total_used_count || 0;
   const usageRate = broughtCount > 0 ? (usedCount / broughtCount) * 100 : 0;
@@ -141,7 +142,7 @@ export default function GearItemCard({
   const renderUsageBadge = () => {
     if (broughtCount === 0) {
       return (
-        <span className="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-cyan-950/60 text-cyan-400 border border-cyan-800/60 font-sans">
+        <span className="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-cyan-950/60 text-cyan-300 border border-cyan-700/60 font-sans">
           NEW
         </span>
       );
@@ -150,7 +151,7 @@ export default function GearItemCard({
     if (usageRate >= 75) {
       return (
         <span
-          className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-950/60 text-emerald-400 border border-emerald-800/60 font-mono tabular-nums text-right"
+          className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-950/60 text-emerald-300 border border-emerald-700/60 font-mono tabular-nums text-right"
           title={`高稼働: 使用率 ${usageRate.toFixed(0)}% (${usedCount}/${broughtCount}回)`}
         >
           🔥 {usedCount}/{broughtCount}回
@@ -161,7 +162,7 @@ export default function GearItemCard({
     if (usageRate <= 39 && broughtCount >= 2) {
       return (
         <span
-          className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-950/60 text-amber-400 border border-amber-800/60 font-mono tabular-nums text-right"
+          className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-950/60 text-amber-300 border border-amber-700/60 font-mono tabular-nums text-right"
           title={`低稼働 (お留守番候補): 使用率 ${usageRate.toFixed(0)}% (${usedCount}/${broughtCount}回)`}
         >
           💤 {usedCount}/{broughtCount}回
@@ -194,26 +195,28 @@ export default function GearItemCard({
     setIsEditing(false);
   };
 
+  // 🎒 【1】 パッキングモード UI
   if (mode === 'packing') {
     return (
       <div className="space-y-1">
         <div
           className={`h-[48px] px-2 rounded-xl border transition-all duration-150 flex items-center justify-between gap-2 select-text ${
             !isSelected
-              ? 'bg-[#18181B]/40 border-zinc-800/80 opacity-40'
+              ? 'bg-[#18181B] border-zinc-800/80 border-dashed'
               : item.is_packed
               ? 'bg-[#1F1F23] border-zinc-800'
               : 'bg-[#27272A] border-zinc-700/80 shadow-sm'
           }`}
         >
           <div className="flex items-center gap-1.5 min-w-0 flex-1">
+            {/* 持参/お休み */}
             {onToggleSelected && (
               <button
                 onClick={() => onToggleSelected(item.id, isSelected)}
                 className={`w-8 h-8 rounded-lg text-sm transition flex items-center justify-center border shrink-0 cursor-pointer active:scale-95 ${
                   isSelected
                     ? 'bg-[#FF5500]/20 border-[#FF5500]/60 text-[#FF5500]'
-                    : 'bg-zinc-800/80 border-zinc-700 text-zinc-400'
+                    : 'bg-zinc-800 border-zinc-700 text-zinc-300 hover:text-white'
                 }`}
                 title={isSelected ? '持参（タップでお休みに変更）' : 'お休み（タップで持参に変更）'}
               >
@@ -221,24 +224,26 @@ export default function GearItemCard({
               </button>
             )}
 
+            {/* パッキング完了チェック */}
             {isSelected && onTogglePacked ? (
               <button
                 onClick={() => onTogglePacked(item.id, item.is_packed)}
                 className={`w-8 h-8 rounded-lg text-sm transition flex items-center justify-center border shrink-0 cursor-pointer active:scale-95 ${
                   item.is_packed
                     ? 'bg-[#10B981] border-[#10B981] text-white shadow-sm'
-                    : 'bg-zinc-800 border-zinc-700 text-zinc-400'
+                    : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white'
                 }`}
                 title={item.is_packed ? '完了済み（タップで未完了に変更）' : '未完了（タップで完了に変更）'}
               >
                 {item.is_packed ? '✅' : '⬜'}
               </button>
             ) : (
-              <span className="w-8 h-8 flex items-center justify-center text-xs text-zinc-600 font-mono font-bold select-none shrink-0">
+              <span className="w-8 h-8 flex items-center justify-center text-xs text-zinc-500 font-mono font-bold select-none shrink-0">
                 [-]
               </span>
             )}
 
+            {/* 商品名 */}
             <button
               type="button"
               onClick={() => setIsEditing(!isEditing)}
@@ -248,7 +253,7 @@ export default function GearItemCard({
               <span
                 className={`text-xs truncate block transition-colors ${
                   !isSelected
-                    ? 'text-zinc-500 font-medium'
+                    ? 'text-zinc-300 font-semibold group-hover:text-white'
                     : item.is_packed
                     ? 'text-zinc-400 font-medium group-hover:text-white'
                     : 'text-white font-extrabold group-hover:text-[#FF5500]'
@@ -277,6 +282,7 @@ export default function GearItemCard({
     );
   }
 
+  // ⛺ 【2】 振り返りモード UI
   if (mode === 'review') {
     return (
       <div className="space-y-1">
@@ -288,6 +294,7 @@ export default function GearItemCard({
           }`}
         >
           <div className="flex items-center gap-1.5 min-w-0 flex-1">
+            {/* 未使用トグルボタン */}
             {onToggleUnusedInReview && (
               <button
                 onClick={() => onToggleUnusedInReview(item.id)}
@@ -305,7 +312,7 @@ export default function GearItemCard({
             <div className="text-left flex-1 min-w-0">
               <span
                 className={`text-xs truncate block font-bold ${
-                  isUnusedInReview ? 'text-amber-300 font-extrabold' : 'text-zinc-200'
+                  isUnusedInReview ? 'text-amber-300 font-extrabold' : 'text-zinc-100'
                 }`}
               >
                 {cleanName}
@@ -326,10 +333,11 @@ export default function GearItemCard({
     );
   }
 
+  // ✏️ 【3】 ギア編集モード UI (視認性を改善)
   return (
     <div
-      className={`py-2 px-2.5 border-b border-zinc-800/80 transition-colors select-text hover:bg-[#1F1F23]/60 space-y-1.5 ${
-        !isSelected ? 'opacity-40' : ''
+      className={`py-2 px-2.5 border-b border-zinc-800/80 transition-colors select-text hover:bg-[#1F1F23] space-y-1.5 ${
+        !isSelected ? 'bg-[#141416]/90' : 'bg-transparent'
       }`}
     >
       <div className="flex items-center justify-between gap-2 min-w-0">
@@ -340,7 +348,7 @@ export default function GearItemCard({
               className={`w-7 h-7 rounded-lg text-xs transition flex items-center justify-center border shrink-0 cursor-pointer active:scale-95 ${
                 isSelected
                   ? 'bg-[#FF5500]/20 border-[#FF5500]/60 text-[#FF5500]'
-                  : 'bg-zinc-800/80 border-zinc-700 text-zinc-400'
+                  : 'bg-zinc-800/90 border-zinc-700 text-zinc-300 hover:text-white hover:border-zinc-500'
               }`}
               title={isSelected ? '持参（タップでお休みに変更）' : 'お休み（タップで持参に変更）'}
             >
@@ -355,17 +363,22 @@ export default function GearItemCard({
             title="タップしてギア情報を編集"
           >
             {item.brand && (
-              <span className="text-zinc-400 font-medium shrink-0">
+              <span className={`font-medium shrink-0 ${!isSelected ? 'text-zinc-400' : 'text-zinc-400'}`}>
                 {item.brand}
               </span>
             )}
             <span
               className={`font-bold truncate group-hover:text-[#FF5500] transition-colors ${
-                !isSelected ? 'text-zinc-500' : 'text-white'
+                !isSelected ? 'text-zinc-200 font-semibold' : 'text-white'
               }`}
             >
               {cleanName}
             </span>
+            {!isSelected && (
+              <span className="text-[10px] text-zinc-400 bg-zinc-800/80 border border-zinc-700 px-1 py-0.2 rounded shrink-0">
+                お留守番
+              </span>
+            )}
           </button>
         </div>
 
@@ -377,9 +390,9 @@ export default function GearItemCard({
       </div>
 
       <div className="flex items-center justify-between gap-2 pt-0.5">
-        <div className="text-[11px] font-mono tabular-nums text-zinc-400 flex items-center gap-1.5 shrink-0 pl-1">
-          <span>{formatWeight(totalWeight)}</span>
-          <span className="text-zinc-600 font-sans">/</span>
+        <div className="text-[11px] font-mono tabular-nums text-zinc-300 flex items-center gap-1.5 shrink-0 pl-1">
+          <span className="font-semibold text-zinc-200">{formatWeight(totalWeight)}</span>
+          <span className="text-zinc-500 font-sans">/</span>
           {renderUsageBadge()}
         </div>
 
@@ -409,7 +422,7 @@ export default function GearItemCard({
             className={`w-7 h-7 flex items-center justify-center rounded-lg text-xs transition border cursor-pointer ${
               isEditing
                 ? 'bg-[#FF5500]/20 border-[#FF5500] text-white'
-                : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border-zinc-700'
+                : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white border-zinc-700'
             }`}
             title="ギア詳細を編集"
           >
