@@ -7,6 +7,7 @@ import WeightsSummary from '@/components/WeightsSummary';
 import GearSearch from '@/components/GearSearch';
 import GearList from '@/components/GearList';
 import CsvManager from '@/components/CsvManager';
+import { GearItem } from '@/components/GearItemCard';
 
 type Camp = {
   id: string;
@@ -19,8 +20,12 @@ type Camp = {
 export default function Home() {
   const [camps, setCamps] = useState<Camp[]>([]);
   const [selectedCampId, setSelectedCampId] = useState<string>('');
-  const [gears, setGears] = useState<any[]>([]);
-  const [allGearsInAccount, setAllGearsInAccount] = useState<any[]>([]);
+  const [gears, setGears] = useState<GearItem[]>([]);
+  const [allGearsInAccount, setAllGearsInAccount] = useState<GearItem[]>([]);
+
+  // ⛺ 振り返り・サマリー動的連動用ステート
+  const [screenMode, setScreenMode] = useState<'packing' | 'edit' | 'review'>('packing');
+  const [unusedGearIds, setUnusedGearIds] = useState<Set<string>>(new Set());
 
   const [isAddCampOpen, setIsAddCampOpen] = useState(false);
   const [newCampTitle, setNewCampTitle] = useState('');
@@ -87,10 +92,10 @@ export default function Home() {
       console.error('Fetch Gears Error:', error);
       return;
     }
-    if (currentGears) setGears(currentGears);
+    if (currentGears) setGears(currentGears as GearItem[]);
 
     const { data: allGears } = await supabase.from('gears').select('*');
-    if (allGears) setAllGearsInAccount(allGears);
+    if (allGears) setAllGearsInAccount(allGears as GearItem[]);
   };
 
   useEffect(() => {
@@ -99,6 +104,7 @@ export default function Home() {
 
   useEffect(() => {
     if (selectedCampId) {
+      setUnusedGearIds(new Set());
       fetchGears();
     }
   }, [selectedCampId]);
@@ -167,6 +173,9 @@ export default function Home() {
           purchase_date: g.purchase_date || '',
           fuel_type: g.fuel_type || '',
           memo: g.memo || '',
+          total_brought_count: g.total_brought_count || 0,
+          total_used_count: g.total_used_count || 0,
+          is_emergency_gear: g.is_emergency_gear || false,
         }));
 
         const { error: cloneErr } = await supabase.from('gears').insert(clonedGears);
@@ -304,10 +313,13 @@ export default function Home() {
       weight: Number(item.weight) || 0,
       price: Number(item.price) || 0,
       quantity: 1,
-      is_packed: true,
+      is_packed: false,
       is_selected: true,
       is_consumable: cat === '消耗品',
       product_url: item.productUrl || '',
+      total_brought_count: 0,
+      total_used_count: 0,
+      is_emergency_gear: false,
     }]);
     fetchGears();
   };
@@ -339,6 +351,18 @@ export default function Home() {
       console.error('Update is_selected Error:', error);
       fetchGears();
     }
+  };
+
+  const handleToggleUnusedGear = (gearId: string) => {
+    setUnusedGearIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(gearId)) {
+        next.delete(gearId);
+      } else {
+        next.add(gearId);
+      }
+      return next;
+    });
   };
 
   const updateQuantity = async (id: string, currentQty: number, delta: number) => {
@@ -375,7 +399,7 @@ export default function Home() {
     <main className="min-h-screen bg-[#09090B] text-zinc-100 p-3 sm:p-4 md:p-8 font-sans">
       <div className="max-w-5xl mx-auto space-y-4">
         
-        {/* ヘッダーエリア（パディング・余白を詰め、ロゴ行を確実に1行化） */}
+        {/* ヘッダーエリア */}
         <header className="border-b border-zinc-800 pb-2.5 space-y-2">
           <div className="flex items-center justify-between gap-2">
             <h1 className="text-sm sm:text-lg md:text-xl font-black text-white tracking-tight flex items-center gap-1.5 whitespace-nowrap overflow-hidden truncate">
@@ -397,7 +421,7 @@ export default function Home() {
             </button>
           </div>
 
-          {/* キャンプ場選択・操作エリア（カード余白とボタンサイズ・間隔をスリム化） */}
+          {/* キャンプ場選択・操作エリア */}
           <div className="flex items-center justify-between gap-1.5 bg-[#18181B] px-2 py-1.5 rounded-xl border border-zinc-800">
             <div className="flex items-center gap-1.5 flex-1 min-w-0">
               <span className="text-xs font-bold text-[#FF5500] pl-0.5 shrink-0">⛺</span>
@@ -571,17 +595,26 @@ export default function Home() {
           </div>
         )}
 
-        {/* 1段目: パッキングサマリー */}
-        <WeightsSummary gears={gears} onCategoryClick={scrollToCategory} />
+        {/* 1段目: パッキングサマリー (振り返り・実使用/未使用重量の動的連動) */}
+        <WeightsSummary
+          gears={gears}
+          screenMode={screenMode}
+          unusedGearIds={unusedGearIds}
+          onCategoryClick={scrollToCategory}
+        />
         
         {/* 2段目: ギアを追加 */}
         <GearSearch onAddGear={handleAddGear} />
 
-        {/* 3段目: パッキングリスト */}
+        {/* 3段目: パッキングリスト (3モード切替・振り返り集計対応) */}
         <GearList
           gears={gears}
           allCampsCount={camps.length}
           allGearsInUserAccount={allGearsInAccount}
+          screenMode={screenMode}
+          onScreenModeChange={setScreenMode}
+          unusedGearIds={unusedGearIds}
+          onToggleUnusedGear={handleToggleUnusedGear}
           openCategories={openCategories}
           onToggleCategoryOpen={toggleCategoryOpen}
           onTogglePacked={togglePacked}
