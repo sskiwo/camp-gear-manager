@@ -2,7 +2,7 @@
 
 import React, { useState, useRef } from 'react';
 import Link from 'next/link';
-import { Camera, Plus, X, Loader2, Lightbulb, RefreshCw, RotateCcw, Edit2 } from 'lucide-react';
+import { Camera, X, Loader2, Lightbulb, RefreshCw, RotateCcw, CheckSquare, Square, Check } from 'lucide-react';
 
 interface ScannedItem {
   product_name: string;
@@ -13,7 +13,7 @@ interface ScannedItem {
 }
 
 interface GearSearchProps {
-  onAddGear: (item: ScannedItem) => void;
+  onAddGear: (item: ScannedItem) => Promise<void> | void;
   onOpenManualInput?: () => void;
   onSearchQueryChange?: (query: string) => void;
 }
@@ -75,11 +75,13 @@ const compressImage = (file: File, maxWidth = 1024, maxHeight = 1024, quality = 
 
 const CATEGORIES = ['ベース', '調理', '衣類', 'その他', '消耗品'];
 
-export default function GearSearch({ onAddGear, onOpenManualInput, onSearchQueryChange }: GearSearchProps) {
+export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearchProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isScanning, setIsScanning] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isSubmittingBulk, setIsSubmittingBulk] = useState(false);
   const [scannedResults, setScannedResults] = useState<ScannedItem[]>([]);
+  const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set());
   const [lastSelectedFile, setLastSelectedFile] = useState<File | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [showTipsModal, setShowTipsModal] = useState(false);
@@ -147,9 +149,11 @@ export default function GearSearch({ onAddGear, onOpenManualInput, onSearchQuery
 
       if (data.results && data.results.length > 0) {
         setScannedResults(data.results);
+        // 初期状態ですべての検出アイテムにチェックを入れる
+        setSelectedIndices(new Set(data.results.map((_: any, i: number) => i)));
         setShowModal(true);
       } else {
-        setErrorMessage('該当する別のギア情報が見つかりませんでした。');
+        setErrorMessage('該当するギア情報が見つかりませんでした。別の写真やキーワードでお試しください。');
       }
     } catch (err: any) {
       console.error('Search/Scan Error:', err);
@@ -187,6 +191,51 @@ export default function GearSearch({ onAddGear, onOpenManualInput, onSearchQuery
       [field]: value,
     };
     setScannedResults(updated);
+  };
+
+  // 個別アイテムの選択チェック切り替え
+  const toggleItemSelection = (index: number) => {
+    setSelectedIndices((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) {
+        next.delete(index);
+      } else {
+        next.add(index);
+      }
+      return next;
+    });
+  };
+
+  // 全選択・全解除トグル
+  const toggleSelectAll = () => {
+    if (selectedIndices.size === scannedResults.length) {
+      setSelectedIndices(new Set());
+    } else {
+      setSelectedIndices(new Set(scannedResults.map((_, i) => i)));
+    }
+  };
+
+  // 🎯 選択したギアの一括登録処理
+  const handleBulkAdd = async () => {
+    const itemsToAdd = scannedResults.filter((_, i) => selectedIndices.has(i));
+    if (itemsToAdd.length === 0 || isSubmittingBulk) return;
+
+    setIsSubmittingBulk(true);
+    try {
+      for (const item of itemsToAdd) {
+        await onAddGear(item);
+      }
+      setShowModal(false);
+      setScannedResults([]);
+      setSelectedIndices(new Set());
+      setSearchQuery('');
+      setLastSelectedFile(null);
+    } catch (err: any) {
+      console.error('Bulk add error:', err);
+      alert('ギアの登録中にエラーが発生しました');
+    } finally {
+      setIsSubmittingBulk(false);
+    }
   };
 
   return (
@@ -259,6 +308,7 @@ export default function GearSearch({ onAddGear, onOpenManualInput, onSearchQuery
         <p className="text-xs text-red-500 font-medium">{errorMessage}</p>
       )}
 
+      {/* 撮影のコツモーダル */}
       {showTipsModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="bg-[#18181B] border border-zinc-800 w-full max-w-sm rounded-2xl shadow-2xl p-5 space-y-4 text-zinc-100">
@@ -287,19 +337,19 @@ export default function GearSearch({ onAddGear, onOpenManualInput, onSearchQuery
 
               <li className="bg-[#27272A]/60 p-3 rounded-xl border border-zinc-700/50 space-y-1">
                 <span className="font-bold text-white block text-xs">
-                  🔤 2. 型番やロゴの文字を写す
+                  🔤 2. 複数ギアの一括認識
                 </span>
                 <p className="text-zinc-300">
-                  本体の印字・パッケージの型番（例: ST-310）が入ると特定がスムーズです。
+                  広げたキャンプギア一式を撮影すると、AIが自動で複数のギアを個別に検出してリストアップします。
                 </p>
               </li>
 
               <li className="bg-[#27272A]/60 p-3 rounded-xl border border-zinc-700/50 space-y-1">
                 <span className="font-bold text-white block text-xs">
-                  ☀️ 3. 明るい場所でギア単体を置く
+                  ☀️ 3. 型番やロゴの文字を写す
                 </span>
                 <p className="text-zinc-300">
-                  他のギアの映り込みや影を減らすと誤認識を防げます。
+                  本体の印字・パッケージの型番（例: ST-310）が入ると特定がスムーズです。
                 </p>
               </li>
 
@@ -323,16 +373,18 @@ export default function GearSearch({ onAddGear, onOpenManualInput, onSearchQuery
         </div>
       )}
 
+      {/* 🎯 AI解析結果: 一括確認＆一括登録モーダル */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-[#18181B] border border-zinc-800 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="px-5 py-4 border-b border-zinc-800 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-[#18181B] border border-zinc-800 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            {/* ヘッダー */}
+            <div className="px-5 py-4 border-b border-zinc-800 flex items-center justify-between shrink-0">
               <div>
-                <h3 className="text-zinc-100 font-bold text-lg flex items-center gap-1.5">
-                  <Edit2 className="w-4 h-4 text-[#FF5500]" />
-                  <span>AI解析結果の微調整</span>
+                <h3 className="text-zinc-100 font-bold text-base sm:text-lg flex items-center gap-1.5">
+                  <span>✨</span>
+                  <span>AI検出結果 ({scannedResults.length}件)</span>
                 </h3>
-                <p className="text-zinc-400 text-xs">内容を確認・修正してから追加してください</p>
+                <p className="text-zinc-400 text-xs">追加するアイテムを選択し、必要に応じて修正してください</p>
               </div>
               <button
                 onClick={() => setShowModal(false)}
@@ -342,6 +394,26 @@ export default function GearSearch({ onAddGear, onOpenManualInput, onSearchQuery
               </button>
             </div>
 
+            {/* 一括選択/解除コントロールバー */}
+            <div className="px-5 py-2.5 border-b border-zinc-800/80 bg-[#121215] flex items-center justify-between shrink-0">
+              <button
+                type="button"
+                onClick={toggleSelectAll}
+                className="flex items-center gap-1.5 text-xs font-bold text-zinc-300 hover:text-white transition cursor-pointer"
+              >
+                {selectedIndices.size === scannedResults.length ? (
+                  <CheckSquare className="w-4 h-4 text-[#FF5500]" />
+                ) : (
+                  <Square className="w-4 h-4 text-zinc-500" />
+                )}
+                <span>全選択 / 全解除</span>
+              </button>
+              <span className="text-xs font-mono text-zinc-400">
+                選択中: <strong className="text-white">{selectedIndices.size}</strong> / {scannedResults.length} 点
+              </span>
+            </div>
+
+            {/* アイテム一覧 */}
             <div className="p-4 overflow-y-auto space-y-3 flex-1">
               {isRefreshing ? (
                 <div className="py-12 flex flex-col items-center justify-center gap-3 text-zinc-400">
@@ -349,107 +421,139 @@ export default function GearSearch({ onAddGear, onOpenManualInput, onSearchQuery
                   <p className="text-xs font-bold">別の候補を検索中...</p>
                 </div>
               ) : (
-                scannedResults.map((item, index) => (
-                  <div
-                    key={index}
-                    className="bg-[#27272A]/60 border border-zinc-700/60 rounded-xl p-4 space-y-3"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-[10px] font-bold text-zinc-400">候補 #{index + 1}</span>
-                      <select
-                        value={item.category || 'その他'}
-                        onChange={(e) => handleResultChange(index, 'category', e.target.value)}
-                        className="bg-[#18181B] text-[#FF5500] border border-zinc-700 rounded-lg px-2 py-1 text-xs font-bold focus:outline-none focus:border-[#FF5500] cursor-pointer"
-                      >
-                        {CATEGORIES.map((cat) => (
-                          <option key={cat} value={cat}>{cat}</option>
-                        ))}
-                      </select>
-                    </div>
+                scannedResults.map((item, index) => {
+                  const isChecked = selectedIndices.has(index);
 
-                    <div className="space-y-1">
-                      <label className="text-[10px] text-zinc-400 font-bold block">商品名・型番</label>
-                      <input
-                        type="text"
-                        value={item.product_name}
-                        onChange={(e) => handleResultChange(index, 'product_name', e.target.value)}
-                        className="w-full bg-[#18181B] border border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-[#FF5500]"
-                      />
-                    </div>
+                  return (
+                    <div
+                      key={index}
+                      className={`border rounded-xl p-3.5 space-y-2.5 transition ${
+                        isChecked
+                          ? 'bg-[#27272A]/80 border-zinc-700 shadow-sm'
+                          : 'bg-[#18181B]/50 border-zinc-800/70 opacity-60'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <label className="flex items-center gap-2 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => toggleItemSelection(index)}
+                            className="w-4 h-4 accent-[#FF5500] rounded cursor-pointer shrink-0"
+                          />
+                          <span className="text-xs font-extrabold text-white">
+                            アイテム #{index + 1}
+                          </span>
+                        </label>
 
-                    <div className="space-y-1">
-                      <label className="text-[10px] text-zinc-400 font-bold block">ブランド・メーカー</label>
-                      <input
-                        type="text"
-                        value={item.brand || ''}
-                        onChange={(e) => handleResultChange(index, 'brand', e.target.value)}
-                        className="w-full bg-[#18181B] border border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-[#FF5500]"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="space-y-1">
-                        <label className="text-[10px] text-zinc-400 font-bold block">重量 (g)</label>
-                        <input
-                          type="number"
-                          value={item.weight}
-                          onChange={(e) => handleResultChange(index, 'weight', Number(e.target.value))}
-                          className="w-full bg-[#18181B] border border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-[#FF5500]"
-                        />
+                        <select
+                          value={item.category || 'ベース'}
+                          onChange={(e) => handleResultChange(index, 'category', e.target.value)}
+                          className="bg-[#18181B] text-[#FF5500] border border-zinc-700 rounded-lg px-2 py-1 text-xs font-bold focus:outline-none focus:border-[#FF5500] cursor-pointer"
+                        >
+                          {CATEGORIES.map((cat) => (
+                            <option key={cat} value={cat}>{cat}</option>
+                          ))}
+                        </select>
                       </div>
 
-                      <div className="space-y-1">
-                        <label className="text-[10px] text-zinc-400 font-bold block">価格 (円)</label>
-                        <input
-                          type="number"
-                          value={item.price}
-                          onChange={(e) => handleResultChange(index, 'price', Number(e.target.value))}
-                          className="w-full bg-[#18181B] border border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-[#FF5500]"
-                        />
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div className="space-y-0.5">
+                          <label className="text-[10px] text-zinc-400 font-bold block">商品名・型番</label>
+                          <input
+                            type="text"
+                            value={item.product_name}
+                            onChange={(e) => handleResultChange(index, 'product_name', e.target.value)}
+                            className="w-full bg-[#18181B] border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-[#FF5500]"
+                          />
+                        </div>
+
+                        <div className="space-y-0.5">
+                          <label className="text-[10px] text-zinc-400 font-bold block">ブランド・メーカー</label>
+                          <input
+                            type="text"
+                            value={item.brand || ''}
+                            onChange={(e) => handleResultChange(index, 'brand', e.target.value)}
+                            className="w-full bg-[#18181B] border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-[#FF5500]"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-0.5">
+                          <label className="text-[10px] text-zinc-400 font-bold block">重量 (g)</label>
+                          <input
+                            type="number"
+                            step="10"
+                            value={item.weight}
+                            onChange={(e) => handleResultChange(index, 'weight', Number(e.target.value))}
+                            className="w-full bg-[#18181B] border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono tabular-nums text-right focus:outline-none focus:border-[#FF5500]"
+                          />
+                        </div>
+
+                        <div className="space-y-0.5">
+                          <label className="text-[10px] text-zinc-400 font-bold block">価格 (円)</label>
+                          <input
+                            type="number"
+                            step="100"
+                            value={item.price}
+                            onChange={(e) => handleResultChange(index, 'price', Number(e.target.value))}
+                            className="w-full bg-[#18181B] border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono tabular-nums text-right focus:outline-none focus:border-[#FF5500]"
+                          />
+                        </div>
                       </div>
                     </div>
-
-                    <div className="flex justify-end pt-2">
-                      <button
-                        onClick={() => {
-                          onAddGear(item);
-                          setShowModal(false);
-                        }}
-                        className="w-full py-2 bg-[#FF5500] hover:bg-[#e04c00] text-white font-bold rounded-xl shadow transition flex items-center justify-center gap-1.5 text-xs cursor-pointer"
-                      >
-                        <Plus className="w-4 h-4" />
-                        <span>この内容でリストに追加</span>
-                      </button>
-                    </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
 
-            <div className="p-3 border-t border-zinc-800 bg-[#18181B] flex flex-col sm:flex-row gap-2 items-center justify-between">
+            {/* フッターアクション */}
+            <div className="p-4 border-t border-zinc-800 bg-[#18181B] space-y-2 shrink-0">
               <button
                 type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isRefreshing || isScanning}
-                className="w-full sm:w-auto px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold rounded-xl text-xs transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                onClick={handleBulkAdd}
+                disabled={selectedIndices.size === 0 || isSubmittingBulk}
+                className="w-full py-3 bg-[#FF5500] hover:bg-[#e04c00] text-white font-bold rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
               >
-                <RotateCcw className="w-3.5 h-3.5 text-zinc-400" />
-                <span>写真を選び直す</span>
+                {isSubmittingBulk ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>登録中...</span>
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-5 h-5" />
+                    <span>選択した {selectedIndices.size} 件をまとめて登録</span>
+                  </>
+                )}
               </button>
 
-              <button
-                type="button"
-                onClick={handleRefreshResults}
-                disabled={isRefreshing || isScanning}
-                className="w-full sm:w-auto px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-xl text-xs transition border border-zinc-700 hover:border-zinc-600 flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
-              >
-                {isRefreshing ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin text-[#FF5500]" />
-                ) : (
-                  <RefreshCw className="w-3.5 h-3.5 text-amber-400" />
-                )}
-                <span>別の候補を表示（更新）</span>
-              </button>
+              <div className="flex items-center justify-between gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isRefreshing || isScanning || isSubmittingBulk}
+                  className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold rounded-lg text-xs transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 text-zinc-400" />
+                  <span>写真を選び直す</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleRefreshResults}
+                  disabled={isRefreshing || isScanning || isSubmittingBulk}
+                  className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-bold rounded-lg text-xs transition border border-zinc-700 hover:border-zinc-600 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  {isRefreshing ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-[#FF5500]" />
+                  ) : (
+                    <RefreshCw className="w-3.5 h-3.5 text-amber-400" />
+                  )}
+                  <span>別の候補（再検索）</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>

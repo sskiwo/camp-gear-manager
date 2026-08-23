@@ -64,21 +64,22 @@ export async function POST(request: Request) {
       );
     }
 
+    // 🎯 複数ギアの個別一括検出プロンプト
     let promptText = `あなたはキャンプギアの専門データベースAIです。`;
 
     if (file && queryHint) {
       promptText += `\n【解析モード: 画像 ＋ 補助テキスト】`;
-      promptText += `\n提供された画像と、ユーザーからの入力キーワード「${queryHint}」（型番・メーカー名・Amazon URL等）の両方を組み合わせ、該当する商品およびそのバリエーション・定番同等品を特定してください。`;
+      promptText += `\n提供された画像と、入力キーワード「${queryHint}」から該当するすべてのキャンプギアを特定してください。画像内に複数のアイテムが写っている場合は、それらを**個別にすべて検出**してください。`;
     } else if (file) {
-      promptText += `\n【解析モード: 画像のみ】`;
-      promptText += `\n提供された画像（キャンプギア現物・パッケージ箱・購入レシートなど）を視覚的に解析し、商品を特定してください。`;
+      promptText += `\n【解析モード: 画像一括検出】`;
+      promptText += `\n提供された画像（キャンプギア現物・パッキング展開写真・パッケージ・レシートなど）を視覚的に解析し、写っている**すべてのキャンプギアを個別に検出・分解してリスト化**してください。複数アイテムを1つにまとめず、それぞれ独立したアイテムとして出力してください。`;
     } else {
       promptText += `\n【解析モード: テキスト検索】`;
       promptText += `\nユーザーが入力した「${queryHint}」（型番・商品名・メーカー・Amazon URL等）から該当するキャンプギアを特定してください。`;
     }
 
     promptText += `\n\n【必須要件】
-1. 対象商品および近い仕様の定番モデルを含めて最大3つの候補を出力してください。
+1. 画像内のすべてのギア、またはテキストに合致するギアを配列(リスト)で出力してください（最大10点まで）。
 2. カテゴリーは「ベース」「調理」「衣類」「その他」「消耗品」のいずれか1つに厳密に分類してください。
 3. 重量(g)と価格(円:税込)は、公式データまたは一般的な定価・実売価格の推測値を正確な数値で出力してください。`;
 
@@ -86,6 +87,7 @@ export async function POST(request: Request) {
       promptText += `\n\n※以下の商品は除外して別の関連候補を提案してください: ${exclude}`;
     }
 
+    // Structured Outputs (JSONレスポンス定義: 配列形式)
     const config = {
       responseMimeType: 'application/json',
       responseSchema: {
@@ -93,7 +95,7 @@ export async function POST(request: Request) {
         properties: {
           items: {
             type: Type.ARRAY,
-            description: '検出・検索されたギア候補リスト（最大3つ）',
+            description: '検出されたキャンプギア候補リスト（複数ある場合はすべて個別に分割出力）',
             items: {
               type: Type.OBJECT,
               properties: {
@@ -144,7 +146,7 @@ export async function POST(request: Request) {
 
     const contents = [{ role: 'user', parts }];
 
-    // 💡 エラーメッセージの指定に従い gemini-3.6-flash を指定
+    // 💡 有効なFlashモデルを指定
     const candidateModels = [
       'gemini-3.6-flash',
       'gemini-flash-latest'
