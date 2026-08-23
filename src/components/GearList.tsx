@@ -2,12 +2,16 @@
 
 import { useState } from 'react';
 import GearItemCard, { GearItem } from './GearItemCard';
-import { CheckCircle2, Sparkles } from 'lucide-react';
+import { CheckCircle2, Sparkles, Loader2 } from 'lucide-react';
 
 type Props = {
   gears: GearItem[];
   allCampsCount?: number;
   allGearsInUserAccount?: GearItem[];
+  screenMode?: 'packing' | 'edit' | 'review';
+  onScreenModeChange?: (mode: 'packing' | 'edit' | 'review') => void;
+  unusedGearIds?: Set<string>;
+  onToggleUnusedGear?: (id: string) => void;
   openCategories: Record<string, boolean>;
   onToggleCategoryOpen: (catName: string) => void;
   onTogglePacked: (id: string, currentStatus: boolean) => void;
@@ -17,7 +21,7 @@ type Props = {
   onDeleteGear: (id: string) => void;
   onDeleteAllGears?: () => void;
   onResetAllPacked?: () => void;
-  onReorderGears?: (reorderedGears: GearItem[]) => void;
+  onReorderGears?: (reorderedGears: any[]) => void;
 };
 
 const CATEGORIES = ['ベース', '調理', '衣類', 'その他', '消耗品'];
@@ -30,7 +34,10 @@ const CATEGORY_COLORS = {
   消耗品: '#00E676',
 };
 
-const normalizeCategory = (gearCategory?: string, isConsumable?: boolean): 'ベース' | '調理' | '衣類' | 'その他' | '消耗品' => {
+const normalizeCategory = (
+  gearCategory?: string,
+  isConsumable?: boolean
+): 'ベース' | '調理' | '衣類' | 'その他' | '消耗品' => {
   if (isConsumable) return '消耗品';
   if (!gearCategory) return 'ベース';
   const cat = gearCategory.trim();
@@ -42,10 +49,21 @@ const normalizeCategory = (gearCategory?: string, isConsumable?: boolean): 'ベ�
   return 'その他';
 };
 
+const formatUnusedWeight = (grams: number): string => {
+  if (grams >= 1000) {
+    return `未使用: ${(grams / 1000).toFixed(2)}kg`;
+  }
+  return `未使用: ${Math.round(grams)}g`;
+};
+
 export default function GearList({
   gears,
   allCampsCount = 1,
   allGearsInUserAccount = [],
+  screenMode: externalScreenMode,
+  onScreenModeChange,
+  unusedGearIds: externalUnusedGearIds,
+  onToggleUnusedGear,
   openCategories,
   onToggleCategoryOpen,
   onTogglePacked,
@@ -58,11 +76,22 @@ export default function GearList({
   const [sortOrders, setSortOrders] = useState<Record<string, string>>({});
   const [filterMode, setFilterMode] = useState<'all' | 'unpacked'>('all');
 
-  // ⛺ 3モード管理: 'packing' | 'edit' | 'review'
-  const [screenMode, setScreenMode] = useState<'packing' | 'edit' | 'review'>('packing');
+  // ⛺ 3モード管理 (Props連携 or 内部State)
+  const [internalScreenMode, setInternalScreenMode] = useState<'packing' | 'edit' | 'review'>('packing');
+  const screenMode = externalScreenMode !== undefined ? externalScreenMode : internalScreenMode;
+
+  const handleModeChange = (mode: 'packing' | 'edit' | 'review') => {
+    if (onScreenModeChange) {
+      onScreenModeChange(mode);
+    } else {
+      setInternalScreenMode(mode);
+    }
+  };
 
   // 振り返りモード用ステート
-  const [unusedGearIds, setUnusedGearIds] = useState<Set<string>>(new Set());
+  const [internalUnusedGearIds, setInternalUnusedGearIds] = useState<Set<string>>(new Set());
+  const unusedGearIds = externalUnusedGearIds !== undefined ? externalUnusedGearIds : internalUnusedGearIds;
+
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [reviewResultModal, setReviewResultModal] = useState<{
     unusedWeightGrams: number;
@@ -82,7 +111,6 @@ export default function GearList({
         : gears;
     }
     if (screenMode === 'review') {
-      // 振り返りモード: 今回持参対象（is_selected !== false）のギアのみ表示
       return selectedGears;
     }
     return gears;
@@ -105,27 +133,30 @@ export default function GearList({
 
   // 振り返りモード: 未使用チェックのトグル
   const handleToggleUnused = (gearId: string) => {
-    setUnusedGearIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(gearId)) {
-        next.delete(gearId);
-      } else {
-        next.add(gearId);
-      }
-      return next;
-    });
+    if (onToggleUnusedGear) {
+      onToggleUnusedGear(gearId);
+    } else {
+      setInternalUnusedGearIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(gearId)) {
+          next.delete(gearId);
+        } else {
+          next.add(gearId);
+        }
+        return next;
+      });
+    }
   };
 
   // 振り返り完了処理
   const handleCompleteReview = async () => {
-    if (selectedGears.length === 0) return;
+    if (selectedGears.length === 0 || isSubmittingReview) return;
     setIsSubmittingReview(true);
 
     try {
       let totalUnusedWeight = 0;
       let totalUnusedGearsCount = 0;
 
-      // 持参対象ギアの稼働実績を一括更新
       for (const gear of selectedGears) {
         const isUnused = unusedGearIds.has(gear.id);
         const nextBrought = (gear.total_brought_count || 0) + 1;
@@ -169,7 +200,7 @@ export default function GearList({
         {/* 3モード切替トグル */}
         <div className="flex items-center bg-[#09090B] p-1 rounded-xl border border-zinc-800 self-start sm:self-auto overflow-x-auto max-w-full">
           <button
-            onClick={() => setScreenMode('packing')}
+            onClick={() => handleModeChange('packing')}
             className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-black transition cursor-pointer flex items-center gap-1 shrink-0 ${
               screenMode === 'packing'
                 ? 'bg-[#FF5500] text-white shadow-md'
@@ -179,7 +210,7 @@ export default function GearList({
             ☑️ パッキング
           </button>
           <button
-            onClick={() => setScreenMode('edit')}
+            onClick={() => handleModeChange('edit')}
             className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-black transition cursor-pointer flex items-center gap-1 shrink-0 ${
               screenMode === 'edit'
                 ? 'bg-[#FF5500] text-white shadow-md'
@@ -189,7 +220,7 @@ export default function GearList({
             ✏️ ギア編集
           </button>
           <button
-            onClick={() => setScreenMode('review')}
+            onClick={() => handleModeChange('review')}
             className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-black transition cursor-pointer flex items-center gap-1 shrink-0 ${
               screenMode === 'review'
                 ? 'bg-[#FF5500] text-white shadow-md'
@@ -224,7 +255,7 @@ export default function GearList({
               <span className="text-sm font-black text-white">
                 パッキング済み:
               </span>
-              <span className="text-sm font-black text-white font-mono">
+              <span className="text-sm font-black text-white font-mono tabular-nums text-right">
                 {packedCount} / {totalCount} 点
               </span>
             </div>
@@ -306,7 +337,6 @@ export default function GearList({
           const selectedGearsInCat = categoryAllGears.filter((g) => g.is_selected !== false);
           const packedGearsInCat = selectedGearsInCat.filter((g) => g.is_packed);
 
-          // 点数カウンタの動的切り替え
           const countText =
             screenMode === 'packing'
               ? `${packedGearsInCat.length} / ${selectedGearsInCat.length}`
@@ -344,7 +374,7 @@ export default function GearList({
                   <span style={{ color: catColor }} className="font-extrabold text-xs sm:text-sm tracking-wide truncate">
                     {catName}
                   </span>
-                  <span className="text-[11px] text-zinc-300 font-semibold shrink-0 font-mono">
+                  <span className="text-[11px] text-zinc-300 font-semibold shrink-0 font-mono tabular-nums text-right">
                     ({countText})
                   </span>
                 </button>
@@ -415,8 +445,17 @@ export default function GearList({
             disabled={isSubmittingReview}
             className="w-full py-3.5 bg-[#FF5500] hover:bg-[#e04c00] text-white font-bold rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-sm cursor-pointer disabled:opacity-50"
           >
-            <CheckCircle2 className="w-5 h-5" />
-            <span>{isSubmittingReview ? '振り返りを集計中...' : '振り返りを完了する'}</span>
+            {isSubmittingReview ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span>振り返りを集計中...</span>
+              </>
+            ) : (
+              <>
+                <CheckCircle2 className="w-5 h-5" />
+                <span>振り返りを完了する</span>
+              </>
+            )}
           </button>
         </div>
       )}
@@ -436,16 +475,16 @@ export default function GearList({
             <div className="bg-[#27272A]/70 p-3.5 rounded-xl border border-zinc-700/60 space-y-2">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-zinc-400">持参ギア総数:</span>
-                <span className="font-mono font-bold text-white">{reviewResultModal.totalCount} 点</span>
+                <span className="font-mono tabular-nums text-right font-bold text-white">{reviewResultModal.totalCount} 点</span>
               </div>
               <div className="flex items-center justify-between text-xs">
                 <span className="text-amber-400 font-bold">使わなかったギア:</span>
-                <span className="font-mono font-bold text-amber-400">{reviewResultModal.unusedCount} 点</span>
+                <span className="font-mono tabular-nums text-right font-bold text-amber-400">{reviewResultModal.unusedCount} 点</span>
               </div>
               <div className="flex items-center justify-between text-xs pt-2 border-t border-zinc-700/60">
                 <span className="text-zinc-300 font-bold">今回の未使用重量:</span>
-                <span className="font-mono font-extrabold text-[#FF5500] text-sm">
-                  {(reviewResultModal.unusedWeightGrams / 1000).toFixed(2)} kg
+                <span className="font-mono tabular-nums text-right font-extrabold text-[#FF5500] text-sm">
+                  {formatUnusedWeight(reviewResultModal.unusedWeightGrams)}
                 </span>
               </div>
             </div>
@@ -457,7 +496,7 @@ export default function GearList({
             <button
               onClick={() => {
                 setReviewResultModal(null);
-                setScreenMode('edit');
+                handleModeChange('edit');
               }}
               className="w-full py-2.5 bg-[#FF5500] hover:bg-[#e04c00] text-white font-bold rounded-xl text-xs transition cursor-pointer shadow"
             >
