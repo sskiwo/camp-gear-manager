@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { GoogleGenAI, Type } from '@google/genai';
 
 // 🛡️ 簡易レートリミット管理（メモリキャッシュ用）
-// ※ Vercelのサーバーレス関数ではインスタンスごとに初期化されますが、短時間の連打攻撃には十分に効果を発揮します
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 const RATE_LIMIT_WINDOW = 60 * 1000; // 1分間
 const MAX_REQUESTS_PER_WINDOW = 5;    // 1分間に最大5回まで
@@ -17,7 +16,7 @@ function checkRateLimit(ip: string): boolean {
   }
 
   if (record.count >= MAX_REQUESTS_PER_WINDOW) {
-    return false; // 制限超過
+    return false;
   }
 
   record.count += 1;
@@ -26,11 +25,9 @@ function checkRateLimit(ip: string): boolean {
 
 export async function POST(request: Request) {
   try {
-    // 🌐 クライアントのIPアドレスを取得（Vercelヘッダー対応）
     const forwardedFor = request.headers.get('x-forwarded-for');
     const clientIp = forwardedFor ? forwardedFor.split(',')[0].trim() : '127.0.0.1';
 
-    // レートリミット判定
     if (!checkRateLimit(clientIp)) {
       return NextResponse.json(
         { error: 'リクエストが多すぎます。しばらく時間を置いてから再度お試しください。（連打防止制限）' },
@@ -53,7 +50,6 @@ export async function POST(request: Request) {
     let queryHint = (formData.get('queryHint') as string | null)?.trim() || '';
     const exclude = (formData.get('exclude') as string | null)?.trim() || '';
 
-    // Data URLなどの入力事故を防ぐため1,000文字までに制限
     if (queryHint.startsWith('data:')) {
       queryHint = '';
     }
@@ -61,7 +57,6 @@ export async function POST(request: Request) {
       queryHint = queryHint.substring(0, 1000);
     }
 
-    // どちらも入力されていない場合はエラー
     if (!file && !queryHint) {
       return NextResponse.json(
         { error: '検索キーワードを入力するか、画像を選択してください' },
@@ -69,7 +64,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // --- プロンプト（AIへの指示文）の動的構築 ---
     let promptText = `あなたはキャンプギアの専門データベースAIです。`;
 
     if (file && queryHint) {
@@ -92,7 +86,6 @@ export async function POST(request: Request) {
       promptText += `\n\n※以下の商品は除外して別の関連候補を提案してください: ${exclude}`;
     }
 
-    // Structured Outputs (JSONレスポンス定義)
     const config = {
       responseMimeType: 'application/json',
       responseSchema: {
@@ -123,7 +116,6 @@ export async function POST(request: Request) {
 
     const parts: any[] = [];
 
-    // 画像が存在する場合はBase64に変換して添付
     if (file) {
       if (file.size > 10 * 1024 * 1024) {
         return NextResponse.json(
@@ -152,10 +144,10 @@ export async function POST(request: Request) {
 
     const contents = [{ role: 'user', parts }];
 
-    // 💡 試行するモデルを gemini-flash-latest と gemini-2.5-flash の2つのみに限定
+    // 💡 エラーメッセージの指定に従い gemini-3.6-flash を指定
     const candidateModels = [
-      'gemini-flash-latest',
-      'gemini-2.5-flash'
+      'gemini-3.6-flash',
+      'gemini-flash-latest'
     ];
 
     let response: any = null;
@@ -178,7 +170,7 @@ export async function POST(request: Request) {
     }
 
     if (!response || !response.text) {
-      throw lastError || new Error('すべてのGeminiモデルでの応答取得に失敗しました');
+      throw lastError || new Error('Geminiモデルでの応答取得に失敗しました');
     }
 
     const responseText = response.text;
