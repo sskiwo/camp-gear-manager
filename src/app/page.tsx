@@ -27,6 +27,7 @@ export default function Home() {
   const [screenMode, setScreenMode] = useState<'packing' | 'edit' | 'review'>('packing');
   const [unusedGearIds, setUnusedGearIds] = useState<Set<string>>(new Set());
 
+  // キャンプ追加・管理用ステート
   const [isAddCampOpen, setIsAddCampOpen] = useState(false);
   const [newCampTitle, setNewCampTitle] = useState('');
   const [copyOption, setCopyOption] = useState<'latest' | 'select' | 'none'>('latest');
@@ -115,6 +116,7 @@ export default function Home() {
     if (camps.length > 0) {
       setSelectedSourceCampId(camps[0].id);
     }
+    setIsEditCampOpen(false);
     setIsAddCampOpen(true);
   };
 
@@ -250,7 +252,7 @@ export default function Home() {
     }
 
     const currentCamp = camps.find((c) => c.id === selectedCampId);
-    const confirmed = window.confirm(`「${currentCamp?.title}」を削除してもよろしいですか？`);
+    const confirmed = window.confirm(`「${currentCamp?.title}」を削除してもよろしいですか？\n※登録されているギアもすべて削除されます。`);
     if (!confirmed) return;
 
     const { error } = await supabase.from('camps').delete().eq('id', selectedCampId);
@@ -262,6 +264,7 @@ export default function Home() {
     const remaining = camps.filter((c) => c.id !== selectedCampId);
     setCamps(remaining);
     setSelectedCampId(remaining[0].id);
+    setIsEditCampOpen(false);
   };
 
   const handleDeleteAllGears = async () => {
@@ -421,8 +424,8 @@ export default function Home() {
             </button>
           </div>
 
-          {/* キャンプ場選択・操作エリア */}
-          <div className="flex items-center justify-between gap-1.5 bg-[#18181B] px-2 py-1.5 rounded-xl border border-zinc-800">
+          {/* 🎯 改修: キャンプ場選択・管理バー（ドロップダウン ＋ ✏️ 管理ボタンのみ） */}
+          <div className="flex items-center justify-between gap-2 bg-[#18181B] px-2 py-1.5 rounded-xl border border-zinc-800 shadow-sm">
             <div className="flex items-center gap-1.5 flex-1 min-w-0">
               <span className="text-xs font-bold text-[#FF5500] pl-0.5 shrink-0">⛺</span>
               <select
@@ -438,54 +441,78 @@ export default function Home() {
               </select>
             </div>
 
-            <div className="flex items-center gap-1 shrink-0">
-              <button
-                onClick={handleOpenAddCampModal}
-                className="w-8 h-8 flex items-center justify-center bg-[#FF5500] hover:bg-[#E04B00] text-white text-sm font-black rounded-lg transition shrink-0 cursor-pointer shadow-sm"
-                title="新しいキャンプを追加"
-              >
-                +
-              </button>
-
+            <div className="flex items-center shrink-0">
               <button
                 onClick={startEditCampTitle}
-                className="w-8 h-8 flex items-center justify-center bg-[#27272A] hover:bg-zinc-700 text-zinc-300 rounded-lg text-xs transition border border-zinc-700 cursor-pointer"
-                title="キャンプ名を編集"
+                className="px-2.5 py-1.5 flex items-center gap-1 bg-[#27272A] hover:bg-zinc-700 text-zinc-200 hover:text-white rounded-lg text-xs font-bold transition border border-zinc-700 cursor-pointer shadow-sm active:scale-95"
+                title="キャンプの編集・追加・削除"
               >
-                ✏️
-              </button>
-
-              <button
-                onClick={handleDeleteCamp}
-                className="ml-1 w-8 h-8 flex items-center justify-center bg-red-950/30 hover:bg-red-900/60 text-[#EF4444] hover:text-white rounded-lg text-xs transition border border-[#EF4444]/40 cursor-pointer"
-                title="このキャンプを削除"
-              >
-                🗑️
+                <span>✏️</span>
+                <span className="text-[11px]">管理</span>
               </button>
             </div>
           </div>
         </header>
 
+        {/* 🎯 改修: キャンプ設定・管理パネル（鉛筆アイコンタップ時に展開） */}
         {isEditCampOpen && (
-          <div className="bg-[#18181B] border border-[#FF5500]/50 p-4 rounded-2xl space-y-3 shadow-2xl animate-fade-in">
-            <h3 className="text-sm font-bold text-white">✏️ キャンプ名を変更</h3>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={editCampTitle}
-                onChange={(e) => setEditCampTitle(e.target.value)}
-                className="flex-1 bg-[#27272A] border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white"
-              />
-              <button onClick={handleUpdateCampTitle} className="bg-[#FF5500] text-white px-4 py-2 rounded-xl text-xs font-bold cursor-pointer">
-                保存
+          <div className="bg-[#18181B] border border-[#FF5500]/50 p-4 rounded-2xl space-y-4 shadow-2xl animate-fade-in">
+            <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
+              <h3 className="text-xs font-bold text-white flex items-center gap-1.5">
+                <span>⚙️</span>
+                <span>キャンプ設定・管理</span>
+              </h3>
+              <button
+                onClick={() => setIsEditCampOpen(false)}
+                className="text-zinc-400 hover:text-white text-xs font-bold p-1 cursor-pointer"
+              >
+                ✕ 閉じる
               </button>
-              <button onClick={() => setIsEditCampOpen(false)} className="bg-zinc-800 text-zinc-300 px-3 py-2 rounded-xl text-xs cursor-pointer">
-                中止
+            </div>
+
+            {/* キャンプ名の変更エリア */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-zinc-400 block">キャンプ名の変更</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={editCampTitle}
+                  onChange={(e) => setEditCampTitle(e.target.value)}
+                  className="flex-1 bg-[#27272A] border border-zinc-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-[#FF5500]"
+                />
+                <button
+                  onClick={handleUpdateCampTitle}
+                  className="bg-[#FF5500] hover:bg-[#e04c00] text-white px-4 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition shadow-sm"
+                >
+                  保存
+                </button>
+              </div>
+            </div>
+
+            {/* アクションボタン群（新規作成 ＆ 削除） */}
+            <div className="pt-2 border-t border-zinc-800 flex flex-wrap items-center justify-between gap-2">
+              <button
+                onClick={handleOpenAddCampModal}
+                className="px-3 py-1.5 bg-[#FF5500]/20 hover:bg-[#FF5500]/30 text-[#FF5500] border border-[#FF5500]/40 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5"
+              >
+                <span>＋</span>
+                <span>新しいキャンプを追加</span>
+              </button>
+
+              <button
+                onClick={handleDeleteCamp}
+                disabled={camps.length <= 1}
+                className="px-3 py-1.5 bg-red-950/30 hover:bg-red-900/60 text-[#EF4444] hover:text-white border border-[#EF4444]/40 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+                title={camps.length <= 1 ? '最後の1つは削除できません' : '現在のキャンプを削除'}
+              >
+                <span>🗑️</span>
+                <span>このキャンプを削除</span>
               </button>
             </div>
           </div>
         )}
 
+        {/* 新規キャンプ追加モーダル */}
         {isAddCampOpen && (
           <div className="bg-[#18181B] border border-[#FF5500]/50 p-5 rounded-2xl space-y-4 shadow-2xl animate-fade-in">
             <h3 className="text-sm font-extrabold text-white flex items-center gap-1.5">
