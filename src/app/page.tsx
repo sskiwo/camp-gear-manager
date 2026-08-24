@@ -23,11 +23,9 @@ export default function Home() {
   const [gears, setGears] = useState<GearItem[]>([]);
   const [allGearsInAccount, setAllGearsInAccount] = useState<GearItem[]>([]);
 
-  // ⛺ 振り返り・サマリー動的連動用ステート
   const [screenMode, setScreenMode] = useState<'packing' | 'edit' | 'review'>('packing');
   const [unusedGearIds, setUnusedGearIds] = useState<Set<string>>(new Set());
 
-  // キャンプ追加・管理用ステート
   const [isAddCampOpen, setIsAddCampOpen] = useState(false);
   const [newCampTitle, setNewCampTitle] = useState('');
   const [copyOption, setCopyOption] = useState<'latest' | 'select' | 'none'>('latest');
@@ -178,7 +176,7 @@ export default function Home() {
           total_brought_count: g.total_brought_count || 0,
           total_used_count: g.total_used_count || 0,
           is_emergency_gear: g.is_emergency_gear || false,
-          is_weight_estimated: g.is_weight_estimated || false, // 💡 複製時にも推定フラグを引き継ぎ
+          is_weight_estimated: g.is_weight_estimated || false,
         }));
 
         const { error: cloneErr } = await supabase.from('gears').insert(clonedGears);
@@ -297,7 +295,6 @@ export default function Home() {
     }, 50);
   };
 
-  // 🎯 AIスキャンまたは手動追加時の登録
   const handleAddGear = async (item: any) => {
     if (!selectedCampId) return;
 
@@ -325,7 +322,7 @@ export default function Home() {
       total_brought_count: 0,
       total_used_count: 0,
       is_emergency_gear: false,
-      is_weight_estimated: item.is_weight_estimated ?? false, // 💡 推定フラグを確実に保存
+      is_weight_estimated: item.is_weight_estimated ?? false,
     }]);
     fetchGears();
   };
@@ -385,7 +382,13 @@ export default function Home() {
       prev.map((g) => (g.id === id ? { ...g, ...updateData } : g))
     );
 
-    await supabase.from('gears').update(updateData).eq('id', id);
+    const { error } = await supabase.from('gears').update(updateData).eq('id', id);
+    if (error) {
+      console.error('Update Gear Error:', error);
+      alert(`保存に失敗しました:\n${error.message}`);
+      fetchGears();
+      return;
+    }
     fetchGears();
   };
 
@@ -620,7 +623,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* 1段目: パッキングサマリー */}
         <WeightsSummary
           gears={gears}
           screenMode={screenMode}
@@ -628,10 +630,8 @@ export default function Home() {
           onCategoryClick={scrollToCategory}
         />
         
-        {/* 2段目: ギアを追加 */}
         <GearSearch onAddGear={handleAddGear} />
 
-        {/* 3段目: パッキングリスト */}
         <GearList
           gears={gears}
           allCampsCount={camps.length}

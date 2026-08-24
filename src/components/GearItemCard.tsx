@@ -120,7 +120,7 @@ export default function GearItemCard({
   const [isEditing, setIsEditing] = useState(false);
 
   const [editBrand, setEditBrand] = useState(item.brand || '');
-  const [editName, setEditName] = useState(item.name);
+  const [editName, setEditName] = useState(item.name || '');
   const [editCategory, setEditCategory] = useState(item.category || 'ベース');
   const [editWeight, setEditWeight] = useState(item.weight || 0);
   const [editPrice, setEditPrice] = useState(item.price || 0);
@@ -128,10 +128,9 @@ export default function GearItemCard({
   const [editFuelType, setEditFuelType] = useState(item.fuel_type || '不要/なし');
   const [editMemo, setEditMemo] = useState(item.memo || '');
 
-  // 🔄 編集フォームの値を元のデータにリセットする関数
   const resetEditForm = useCallback(() => {
     setEditBrand(item.brand || '');
-    setEditName(item.name);
+    setEditName(item.name || '');
     setEditCategory(item.category || 'ベース');
     setEditWeight(item.weight || 0);
     setEditPrice(item.price || 0);
@@ -140,14 +139,12 @@ export default function GearItemCard({
     setEditMemo(item.memo || '');
   }, [item]);
 
-  // 親データの変更時または編集終了時にStateを同期
   useEffect(() => {
     if (!isEditing) {
       resetEditForm();
     }
   }, [item, isEditing, resetEditForm]);
 
-  // 編集の開閉トグル
   const handleToggleEdit = () => {
     if (isEditing) {
       resetEditForm();
@@ -158,7 +155,6 @@ export default function GearItemCard({
     }
   };
 
-  // 中止ボタン押下時
   const handleCancelEdit = () => {
     resetEditForm();
     setIsEditing(false);
@@ -235,16 +231,20 @@ export default function GearItemCard({
   };
 
   const handleSaveEdit = async () => {
+    const finalName = editName.trim() || item.name;
+    const finalBrand = editBrand.trim();
+
     await onUpdateGear(item.id, {
-      brand: editBrand,
-      name: editName,
-      product_name: editName,
+      name: finalName,
+      product_name: finalName,
+      brand: finalBrand,
       category: editCategory,
-      weight: Number(editWeight),
-      price: Number(editPrice),
+      is_consumable: editCategory === '消耗品',
+      weight: Math.max(0, Number(editWeight) || 0),
+      price: Math.max(0, Number(editPrice) || 0),
       purchase_date: editPurchaseDate,
       fuel_type: editFuelType === '不要/なし' ? '' : editFuelType,
-      memo: editMemo,
+      memo: editMemo.trim(),
       is_weight_estimated: false,
     });
     setIsEditing(false);
