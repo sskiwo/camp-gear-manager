@@ -11,10 +11,8 @@ type Props = {
   onCategoryClick?: (catName: string) => void;
 };
 
-// 短縮カテゴリー定義
 const CATEGORIES = ['ベース', '調理', '衣類', 'その他', '消耗品'];
 
-// 🎨 カラーパレット (ベース: 赤 #EF4444)
 const CATEGORY_COLORS: Record<string, string> = {
   ベース: '#EF4444',
   調理: '#FFB800',
@@ -31,7 +29,6 @@ const CATEGORY_ICONS: Record<string, string> = {
   消耗品: '🍱',
 };
 
-// 5標準カテゴリーへの正規化関数
 const normalizeCategory = (
   gearCategory?: string,
   isConsumable?: boolean
@@ -47,7 +44,6 @@ const normalizeCategory = (
   return 'その他';
 };
 
-// 重量フォーマット表示ルール (1,000g未満: 整数g / 1,000g以上: 小数点第2位kg)
 const formatWeightDisplay = (grams: number) => {
   if (grams === 0) return '0g';
   if (grams >= 1000) {
@@ -75,7 +71,6 @@ export default function WeightsSummary({
 
   const selectedGears = gears.filter((g) => g.is_selected !== false);
 
-  // カテゴリーごとの総重量集計
   const categoryWeights = CATEGORIES.reduce((acc, catName) => {
     acc[catName] = selectedGears
       .filter((g) => normalizeCategory(g.category, g.is_consumable) === catName)
@@ -83,7 +78,6 @@ export default function WeightsSummary({
     return acc;
   }, {} as Record<string, number>);
 
-  // カテゴリーごとの未使用重量集計
   const categoryUnusedWeights = CATEGORIES.reduce((acc, catName) => {
     acc[catName] = selectedGears
       .filter((g) => normalizeCategory(g.category, g.is_consumable) === catName)
@@ -99,7 +93,6 @@ export default function WeightsSummary({
   const totalWeight = Object.values(categoryWeights).reduce((a, b) => a + b, 0);
   const baseWeight = totalWeight - (categoryWeights['消耗品'] || 0);
 
-  // 未使用重量と実使用重量の集計
   const totalUnusedWeight = Object.values(categoryUnusedWeights).reduce((a, b) => a + b, 0);
   const actualUsedWeight = Math.max(0, totalWeight - totalUnusedWeight);
 
@@ -116,14 +109,13 @@ export default function WeightsSummary({
   return (
     <div className="sticky top-3 z-40 transition-all duration-200 shadow-2xl">
       <section className="bg-[#18181B]/95 backdrop-blur-md border border-zinc-800 p-4 md:p-5 rounded-2xl space-y-3 shadow-2xl">
-        {/* ヘッダー部分 */}
         <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
           <div className="flex items-center gap-2">
-            <h2 className="text-zinc-100 font-bold text-base sm:text-lg">
+            <h2 className="text-zinc-100 font-bold text-[18px]">
               パッキングサマリー
             </h2>
             {screenMode === 'review' && (
-              <span className="text-[11px] font-bold text-amber-400 bg-amber-950/60 border border-amber-800/60 px-2 py-0.5 rounded-md">
+              <span className="text-[12px] font-bold text-amber-400 bg-amber-950/60 border border-amber-800/60 px-2 py-0.5 rounded-md">
                 ⛺ 振り返り集計中
               </span>
             )}
@@ -139,14 +131,13 @@ export default function WeightsSummary({
           </button>
         </div>
 
-        {/* 折りたたみ時 */}
         {!isOpen && (
           <div className="bg-[#27272A]/50 p-2.5 rounded-xl border border-zinc-700/60 space-y-1.5">
-            <div className="flex items-center justify-between text-[11px] text-zinc-300 font-bold font-mono tabular-nums">
+            <div className="flex items-center justify-between text-[12px] text-zinc-300 font-normal font-mono tabular-nums">
               <span>目標: {targetWeightKg.toFixed(2)}kg</span>
               <span>
                 {screenMode === 'review' ? (
-                  <span className="text-amber-400">{formatUnusedWeight(totalUnusedWeight)}</span>
+                  <span className="text-amber-400 font-bold">{formatUnusedWeight(totalUnusedWeight)}</span>
                 ) : isOverTarget ? (
                   `⚠️ ${(diffGrams / 1000).toFixed(2)}kg オーバー`
                 ) : (
@@ -165,13 +156,11 @@ export default function WeightsSummary({
           </div>
         )}
 
-        {/* 展開時 */}
         {isOpen && (
           <div className="space-y-3 pt-1">
-            {/* 目標重量 ＆ プログレスバー */}
             <div className="bg-[#27272A]/50 p-3 rounded-xl border border-zinc-700/60 space-y-2">
-              <div className="flex items-center justify-between gap-2 text-xs font-mono tabular-nums">
-                <div className="flex items-center gap-1 font-bold text-white">
+              <div className="flex items-center justify-between gap-2 text-[12px] font-mono tabular-nums">
+                <div className="flex items-center gap-1 font-normal text-white">
                   <span>目標:</span>
                   {isEditingTarget ? (
                     <div className="flex items-center gap-1">
@@ -180,12 +169,12 @@ export default function WeightsSummary({
                         step="0.5"
                         value={targetWeightKg}
                         onChange={(e) => setTargetWeightKg(Number(e.target.value))}
-                        className="w-16 bg-[#18181B] border border-[#FF5500] rounded px-1.5 py-0.5 text-xs font-mono tabular-nums text-white focus:outline-none"
+                        className="w-16 bg-[#18181B] border border-[#FF5500] rounded px-1.5 py-0.5 text-[12px] font-mono tabular-nums text-white focus:outline-none"
                       />
-                      <span className="text-xs text-white">kg</span>
+                      <span className="text-[12px] text-white">kg</span>
                       <button
                         onClick={() => setIsEditingTarget(false)}
-                        className="text-[10px] bg-[#FF5500] text-white px-2 py-0.5 rounded font-bold cursor-pointer hover:bg-[#E04B00]"
+                        className="text-[12px] bg-[#FF5500] text-white px-2 py-0.5 rounded font-bold cursor-pointer hover:bg-[#E04B00]"
                       >
                         保存
                       </button>
@@ -193,22 +182,22 @@ export default function WeightsSummary({
                   ) : (
                     <span
                       onClick={() => setIsEditingTarget(true)}
-                      className="font-mono tabular-nums text-xs font-bold text-white cursor-pointer hover:underline flex items-center gap-1"
+                      className="font-mono tabular-nums text-[12px] font-normal text-white cursor-pointer hover:underline flex items-center gap-1"
                       title="タップして目標重量を変更"
                     >
                       {targetWeightKg.toFixed(2)} kg
-                      <span className="text-[10px] text-zinc-400 font-normal">✏️</span>
+                      <span className="text-[12px] text-zinc-400">✏️</span>
                     </span>
                   )}
                 </div>
 
                 <div className="text-right">
                   {screenMode === 'review' ? (
-                    <span className="font-bold text-amber-400 font-mono tabular-nums text-right">
+                    <span className="font-bold text-amber-400 font-mono tabular-nums text-right text-[12px]">
                       {formatUnusedWeight(totalUnusedWeight)}
                     </span>
                   ) : targetWeightGrams > 0 ? (
-                    <span className={`text-xs font-bold font-mono tabular-nums shrink-0 ${isOverTarget ? 'text-[#EF4444]' : 'text-white'}`}>
+                    <span className={`text-[12px] font-normal font-mono tabular-nums shrink-0 ${isOverTarget ? 'text-[#EF4444] font-bold' : 'text-white'}`}>
                       {isOverTarget
                         ? `⚠️ ${(diffGrams / 1000).toFixed(2)}kg オーバー`
                         : `残り ${(diffGrams / 1000).toFixed(2)}kg`}
@@ -227,13 +216,12 @@ export default function WeightsSummary({
               </div>
             </div>
 
-            {/* 行き / 帰り / 合計金額 3カラムカード */}
             <div className="grid grid-cols-3 gap-2">
               <div className="bg-[#27272A]/50 p-2.5 rounded-xl border border-zinc-700/60 flex flex-col items-center justify-center text-center">
-                <span className="text-[10px] sm:text-xs text-zinc-400 font-bold block">
+                <span className="text-[12px] text-zinc-400 font-normal block">
                   {screenMode === 'review' ? '実使用重量' : '行き'}
                 </span>
-                <span className="text-xs sm:text-sm font-mono tabular-nums text-white font-extrabold mt-0.5 truncate w-full text-right sm:text-center">
+                <span className="text-[12px] sm:text-sm font-mono tabular-nums text-white font-normal mt-0.5 truncate w-full text-right sm:text-center">
                   {screenMode === 'review'
                     ? formatWeightDisplay(actualUsedWeight)
                     : formatWeightDisplay(totalWeight)}
@@ -241,12 +229,12 @@ export default function WeightsSummary({
               </div>
 
               <div className="bg-[#27272A]/50 p-2.5 rounded-xl border border-zinc-700/60 flex flex-col items-center justify-center text-center">
-                <span className="text-[10px] sm:text-xs text-zinc-400 font-bold block">
+                <span className="text-[12px] text-zinc-400 font-normal block">
                   {screenMode === 'review' ? '未使用重量' : '帰り'}
                 </span>
                 <span
-                  className={`text-xs sm:text-sm font-mono tabular-nums font-extrabold mt-0.5 truncate w-full text-right sm:text-center ${
-                    screenMode === 'review' ? 'text-amber-400' : 'text-white'
+                  className={`text-[12px] sm:text-sm font-mono tabular-nums font-normal mt-0.5 truncate w-full text-right sm:text-center ${
+                    screenMode === 'review' ? 'text-amber-400 font-bold' : 'text-white'
                   }`}
                 >
                   {screenMode === 'review'
@@ -256,19 +244,18 @@ export default function WeightsSummary({
               </div>
 
               <div className="bg-[#27272A]/50 p-2.5 rounded-xl border border-zinc-700/60 flex flex-col items-center justify-center text-center">
-                <span className="text-[10px] sm:text-xs text-zinc-400 font-bold block">合計金額</span>
-                <span className="text-xs sm:text-sm font-mono tabular-nums text-white font-extrabold mt-0.5 truncate w-full text-right sm:text-center">
+                <span className="text-[12px] text-zinc-400 font-normal block">合計金額</span>
+                <span className="text-[12px] sm:text-sm font-mono tabular-nums text-white font-normal mt-0.5 truncate w-full text-right sm:text-center">
                   ¥{totalPrice.toLocaleString()}
                 </span>
               </div>
             </div>
 
-            {/* バランスバー ＆ 5カテゴリー内訳 */}
             <div className="bg-[#27272A]/50 p-3 rounded-xl border border-zinc-700/60 space-y-2.5">
-              <div className="flex items-center justify-between text-xs font-bold text-white">
+              <div className="flex items-center justify-between text-[14px] font-semibold text-white">
                 <span>積載バランス</span>
                 {screenMode === 'review' && totalUnusedWeight > 0 && (
-                  <span className="text-[10px] text-zinc-400 font-normal">
+                  <span className="text-[12px] text-zinc-400 font-normal">
                     ※ 斜線部分は各カテゴリーの未使用分
                   </span>
                 )}
@@ -325,12 +312,13 @@ export default function WeightsSummary({
                   );
                 })}
                 {totalWeight === 0 && (
-                  <div className="w-full h-full bg-zinc-800 flex items-center justify-center text-[10px] text-zinc-500">
+                  <div className="w-full h-full bg-zinc-800 flex items-center justify-center text-[12px] text-zinc-500 font-normal">
                     ギア未選択
                   </div>
                 )}
               </div>
 
+              {/* 5カテゴリー名（14px Semi-bold） */}
               <div className="grid grid-cols-5 gap-1 pt-1">
                 {CATEGORIES.map((cat) => {
                   const weight = categoryWeights[cat] || 0;
@@ -351,20 +339,20 @@ export default function WeightsSummary({
                       }`}
                     >
                       <div
-                        className="flex items-center justify-center gap-0.5 text-[10px] sm:text-[11px] font-bold group-hover:scale-105 transition-transform w-full"
+                        className="flex items-center justify-center gap-0.5 text-[14px] font-semibold group-hover:scale-105 transition-transform w-full"
                         style={{ color: isEmpty ? '#71717A' : color }}
                       >
-                        <span className="shrink-0">{icon}</span>
+                        <span className="shrink-0 text-[12px]">{icon}</span>
                         <span className="truncate">{cat}</span>
                       </div>
 
                       <span
-                        className={`text-[10px] sm:text-xs font-mono tabular-nums text-right font-extrabold mt-0.5 w-full ${
+                        className={`text-[12px] font-mono tabular-nums text-right font-normal mt-0.5 w-full ${
                           isEmpty ? 'text-zinc-600' : 'text-zinc-200'
                         }`}
                       >
                         {screenMode === 'review' && unused > 0 ? (
-                          <span className="text-amber-400">-{formatWeightDisplay(unused)}</span>
+                          <span className="text-amber-400 font-bold">-{formatWeightDisplay(unused)}</span>
                         ) : (
                           formatWeightDisplay(weight)
                         )}

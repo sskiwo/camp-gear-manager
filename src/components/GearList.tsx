@@ -207,9 +207,9 @@ export default function GearList({
 
   return (
     <section className="bg-[#18181B] p-4 md:p-6 rounded-2xl border border-zinc-800 space-y-4 shadow-xl">
-      {/* リストヘッダー */}
+      {/* セクション大見出し（18px Bold） */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-3">
-        <h2 className="text-lg font-bold text-zinc-100 flex items-center gap-1.5">
+        <h2 className="text-[18px] font-bold text-zinc-100 flex items-center gap-1.5">
           {screenMode === 'packing'
             ? 'パッキングリスト'
             : screenMode === 'edit'
@@ -221,7 +221,7 @@ export default function GearList({
         <div className="flex items-center bg-[#09090B] p-1 rounded-xl border border-zinc-800 self-start sm:self-auto overflow-x-auto max-w-full">
           <button
             onClick={() => handleModeChange('packing')}
-            className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-black transition cursor-pointer flex items-center gap-1 shrink-0 ${
+            className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-[12px] font-bold transition cursor-pointer flex items-center gap-1 shrink-0 ${
               screenMode === 'packing'
                 ? 'bg-[#FF5500] text-white shadow-md'
                 : 'text-zinc-400 hover:text-white'
@@ -231,7 +231,7 @@ export default function GearList({
           </button>
           <button
             onClick={() => handleModeChange('edit')}
-            className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-black transition cursor-pointer flex items-center gap-1 shrink-0 ${
+            className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-[12px] font-bold transition cursor-pointer flex items-center gap-1 shrink-0 ${
               screenMode === 'edit'
                 ? 'bg-[#FF5500] text-white shadow-md'
                 : 'text-zinc-400 hover:text-white'
@@ -241,7 +241,7 @@ export default function GearList({
           </button>
           <button
             onClick={() => handleModeChange('review')}
-            className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-black transition cursor-pointer flex items-center gap-1 shrink-0 ${
+            className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-[12px] font-bold transition cursor-pointer flex items-center gap-1 shrink-0 ${
               screenMode === 'review'
                 ? 'bg-[#FF5500] text-white shadow-md'
                 : 'text-zinc-400 hover:text-white'
@@ -252,30 +252,28 @@ export default function GearList({
         </div>
       </div>
 
-      {/* 振り返りモード時のガイダンスカード */}
       {screenMode === 'review' && (
         <div className="bg-amber-950/30 border border-amber-800/60 p-3.5 rounded-2xl space-y-1.5">
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
-            <span className="text-xs font-bold text-amber-300">
+            <span className="text-[12px] font-bold text-amber-300">
               キャンプお疲れ様でした！持参ギアを振り返りましょう
             </span>
           </div>
-          <p className="text-[11px] text-zinc-400 leading-relaxed">
-            今回持参したギアのうち、<strong className="text-amber-400">「持っていったが使わなかった（未使用）」</strong>ギアにチェックを入れてください。完了すると各ギアの稼働実績が更新されます。
+          <p className="text-[12px] text-zinc-400 leading-relaxed font-normal">
+            今回持参したギアのうち、<strong className="text-amber-400 font-bold">「持っていったが使わなかった（未使用）」</strong>ギアにチェックを入れてください。完了すると各ギアの稼働実績が更新されます。
           </p>
         </div>
       )}
 
-      {/* パッキング進捗カード */}
       {screenMode === 'packing' && totalCount > 0 && (
         <div className="bg-[#27272A]/80 p-3.5 rounded-2xl border border-zinc-700/70 space-y-2 shadow-inner">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-black text-white">
+              <span className="text-[12px] font-normal text-white">
                 パッキング済み:
               </span>
-              <span className="text-sm font-black text-white font-mono tabular-nums text-right">
+              <span className="text-[12px] font-normal text-white font-mono tabular-nums text-right">
                 {packedCount} / {totalCount} 点
               </span>
             </div>
@@ -283,9 +281,9 @@ export default function GearList({
             <div className="flex items-center gap-1.5">
               <button
                 onClick={() => setFilterMode(filterMode === 'all' ? 'unpacked' : 'all')}
-                className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border transition cursor-pointer ${
+                className={`text-[12px] font-normal px-2.5 py-1 rounded-lg border transition cursor-pointer ${
                   filterMode === 'unpacked'
-                    ? 'bg-[#FF5500] text-white border-[#FF5500] font-extrabold'
+                    ? 'bg-[#FF5500] text-white border-[#FF5500] font-bold'
                     : 'bg-zinc-800 text-zinc-300 border-zinc-700 hover:text-white'
                 }`}
               >
@@ -295,7 +293,7 @@ export default function GearList({
               {onResetAllPacked && (
                 <button
                   onClick={onResetAllPacked}
-                  className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-zinc-800 border border-[#EF4444]/60 text-white hover:bg-[#EF4444]/20 transition cursor-pointer"
+                  className="text-[12px] font-normal px-2.5 py-1 rounded-lg bg-zinc-800 border border-[#EF4444]/60 text-white hover:bg-[#EF4444]/20 transition cursor-pointer"
                   title="当日のパッキング完了チェックをリセットします"
                 >
                   リセット
@@ -314,13 +312,13 @@ export default function GearList({
       )}
 
       {gears.length === 0 ? (
-        <p className="text-center text-zinc-500 py-6 font-medium bg-[#27272A]/50 rounded-xl border border-zinc-800 text-xs">
+        <p className="text-center text-zinc-500 py-6 font-normal bg-[#27272A]/50 rounded-xl border border-zinc-800 text-[12px]">
           ギアや食料がまだ登録されていません。
         </p>
       ) : screenMode === 'packing' && filterMode === 'unpacked' && filteredGears.length === 0 ? (
         <div className="bg-emerald-950/30 border border-emerald-800/60 p-6 rounded-2xl text-center space-y-2">
-          <p className="text-base font-black text-[#10B981]">🎉 本日のパッキング準備がすべて完了しました！</p>
-          <p className="text-xs text-zinc-400">持っていく予定のギアはすべてザックに入っています。行ってらっしゃい！⛺✨</p>
+          <p className="text-[14px] font-semibold text-[#10B981]">🎉 本日のパッキング準備がすべて完了しました！</p>
+          <p className="text-[12px] text-zinc-400 font-normal">持っていく予定のギアはすべてザックに入っています。行ってらっしゃい！⛺✨</p>
         </div>
       ) : (
         CATEGORIES.map((catName) => {
@@ -391,6 +389,7 @@ export default function GearList({
               className="border rounded-xl overflow-hidden shadow-md scroll-mt-6"
               style={{ borderColor: `${catColor}50` }}
             >
+              {/* カテゴリー見出し（14px Semi-bold） */}
               <div
                 style={{ backgroundColor: '#18181B', borderColor: `${catColor}40` }}
                 className="sticky top-0 z-10 w-full flex items-center justify-between px-3 sm:px-4 py-2 border-b backdrop-blur-md gap-2"
@@ -399,11 +398,11 @@ export default function GearList({
                   onClick={() => onToggleCategoryOpen(catName)}
                   className="flex items-center gap-1.5 sm:gap-2 text-left cursor-pointer flex-1 min-w-0"
                 >
-                  <span className="text-sm shrink-0">{catIcon}</span>
-                  <span style={{ color: catColor }} className="font-extrabold text-xs sm:text-sm tracking-wide truncate">
+                  <span className="text-[12px] shrink-0">{catIcon}</span>
+                  <span style={{ color: catColor }} className="font-semibold text-[14px] tracking-wide truncate">
                     {catName}
                   </span>
-                  <span className="text-[11px] text-zinc-300 font-semibold shrink-0 font-mono tabular-nums text-right">
+                  <span className="text-[12px] text-zinc-300 font-normal shrink-0 font-mono tabular-nums text-right">
                     ({countText})
                   </span>
                 </button>
@@ -412,7 +411,7 @@ export default function GearList({
                   <select
                     value={sortOrder}
                     onChange={(e) => handleSortChange(catName, e.target.value)}
-                    className="bg-[#27272A] text-zinc-200 text-[10px] font-bold px-1.5 sm:px-2 py-1 rounded-lg border border-zinc-700 focus:outline-none focus:border-[#FF5500] cursor-pointer"
+                    className="bg-[#27272A] text-zinc-200 text-[12px] font-normal px-1.5 sm:px-2 py-1 rounded-lg border border-zinc-700 focus:outline-none focus:border-[#FF5500] cursor-pointer"
                   >
                     <option value="default">更新順</option>
                     <option value="usage_desc">使用率順</option>
@@ -425,7 +424,7 @@ export default function GearList({
                     <button
                       onClick={() => onToggleCategoryOpen(catName)}
                       style={{ color: catColor }}
-                      className="text-xs font-bold cursor-pointer pl-0.5"
+                      className="text-[12px] font-normal cursor-pointer pl-0.5"
                     >
                       {isOpen ? '▲' : '▼'}
                     </button>
@@ -436,7 +435,7 @@ export default function GearList({
               {(isOpen || screenMode === 'packing' || screenMode === 'review') && (
                 <div className="p-1.5 space-y-1 bg-[#121215]">
                   {categoryGears.length === 0 ? (
-                    <p className="text-center text-zinc-600 py-3 text-[11px]">
+                    <p className="text-center text-zinc-600 py-3 text-[12px] font-normal">
                       このカテゴリーのギアはありません
                     </p>
                   ) : (
@@ -464,13 +463,12 @@ export default function GearList({
         })
       )}
 
-      {/* 振り返り完了ボタン */}
       {screenMode === 'review' && selectedGears.length > 0 && (
         <div className="pt-2">
           <button
             onClick={handleCompleteReview}
             disabled={isSubmittingReview}
-            className="w-full py-3.5 bg-[#FF5500] hover:bg-[#e04c00] text-white font-bold rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-sm cursor-pointer disabled:opacity-50"
+            className="w-full py-3.5 bg-[#FF5500] hover:bg-[#e04c00] text-white font-bold rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-[12px] cursor-pointer disabled:opacity-50"
           >
             {isSubmittingReview ? (
               <>
@@ -487,7 +485,6 @@ export default function GearList({
         </div>
       )}
 
-      {/* 振り返り結果モーダル */}
       {reviewResultModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="bg-[#18181B] border border-zinc-800 w-full max-w-sm rounded-2xl shadow-2xl p-5 space-y-4 text-zinc-100">
@@ -495,28 +492,28 @@ export default function GearList({
               <div className="w-12 h-12 bg-emerald-950/60 border border-emerald-800/80 rounded-full flex items-center justify-center mx-auto text-2xl">
                 ⛺
               </div>
-              <h3 className="font-bold text-base text-white">振り返りが完了しました！</h3>
-              <p className="text-xs text-zinc-400">ギアの稼働実績データが更新されました。</p>
+              <h3 className="font-semibold text-[14px] text-white">振り返りが完了しました！</h3>
+              <p className="text-[12px] text-zinc-400 font-normal">ギアの稼働実績データが更新されました。</p>
             </div>
 
-            <div className="bg-[#27272A]/70 p-3.5 rounded-xl border border-zinc-700/60 space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-zinc-400">持参ギア総数:</span>
-                <span className="font-mono tabular-nums text-right font-bold text-white">{reviewResultModal.totalCount} 点</span>
+            <div className="bg-[#27272A]/70 p-3.5 rounded-xl border border-zinc-700/60 space-y-2 text-[12px]">
+              <div className="flex items-center justify-between">
+                <span className="text-zinc-400 font-normal">持参ギア総数:</span>
+                <span className="font-mono tabular-nums text-right font-normal text-white">{reviewResultModal.totalCount} 点</span>
               </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-amber-400 font-bold">使わなかったギア:</span>
+              <div className="flex items-center justify-between">
+                <span className="text-amber-400 font-normal">使わなかったギア:</span>
                 <span className="font-mono tabular-nums text-right font-bold text-amber-400">{reviewResultModal.unusedCount} 点</span>
               </div>
-              <div className="flex items-center justify-between text-xs pt-2 border-t border-zinc-700/60">
-                <span className="text-zinc-300 font-bold">今回の未使用重量:</span>
-                <span className="font-mono tabular-nums text-right font-extrabold text-[#FF5500] text-sm">
+              <div className="flex items-center justify-between pt-2 border-t border-zinc-700/60">
+                <span className="text-zinc-300 font-normal">今回の未使用重量:</span>
+                <span className="font-mono tabular-nums text-right font-bold text-[#FF5500] text-[14px]">
                   {formatUnusedWeight(reviewResultModal.unusedWeightGrams)}
                 </span>
               </div>
             </div>
 
-            <p className="text-[11px] text-zinc-400 leading-relaxed text-center">
+            <p className="text-[12px] text-zinc-400 leading-relaxed text-center font-normal">
               使わなかったギアはお留守番候補（低稼働バッジ）として次回以降の軽量化に役立ちます！
             </p>
 
@@ -525,7 +522,7 @@ export default function GearList({
                 setReviewResultModal(null);
                 handleModeChange('edit');
               }}
-              className="w-full py-2.5 bg-[#FF5500] hover:bg-[#e04c00] text-white font-bold rounded-xl text-xs transition cursor-pointer shadow"
+              className="w-full py-2.5 bg-[#FF5500] hover:bg-[#e04c00] text-white font-bold rounded-xl text-[12px] transition cursor-pointer shadow"
             >
               ギア一覧（編集モード）に戻る
             </button>

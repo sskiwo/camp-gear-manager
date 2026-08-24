@@ -411,7 +411,7 @@ export default function Home() {
         {/* ヘッダーエリア */}
         <header className="border-b border-zinc-800 pb-2.5 space-y-2">
           <div className="flex items-center justify-between gap-2">
-            <h1 className="text-sm sm:text-lg md:text-xl font-black text-white tracking-tight flex items-center gap-1.5 whitespace-nowrap overflow-hidden truncate">
+            <h1 className="text-sm sm:text-base font-black text-white tracking-tight flex items-center gap-1.5 whitespace-nowrap overflow-hidden truncate">
               <span>⛺</span>
               <span className="truncate">
                 <span className="text-[#FF5500]">Camp Gear</span> Manager
@@ -420,7 +420,7 @@ export default function Home() {
 
             <button
               onClick={handleTogglePublic}
-              className={`px-2.5 py-1 rounded-xl text-[11px] font-bold transition border cursor-pointer shrink-0 shadow-sm ${
+              className={`px-2.5 py-1 rounded-xl text-[12px] font-bold transition border cursor-pointer shrink-0 shadow-sm ${
                 currentSelectedCamp?.is_public
                   ? 'bg-[#10B981] text-white border-transparent hover:bg-emerald-600'
                   : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white'
@@ -430,16 +430,16 @@ export default function Home() {
             </button>
           </div>
 
-          <div className="flex items-center justify-between gap-2 bg-[#18181B] px-2 py-1.5 rounded-xl border border-zinc-800 shadow-sm">
-            <div className="flex items-center gap-1.5 flex-1 min-w-0">
-              <span className="text-xs font-bold text-[#FF5500] pl-0.5 shrink-0">⛺</span>
+          {/* キャンプ場選択バー（アイコンと管理文字を削除し、大見出し18px Boldを適用） */}
+          <div className="flex items-center justify-between gap-2 bg-[#18181B] px-3 py-2 rounded-xl border border-zinc-800 shadow-sm">
+            <div className="flex-1 min-w-0">
               <select
                 value={selectedCampId}
                 onChange={(e) => setSelectedCampId(e.target.value)}
-                className="w-full bg-[#27272A] text-white text-xs font-bold px-2 py-1.5 rounded-lg border border-zinc-700 focus:outline-none focus:border-[#FF5500] cursor-pointer truncate"
+                className="w-full bg-transparent text-white text-[18px] font-bold focus:outline-none cursor-pointer truncate"
               >
                 {camps.map((camp) => (
-                  <option key={camp.id} value={camp.id}>
+                  <option key={camp.id} value={camp.id} className="bg-[#18181B] text-white text-[18px] font-bold">
                     {camp.title}
                   </option>
                 ))}
@@ -449,11 +449,10 @@ export default function Home() {
             <div className="flex items-center shrink-0">
               <button
                 onClick={startEditCampTitle}
-                className="px-2.5 py-1.5 flex items-center gap-1 bg-[#27272A] hover:bg-zinc-700 text-zinc-200 hover:text-white rounded-lg text-xs font-bold transition border border-zinc-700 cursor-pointer shadow-sm active:scale-95"
-                title="キャンプの編集・追加・削除"
+                className="w-8 h-8 flex items-center justify-center bg-[#27272A] hover:bg-zinc-700 text-zinc-200 hover:text-white rounded-lg text-sm transition border border-zinc-700 cursor-pointer shadow-sm active:scale-95"
+                title="キャンプ設定"
               >
-                <span>✏️</span>
-                <span className="text-[11px]">管理</span>
+                ✏️
               </button>
             </div>
           </div>
@@ -462,30 +461,27 @@ export default function Home() {
         {isEditCampOpen && (
           <div className="bg-[#18181B] border border-[#FF5500]/50 p-4 rounded-2xl space-y-4 shadow-2xl animate-fade-in">
             <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
-              <h3 className="text-xs font-bold text-white flex items-center gap-1.5">
-                <span>⚙️</span>
-                <span>キャンプ設定・管理</span>
-              </h3>
+              <h3 className="text-[14px] font-semibold text-white">キャンプ設定・管理</h3>
               <button
                 onClick={() => setIsEditCampOpen(false)}
-                className="text-zinc-400 hover:text-white text-xs font-bold p-1 cursor-pointer"
+                className="text-zinc-400 hover:text-white text-[12px] font-normal p-1 cursor-pointer"
               >
                 ✕ 閉じる
               </button>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-zinc-400 block">キャンプ名の変更</label>
+              <label className="text-[12px] font-normal text-zinc-400 block">キャンプ名の変更</label>
               <div className="flex gap-2">
                 <input
                   type="text"
                   value={editCampTitle}
                   onChange={(e) => setEditCampTitle(e.target.value)}
-                  className="flex-1 bg-[#27272A] border border-zinc-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-[#FF5500]"
+                  className="flex-1 bg-[#27272A] border border-zinc-700 rounded-xl px-3 py-1.5 text-[12px] text-white focus:outline-none focus:border-[#FF5500]"
                 />
                 <button
                   onClick={handleUpdateCampTitle}
-                  className="bg-[#FF5500] hover:bg-[#e04c00] text-white px-4 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition shadow-sm"
+                  className="bg-[#FF5500] hover:bg-[#e04c00] text-white px-4 py-1.5 rounded-xl text-[12px] font-bold cursor-pointer transition shadow-sm"
                 >
                   保存
                 </button>
@@ -495,7 +491,7 @@ export default function Home() {
             <div className="pt-2 border-t border-zinc-800 flex flex-wrap items-center justify-between gap-2">
               <button
                 onClick={handleOpenAddCampModal}
-                className="px-3 py-1.5 bg-[#FF5500]/20 hover:bg-[#FF5500]/30 text-[#FF5500] border border-[#FF5500]/40 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5"
+                className="px-3 py-1.5 bg-[#FF5500]/20 hover:bg-[#FF5500]/30 text-[#FF5500] border border-[#FF5500]/40 rounded-xl text-[12px] font-bold transition cursor-pointer flex items-center gap-1.5"
               >
                 <span>＋</span>
                 <span>新しいキャンプを追加</span>
@@ -504,7 +500,7 @@ export default function Home() {
               <button
                 onClick={handleDeleteCamp}
                 disabled={camps.length <= 1}
-                className="px-3 py-1.5 bg-red-950/30 hover:bg-red-900/60 text-[#EF4444] hover:text-white border border-[#EF4444]/40 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="px-3 py-1.5 bg-red-950/30 hover:bg-red-900/60 text-[#EF4444] hover:text-white border border-[#EF4444]/40 rounded-xl text-[12px] font-bold transition cursor-pointer flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
                 title={camps.length <= 1 ? '最後の1つは削除できません' : '現在のキャンプを削除'}
               >
                 <span>🗑️</span>
@@ -516,25 +512,23 @@ export default function Home() {
 
         {isAddCampOpen && (
           <div className="bg-[#18181B] border border-[#FF5500]/50 p-5 rounded-2xl space-y-4 shadow-2xl animate-fade-in">
-            <h3 className="text-sm font-extrabold text-white flex items-center gap-1.5">
-              ⛺ 新しいキャンプを追加
-            </h3>
+            <h3 className="text-[14px] font-semibold text-white">新しいキャンプを追加</h3>
 
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-zinc-400 block">キャンプ名（必須）</label>
+              <label className="text-[12px] font-normal text-zinc-400 block">キャンプ名（必須）</label>
               <input
                 type="text"
                 placeholder="例: 2026年8月 ふもとっぱらソロキャン"
                 value={newCampTitle}
                 onChange={(e) => setNewCampTitle(e.target.value)}
-                className="w-full bg-[#27272A] border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:border-[#FF5500] focus:outline-none"
+                className="w-full bg-[#27272A] border border-zinc-700 rounded-xl px-3 py-2 text-[12px] text-white focus:border-[#FF5500] focus:outline-none"
               />
             </div>
 
             <div className="space-y-2.5 pt-1 border-t border-zinc-800">
-              <label className="text-[10px] font-bold text-zinc-400 block">ギアリストの引き継ぎ</label>
+              <label className="text-[12px] font-normal text-zinc-400 block">ギアリストの引き継ぎ</label>
 
-              <div className="space-y-2 text-xs">
+              <div className="space-y-2 text-[12px]">
                 <label className={`flex items-start gap-2.5 p-2.5 rounded-xl border cursor-pointer transition ${
                   copyOption === 'latest' ? 'bg-[#FF5500]/10 border-[#FF5500] text-white' : 'bg-[#27272A]/40 border-zinc-800 text-zinc-300 hover:bg-[#27272A]'
                 }`}>
@@ -548,13 +542,13 @@ export default function Home() {
                     className="mt-0.5 accent-[#FF5500]"
                   />
                   <div className="flex-1 min-w-0">
-                    <span className="font-bold block">直近のキャンプから引き継ぐ</span>
+                    <span className="font-semibold block">直近のキャンプから引き継ぐ</span>
                     {camps.length > 0 ? (
-                      <span className="text-[11px] text-zinc-400 block truncate font-mono mt-0.5">
+                      <span className="text-[12px] text-zinc-400 block truncate font-mono mt-0.5">
                         直近: {camps[0].title} ({getCampGearCount(camps[0].id)}点)
                       </span>
                     ) : (
-                      <span className="text-[11px] text-zinc-500 block mt-0.5">※過去のキャンプが存在しません</span>
+                      <span className="text-[12px] text-zinc-500 block mt-0.5">※過去のキャンプが存在しません</span>
                     )}
                   </div>
                 </label>
@@ -572,12 +566,12 @@ export default function Home() {
                     className="mt-0.5 accent-[#FF5500]"
                   />
                   <div className="flex-1 min-w-0 space-y-2">
-                    <span className="font-bold block">過去のリストから選択</span>
+                    <span className="font-semibold block">過去のリストから選択</span>
                     {copyOption === 'select' && (
                       <select
                         value={selectedSourceCampId}
                         onChange={(e) => setSelectedSourceCampId(e.target.value)}
-                        className="w-full bg-[#18181B] border border-zinc-700 text-white text-xs font-bold px-2.5 py-1.5 rounded-lg focus:outline-none focus:border-[#FF5500]"
+                        className="w-full bg-[#18181B] border border-zinc-700 text-white text-[12px] px-2.5 py-1.5 rounded-lg focus:outline-none focus:border-[#FF5500]"
                       >
                         {camps.map((camp) => (
                           <option key={camp.id} value={camp.id}>
@@ -600,7 +594,7 @@ export default function Home() {
                     onChange={() => setCopyOption('none')}
                     className="accent-[#FF5500]"
                   />
-                  <span className="font-bold">空のリストで作成する (ギア0件)</span>
+                  <span className="font-semibold">空のリストで作成する (ギア0件)</span>
                 </label>
               </div>
             </div>
@@ -609,13 +603,13 @@ export default function Home() {
               <button
                 onClick={handleCreateCamp}
                 disabled={isSubmitting}
-                className="bg-[#FF5500] hover:bg-[#E04B00] text-white px-5 py-2 rounded-xl text-xs font-bold transition shadow-sm cursor-pointer disabled:opacity-50"
+                className="bg-[#FF5500] hover:bg-[#E04B00] text-white px-5 py-2 rounded-xl text-[12px] font-bold transition shadow-sm cursor-pointer disabled:opacity-50"
               >
                 {isSubmitting ? '作成中...' : '作成'}
               </button>
               <button
                 onClick={() => setIsAddCampOpen(false)}
-                className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-4 py-2 rounded-xl text-xs font-bold cursor-pointer transition"
+                className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-4 py-2 rounded-xl text-[12px] font-normal cursor-pointer transition"
               >
                 中止
               </button>
@@ -655,10 +649,10 @@ export default function Home() {
         <CsvManager gears={gears} selectedCampId={selectedCampId} onGearsUpdated={fetchGears} />
 
         <footer className="pt-8 pb-10 text-center border-t border-zinc-800 space-y-3">
-          <Link href="/split-bill" className="inline-flex items-center justify-center gap-2 bg-[#FF5500] text-white px-6 py-3.5 rounded-2xl text-xs font-black">
+          <Link href="/split-bill" className="inline-flex items-center justify-center gap-2 bg-[#FF5500] text-white px-6 py-3.5 rounded-2xl text-[12px] font-bold">
             💰 スマート割り勘計算ページへ進む →
           </Link>
-          <p className="text-[11px] text-zinc-500 font-medium">🏕️ Camp Gear Manager & Packing Tool</p>
+          <p className="text-[12px] text-zinc-500 font-normal">🏕️ Camp Gear Manager & Packing Tool</p>
         </footer>
       </div>
     </main>

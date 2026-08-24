@@ -238,11 +238,12 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
   return (
     <div className="bg-[#18181B] border border-zinc-800 rounded-2xl p-5 shadow-lg space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-white font-bold text-lg">ギアを追加</h2>
+        {/* セクション大見出し（18px Bold） */}
+        <h2 className="text-white font-bold text-[18px]">ギアを追加</h2>
         <button
           type="button"
           onClick={() => setShowTipsModal(true)}
-          className="text-xs text-amber-400 hover:text-amber-300 flex items-center gap-1 cursor-pointer font-medium transition"
+          className="text-[12px] text-amber-400 hover:text-amber-300 flex items-center gap-1 cursor-pointer font-normal transition"
         >
           <Lightbulb className="w-3.5 h-3.5" />
           <span>撮影のコツ</span>
@@ -264,14 +265,14 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
             value={searchQuery}
             onChange={handleSearchChange}
             placeholder="型番・商品名・Amazon URLを入力"
-            className="w-full bg-[#27272A] border border-zinc-700 rounded-xl px-4 py-3 text-zinc-100 placeholder-zinc-500 text-sm focus:outline-none focus:border-[#FF5500] transition shadow-inner"
+            className="w-full bg-[#27272A] border border-zinc-700 rounded-xl px-4 py-3 text-zinc-100 placeholder-zinc-500 text-[12px] focus:outline-none focus:border-[#FF5500] transition shadow-inner font-normal"
           />
         </div>
 
         <button
           type="submit"
           disabled={isScanning || isRefreshing}
-          className="py-3 px-5 bg-[#FF5500] hover:bg-[#e04c00] text-white font-medium rounded-xl shadow transition flex items-center justify-center shrink-0 text-sm cursor-pointer disabled:opacity-50"
+          className="py-3 px-5 bg-[#FF5500] hover:bg-[#e04c00] text-white font-bold rounded-xl shadow transition flex items-center justify-center shrink-0 text-[12px] cursor-pointer disabled:opacity-50"
         >
           {isScanning ? (
             <Loader2 className="w-5 h-5 animate-spin text-white" />
@@ -294,7 +295,7 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
       <div className="pt-2 pb-2">
         <Link
           href="/community"
-          className="w-full inline-flex items-center justify-center gap-2 bg-transparent hover:bg-[#FF5500]/10 text-white border border-[#FF5500] px-4 py-3 rounded-xl text-xs font-bold transition shadow-sm group cursor-pointer"
+          className="w-full inline-flex items-center justify-center gap-2 bg-transparent hover:bg-[#FF5500]/10 text-white border border-[#FF5500] px-4 py-3 rounded-xl text-[12px] font-bold transition shadow-sm group cursor-pointer"
         >
           <span>みんなのギアから追加</span>
           <span className="group-hover:translate-x-1 transition-transform">➔</span>
@@ -302,14 +303,14 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
       </div>
 
       {errorMessage && !showModal && (
-        <p className="text-xs text-red-500 font-medium">{errorMessage}</p>
+        <p className="text-[12px] text-red-500 font-normal">{errorMessage}</p>
       )}
 
       {showTipsModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="bg-[#18181B] border border-zinc-800 w-full max-w-sm rounded-2xl shadow-2xl p-5 space-y-4 text-zinc-100">
             <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
-              <h3 className="font-bold text-xs sm:text-sm flex items-center gap-1.5 text-amber-400">
+              <h3 className="font-semibold text-[14px] flex items-center gap-1.5 text-amber-400">
                 <Lightbulb className="w-4 h-4 shrink-0" />
                 <span>AI解析率を高める撮影のコツ (厳選4項目)</span>
               </h3>
@@ -321,39 +322,39 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
               </button>
             </div>
 
-            <ul className="space-y-3 text-xs leading-relaxed max-h-[60vh] overflow-y-auto pr-1">
+            <ul className="space-y-3 text-[12px] leading-relaxed max-h-[60vh] overflow-y-auto pr-1">
               <li className="bg-[#27272A]/60 p-3 rounded-xl border border-zinc-700/50 space-y-1">
-                <span className="font-bold text-white block text-xs">
+                <span className="font-semibold text-white block text-[12px]">
                   🔍 1. 検索窓の「文字」と組み合わせる【効果絶大】
                 </span>
-                <p className="text-zinc-300">
+                <p className="text-zinc-300 font-normal">
                   検索枠に「SOTO」や「テント」などブランドや種類を入力してカメラを押すと、テキスト＋写真で認識精度が劇的に上がります！
                 </p>
               </li>
 
               <li className="bg-[#27272A]/60 p-3 rounded-xl border border-zinc-700/50 space-y-1">
-                <span className="font-bold text-white block text-xs">
+                <span className="font-semibold text-white block text-[12px]">
                   🔤 2. 複数ギアの一括認識
                 </span>
-                <p className="text-zinc-300">
+                <p className="text-zinc-300 font-normal">
                   広げたキャンプギア一式を撮影すると、AIが自動で複数のギアを個別に検出してリストアップします。
                 </p>
               </li>
 
               <li className="bg-[#27272A]/60 p-3 rounded-xl border border-zinc-700/50 space-y-1">
-                <span className="font-bold text-white block text-xs">
+                <span className="font-semibold text-white block text-[12px]">
                   ☀️ 3. 型番やロゴの文字を写す
                 </span>
-                <p className="text-zinc-300">
+                <p className="text-zinc-300 font-normal">
                   本体の印字・パッケージの型番（例: ST-310）が入ると特定がスムーズです。
                 </p>
               </li>
 
               <li className="bg-[#27272A]/60 p-3 rounded-xl border border-zinc-700/50 space-y-1">
-                <span className="font-bold text-white block text-xs">
+                <span className="font-semibold text-white block text-[12px]">
                   🧾 4. レシートや注文画面のスクショもOK
                 </span>
-                <p className="text-zinc-300">
+                <p className="text-zinc-300 font-normal">
                   商品名と金額が入った画像ならそのまま自動入力可能です！
                 </p>
               </li>
@@ -361,7 +362,7 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
 
             <button
               onClick={() => setShowTipsModal(false)}
-              className="w-full py-2.5 bg-[#FF5500] hover:bg-[#e04c00] text-white font-bold rounded-xl text-xs transition cursor-pointer shadow"
+              className="w-full py-2.5 bg-[#FF5500] hover:bg-[#e04c00] text-white font-bold rounded-xl text-[12px] transition cursor-pointer shadow"
             >
               閉じる
             </button>
@@ -374,11 +375,11 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
           <div className="bg-[#18181B] border border-zinc-800 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
             <div className="px-5 py-4 border-b border-zinc-800 flex items-center justify-between shrink-0">
               <div>
-                <h3 className="text-zinc-100 font-bold text-base sm:text-lg flex items-center gap-1.5">
+                <h3 className="text-zinc-100 font-semibold text-[14px] flex items-center gap-1.5">
                   <span>✨</span>
                   <span>AI検出結果 ({scannedResults.length}件)</span>
                 </h3>
-                <p className="text-zinc-400 text-xs">追加するアイテムを選択し、必要に応じて修正してください</p>
+                <p className="text-zinc-400 text-[12px] font-normal">追加するアイテムを選択し、必要に応じて修正してください</p>
               </div>
               <button
                 onClick={() => setShowModal(false)}
@@ -392,7 +393,7 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
               <button
                 type="button"
                 onClick={toggleSelectAll}
-                className="flex items-center gap-1.5 text-xs font-bold text-zinc-300 hover:text-white transition cursor-pointer"
+                className="flex items-center gap-1.5 text-[12px] font-normal text-zinc-300 hover:text-white transition cursor-pointer"
               >
                 {selectedIndices.size === scannedResults.length ? (
                   <CheckSquare className="w-4 h-4 text-[#FF5500]" />
@@ -401,8 +402,8 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
                 )}
                 <span>全選択 / 全解除</span>
               </button>
-              <span className="text-xs font-mono text-zinc-400">
-                選択中: <strong className="text-white">{selectedIndices.size}</strong> / {scannedResults.length} 点
+              <span className="text-[12px] font-mono text-zinc-400 font-normal">
+                選択中: <strong className="text-white font-bold">{selectedIndices.size}</strong> / {scannedResults.length} 点
               </span>
             </div>
 
@@ -410,7 +411,7 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
               {isRefreshing ? (
                 <div className="py-12 flex flex-col items-center justify-center gap-3 text-zinc-400">
                   <Loader2 className="w-8 h-8 animate-spin text-[#FF5500]" />
-                  <p className="text-xs font-bold">別の候補を検索中...</p>
+                  <p className="text-[12px] font-normal">別の候補を検索中...</p>
                 </div>
               ) : (
                 scannedResults.map((item, index) => {
@@ -433,7 +434,7 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
                             onChange={() => toggleItemSelection(index)}
                             className="w-4 h-4 accent-[#FF5500] rounded cursor-pointer shrink-0"
                           />
-                          <span className="text-xs font-extrabold text-white">
+                          <span className="text-[12px] font-normal text-white">
                             アイテム #{index + 1}
                           </span>
                         </label>
@@ -441,7 +442,7 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
                         <select
                           value={item.category || 'ベース'}
                           onChange={(e) => handleResultChange(index, 'category', e.target.value)}
-                          className="bg-[#18181B] text-[#FF5500] border border-zinc-700 rounded-lg px-2 py-1 text-xs font-bold focus:outline-none focus:border-[#FF5500] cursor-pointer"
+                          className="bg-[#18181B] text-[#FF5500] border border-zinc-700 rounded-lg px-2 py-1 text-[12px] font-semibold focus:outline-none focus:border-[#FF5500] cursor-pointer"
                         >
                           {CATEGORIES.map((cat) => (
                             <option key={cat} value={cat}>{cat}</option>
@@ -451,22 +452,22 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <div className="space-y-0.5">
-                          <label className="text-[10px] text-zinc-400 font-bold block">商品名・型番</label>
+                          <label className="text-[12px] text-zinc-400 font-normal block">商品名・型番</label>
                           <input
                             type="text"
                             value={item.product_name}
                             onChange={(e) => handleResultChange(index, 'product_name', e.target.value)}
-                            className="w-full bg-[#18181B] border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-[#FF5500]"
+                            className="w-full bg-[#18181B] border border-zinc-700 rounded-lg px-2.5 py-1.5 text-[12px] text-white focus:outline-none focus:border-[#FF5500] font-normal"
                           />
                         </div>
 
                         <div className="space-y-0.5">
-                          <label className="text-[10px] text-zinc-400 font-bold block">ブランド・メーカー</label>
+                          <label className="text-[12px] text-zinc-400 font-normal block">ブランド・メーカー</label>
                           <input
                             type="text"
                             value={item.brand || ''}
                             onChange={(e) => handleResultChange(index, 'brand', e.target.value)}
-                            className="w-full bg-[#18181B] border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-[#FF5500]"
+                            className="w-full bg-[#18181B] border border-zinc-700 rounded-lg px-2.5 py-1.5 text-[12px] text-white focus:outline-none focus:border-[#FF5500] font-normal"
                           />
                         </div>
                       </div>
@@ -474,15 +475,14 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
                       <div className="grid grid-cols-2 gap-2">
                         <div className="space-y-0.5">
                           <div className="flex items-center justify-between">
-                            <label className="text-[10px] text-zinc-400 font-bold block">重量 (g)</label>
-                            {/* 🎯 推定/確定フラグの切り替えトグル */}
+                            <label className="text-[12px] text-zinc-400 font-normal block">重量 (g)</label>
                             <button
                               type="button"
                               onClick={() => handleResultChange(index, 'is_weight_estimated', !item.is_weight_estimated)}
-                              className={`text-[9px] font-bold px-1.5 py-0.2 rounded border cursor-pointer ${
+                              className={`text-[12px] font-normal px-1.5 py-0.2 rounded border cursor-pointer ${
                                 item.is_weight_estimated
-                                  ? 'bg-amber-950/70 border-amber-800/80 text-amber-400'
-                                  : 'bg-emerald-950/70 border-emerald-800/80 text-emerald-400'
+                                  ? 'bg-amber-950/70 border-amber-800/80 text-amber-400 font-bold'
+                                  : 'bg-emerald-950/70 border-emerald-800/80 text-emerald-400 font-bold'
                               }`}
                             >
                               {item.is_weight_estimated ? '[推定]' : '[確定]'}
@@ -494,20 +494,20 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
                             value={item.weight}
                             onChange={(e) => {
                               handleResultChange(index, 'weight', Number(e.target.value));
-                              handleResultChange(index, 'is_weight_estimated', false); // 手動変更時は確定にする
+                              handleResultChange(index, 'is_weight_estimated', false);
                             }}
-                            className="w-full bg-[#18181B] border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono tabular-nums text-right focus:outline-none focus:border-[#FF5500]"
+                            className="w-full bg-[#18181B] border border-zinc-700 rounded-lg px-2.5 py-1.5 text-[12px] text-white font-mono tabular-nums text-right focus:outline-none focus:border-[#FF5500] font-normal"
                           />
                         </div>
 
                         <div className="space-y-0.5">
-                          <label className="text-[10px] text-zinc-400 font-bold block">価格 (円)</label>
+                          <label className="text-[12px] text-zinc-400 font-normal block">価格 (円)</label>
                           <input
                             type="number"
                             step="100"
                             value={item.price}
                             onChange={(e) => handleResultChange(index, 'price', Number(e.target.value))}
-                            className="w-full bg-[#18181B] border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono tabular-nums text-right focus:outline-none focus:border-[#FF5500]"
+                            className="w-full bg-[#18181B] border border-zinc-700 rounded-lg px-2.5 py-1.5 text-[12px] text-white font-mono tabular-nums text-right focus:outline-none focus:border-[#FF5500] font-normal"
                           />
                         </div>
                       </div>
@@ -522,7 +522,7 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
                 type="button"
                 onClick={handleBulkAdd}
                 disabled={selectedIndices.size === 0 || isSubmittingBulk}
-                className="w-full py-3 bg-[#FF5500] hover:bg-[#e04c00] text-white font-bold rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+                className="w-full py-3 bg-[#FF5500] hover:bg-[#e04c00] text-white font-bold rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-[12px] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
               >
                 {isSubmittingBulk ? (
                   <>
@@ -542,7 +542,7 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isRefreshing || isScanning || isSubmittingBulk}
-                  className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold rounded-lg text-xs transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-normal rounded-lg text-[12px] transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                 >
                   <RotateCcw className="w-3.5 h-3.5 text-zinc-400" />
                   <span>写真を選び直す</span>
@@ -552,7 +552,7 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
                   type="button"
                   onClick={handleRefreshResults}
                   disabled={isRefreshing || isScanning || isSubmittingBulk}
-                  className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-bold rounded-lg text-xs transition border border-zinc-700 hover:border-zinc-600 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-normal rounded-lg text-[12px] transition border border-zinc-700 hover:border-zinc-600 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                 >
                   {isRefreshing ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin text-[#FF5500]" />

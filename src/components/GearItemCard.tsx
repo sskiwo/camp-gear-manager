@@ -181,7 +181,7 @@ export default function GearItemCard({
           e.stopPropagation();
           onUpdateGear(item.id, { is_weight_estimated: false });
         }}
-        className="text-[9px] font-bold text-amber-400 bg-amber-950/70 border border-amber-800/80 px-1 py-0.2 rounded hover:bg-amber-800/80 transition cursor-pointer shrink-0"
+        className="text-[12px] font-normal text-amber-400 bg-amber-950/70 border border-amber-800/80 px-1 py-0.2 rounded hover:bg-amber-800/80 transition cursor-pointer shrink-0"
         title="AIによる推測値です。タップして確定状態に変更"
       >
         [推定]
@@ -192,7 +192,7 @@ export default function GearItemCard({
   const renderUsageBadge = () => {
     if (broughtCount === 0) {
       return (
-        <span className="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-cyan-950/60 text-cyan-300 border border-cyan-700/60 font-sans">
+        <span className="px-1.5 py-0.5 rounded text-[12px] font-normal bg-cyan-950/60 text-cyan-300 border border-cyan-700/60 font-sans">
           NEW
         </span>
       );
@@ -201,7 +201,7 @@ export default function GearItemCard({
     if (usageRate >= 75) {
       return (
         <span
-          className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-950/60 text-emerald-300 border border-emerald-700/60 font-mono tabular-nums text-right"
+          className="px-1.5 py-0.5 rounded text-[12px] font-normal bg-emerald-950/60 text-emerald-300 border border-emerald-700/60 font-mono tabular-nums text-right"
           title={`高稼働: 使用率 ${usageRate.toFixed(0)}% (${usedCount}/${broughtCount}回)`}
         >
           🔥 {usedCount}/{broughtCount}回
@@ -212,7 +212,7 @@ export default function GearItemCard({
     if (usageRate <= 39 && broughtCount >= 2) {
       return (
         <span
-          className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-950/60 text-amber-300 border border-amber-700/60 font-mono tabular-nums text-right"
+          className="px-1.5 py-0.5 rounded text-[12px] font-normal bg-amber-950/60 text-amber-300 border border-amber-700/60 font-mono tabular-nums text-right"
           title={`低稼働 (お留守番候補): 使用率 ${usageRate.toFixed(0)}% (${usedCount}/${broughtCount}回)`}
         >
           💤 {usedCount}/{broughtCount}回
@@ -222,7 +222,7 @@ export default function GearItemCard({
 
     return (
       <span
-        className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-zinc-800 text-zinc-300 border border-zinc-700 font-mono tabular-nums text-right"
+        className="px-1.5 py-0.5 rounded text-[12px] font-normal bg-zinc-800 text-zinc-300 border border-zinc-700 font-mono tabular-nums text-right"
         title={`通常: 使用率 ${usageRate.toFixed(0)}% (${usedCount}/${broughtCount}回)`}
       >
         {usedCount}/{broughtCount}回
@@ -267,7 +267,7 @@ export default function GearItemCard({
             {onToggleSelected && (
               <button
                 onClick={() => onToggleSelected(item.id, isSelected)}
-                className={`w-8 h-8 rounded-lg text-sm transition flex items-center justify-center border shrink-0 cursor-pointer active:scale-95 ${
+                className={`w-8 h-8 rounded-lg text-[12px] transition flex items-center justify-center border shrink-0 cursor-pointer active:scale-95 ${
                   isSelected
                     ? 'bg-[#FF5500]/20 border-[#FF5500]/60 text-[#FF5500]'
                     : 'bg-zinc-800 border-zinc-700 text-zinc-300 hover:text-white'
@@ -281,7 +281,7 @@ export default function GearItemCard({
             {isSelected && onTogglePacked ? (
               <button
                 onClick={() => onTogglePacked(item.id, item.is_packed)}
-                className={`w-8 h-8 rounded-lg text-sm transition flex items-center justify-center border shrink-0 cursor-pointer active:scale-95 ${
+                className={`w-8 h-8 rounded-lg text-[12px] transition flex items-center justify-center border shrink-0 cursor-pointer active:scale-95 ${
                   item.is_packed
                     ? 'bg-[#10B981] border-[#10B981] text-white shadow-sm'
                     : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white'
@@ -291,11 +291,12 @@ export default function GearItemCard({
                 {item.is_packed ? '✅' : '⬜'}
               </button>
             ) : (
-              <span className="w-8 h-8 flex items-center justify-center text-xs text-zinc-500 font-mono font-bold select-none shrink-0">
+              <span className="w-8 h-8 flex items-center justify-center text-[12px] text-zinc-500 font-mono select-none shrink-0 font-normal">
                 [-]
               </span>
             )}
 
+            {/* アイテム名（12px Regular） */}
             <button
               type="button"
               onClick={handleToggleEdit}
@@ -303,12 +304,12 @@ export default function GearItemCard({
               title="タップしてギア情報を編集"
             >
               <span
-                className={`text-xs truncate block transition-colors ${
+                className={`text-[12px] font-normal truncate block transition-colors ${
                   !isSelected
-                    ? 'text-zinc-300 font-semibold group-hover:text-white'
+                    ? 'text-zinc-300 group-hover:text-white'
                     : item.is_packed
-                    ? 'text-zinc-400 font-medium group-hover:text-white'
-                    : 'text-white font-extrabold group-hover:text-[#FF5500]'
+                    ? 'text-zinc-400 group-hover:text-white'
+                    : 'text-white group-hover:text-[#FF5500]'
                 }`}
               >
                 {cleanName}
@@ -320,12 +321,12 @@ export default function GearItemCard({
             {renderWeightEstimatedBadge()}
 
             {qty > 1 && (
-              <span className="text-[11px] font-mono font-black text-[#FFB800] bg-[#FFB800]/15 border border-[#FFB800]/40 px-1.5 py-0.5 rounded shrink-0">
+              <span className="text-[12px] font-mono text-[#FFB800] bg-[#FFB800]/15 border border-[#FFB800]/40 px-1.5 py-0.5 rounded shrink-0 font-normal">
                 ×{qty}
               </span>
             )}
 
-            <span className="text-xs font-mono tabular-nums font-bold text-zinc-300 shrink-0 min-w-[50px] text-right">
+            <span className="text-[12px] font-mono tabular-nums font-normal text-zinc-300 shrink-0 min-w-[50px] text-right">
               {formatWeight(totalWeight)}
             </span>
           </div>
@@ -351,7 +352,7 @@ export default function GearItemCard({
             {onToggleUnusedInReview && (
               <button
                 onClick={() => onToggleUnusedInReview(item.id)}
-                className={`w-8 h-8 rounded-lg text-sm transition flex items-center justify-center border shrink-0 cursor-pointer active:scale-95 ${
+                className={`w-8 h-8 rounded-lg text-[12px] transition flex items-center justify-center border shrink-0 cursor-pointer active:scale-95 ${
                   isUnusedInReview
                     ? 'bg-amber-500/20 border-amber-500 text-amber-400 font-bold'
                     : 'bg-zinc-800 border-zinc-700 text-zinc-400'
@@ -362,10 +363,11 @@ export default function GearItemCard({
               </button>
             )}
 
+            {/* アイテム名（12px Regular） */}
             <div className="text-left flex-1 min-w-0">
               <span
-                className={`text-xs truncate block font-bold ${
-                  isUnusedInReview ? 'text-amber-300 font-extrabold' : 'text-zinc-100'
+                className={`text-[12px] font-normal truncate block ${
+                  isUnusedInReview ? 'text-amber-300 font-bold' : 'text-zinc-100'
                 }`}
               >
                 {cleanName}
@@ -375,7 +377,7 @@ export default function GearItemCard({
 
           <div className="flex items-center gap-1.5 shrink-0">
             {renderUsageBadge()}
-            <span className="text-xs font-mono tabular-nums font-bold text-zinc-300 shrink-0 min-w-[50px] text-right">
+            <span className="text-[12px] font-mono tabular-nums font-normal text-zinc-300 shrink-0 min-w-[50px] text-right">
               {formatWeight(totalWeight)}
             </span>
           </div>
@@ -398,7 +400,7 @@ export default function GearItemCard({
           {onToggleSelected && (
             <button
               onClick={() => onToggleSelected(item.id, isSelected)}
-              className={`w-7 h-7 rounded-lg text-xs transition flex items-center justify-center border shrink-0 cursor-pointer active:scale-95 ${
+              className={`w-7 h-7 rounded-lg text-[12px] transition flex items-center justify-center border shrink-0 cursor-pointer active:scale-95 ${
                 isSelected
                   ? 'bg-[#FF5500]/20 border-[#FF5500]/60 text-[#FF5500]'
                   : 'bg-zinc-800/90 border-zinc-700 text-zinc-300 hover:text-white hover:border-zinc-500'
@@ -409,26 +411,27 @@ export default function GearItemCard({
             </button>
           )}
 
+          {/* アイテム名（12px Regular） */}
           <button
             type="button"
             onClick={handleToggleEdit}
-            className="min-w-0 flex-1 text-left flex items-center gap-1.5 text-xs truncate cursor-pointer group focus:outline-none"
+            className="min-w-0 flex-1 text-left flex items-center gap-1.5 text-[12px] font-normal truncate cursor-pointer group focus:outline-none"
             title="タップしてギア情報を編集"
           >
             {item.brand && (
-              <span className="text-zinc-400 font-medium shrink-0">
+              <span className="text-zinc-400 font-normal shrink-0">
                 {item.brand}
               </span>
             )}
             <span
-              className={`font-bold truncate group-hover:text-[#FF5500] transition-colors ${
-                !isSelected ? 'text-zinc-200 font-semibold' : 'text-white'
+              className={`truncate group-hover:text-[#FF5500] transition-colors ${
+                !isSelected ? 'text-zinc-300 font-normal' : 'text-white font-normal'
               }`}
             >
               {cleanName}
             </span>
             {!isSelected && (
-              <span className="text-[10px] text-zinc-400 bg-zinc-800/80 border border-zinc-700 px-1 py-0.2 rounded shrink-0">
+              <span className="text-[12px] text-zinc-400 bg-zinc-800/80 border border-zinc-700 px-1 py-0.2 rounded shrink-0 font-normal">
                 お留守番
               </span>
             )}
@@ -436,36 +439,35 @@ export default function GearItemCard({
         </div>
 
         {badge && (
-          <span className={`text-[10px] px-1.5 py-0.5 rounded ${badge.className} shrink-0`}>
+          <span className={`text-[12px] px-1.5 py-0.5 rounded ${badge.className} shrink-0 font-normal`}>
             {badge.label}
           </span>
         )}
       </div>
 
       <div className="flex items-center justify-between gap-2 pt-0.5">
-        <div className="text-[11px] font-mono tabular-nums text-zinc-300 flex items-center gap-1.5 shrink-0 pl-1">
-          <span className="font-semibold text-zinc-200">{formatWeight(totalWeight)}</span>
+        <div className="text-[12px] font-mono tabular-nums text-zinc-300 flex items-center gap-1.5 shrink-0 pl-1 font-normal">
+          <span className="text-zinc-200">{formatWeight(totalWeight)}</span>
           {renderWeightEstimatedBadge()}
           <span className="text-zinc-500 font-sans">/</span>
           {renderUsageBadge()}
         </div>
 
-        {/* 🎯 一覧上は数量変更と✏️ボタンのみにシンプル化 */}
         <div className="flex items-center gap-1.5 shrink-0">
           {onUpdateQuantity && (
             <div className="flex items-center bg-[#18181B] rounded-lg border border-zinc-700/80">
               <button
                 onClick={() => onUpdateQuantity(item.id, qty, -1)}
-                className="w-7 h-6 flex items-center justify-center text-zinc-400 hover:text-white font-bold text-xs cursor-pointer rounded-l-lg"
+                className="w-7 h-6 flex items-center justify-center text-zinc-400 hover:text-white font-normal text-[12px] cursor-pointer rounded-l-lg"
               >
                 -
               </button>
-              <span className="px-1.5 text-xs font-mono tabular-nums font-bold text-white">
+              <span className="px-1.5 text-[12px] font-mono tabular-nums font-normal text-white">
                 {qty}
               </span>
               <button
                 onClick={() => onUpdateQuantity(item.id, qty, 1)}
-                className="w-7 h-6 flex items-center justify-center text-zinc-400 hover:text-white font-bold text-xs cursor-pointer rounded-r-lg"
+                className="w-7 h-6 flex items-center justify-center text-zinc-400 hover:text-white font-normal text-[12px] cursor-pointer rounded-r-lg"
               >
                 +
               </button>
@@ -474,7 +476,7 @@ export default function GearItemCard({
 
           <button
             onClick={handleToggleEdit}
-            className={`w-7 h-7 flex items-center justify-center rounded-lg text-xs transition border cursor-pointer ${
+            className={`w-7 h-7 flex items-center justify-center rounded-lg text-[12px] transition border cursor-pointer ${
               isEditing
                 ? 'bg-[#FF5500]/20 border-[#FF5500] text-white'
                 : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white border-zinc-700'
@@ -495,11 +497,11 @@ export default function GearItemCard({
       <div className="mt-2 pt-2 border-t border-zinc-800 space-y-2.5 bg-[#18181B] p-3 rounded-xl animate-fade-in text-left">
         <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
           <div>
-            <label className="text-[10px] font-bold text-zinc-400 block mb-0.5">カテゴリー</label>
+            <label className="text-[12px] font-normal text-zinc-400 block mb-0.5">カテゴリー</label>
             <select
               value={editCategory}
               onChange={(e) => setEditCategory(e.target.value)}
-              className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white focus:border-[#FF5500] focus:outline-none cursor-pointer"
+              className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2 py-1.5 text-[12px] text-white focus:border-[#FF5500] focus:outline-none cursor-pointer font-normal"
             >
               {CATEGORY_OPTIONS.map((cat) => (
                 <option key={cat} value={cat}>
@@ -510,65 +512,65 @@ export default function GearItemCard({
           </div>
 
           <div>
-            <label className="text-[10px] font-bold text-zinc-400 block mb-0.5">メーカー/ブランド</label>
+            <label className="text-[12px] font-normal text-zinc-400 block mb-0.5">メーカー/ブランド</label>
             <input
               type="text"
               placeholder="例: モンベル"
               value={editBrand}
               onChange={(e) => setEditBrand(e.target.value)}
-              className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white focus:border-[#FF5500] focus:outline-none"
+              className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2 py-1.5 text-[12px] text-white focus:border-[#FF5500] focus:outline-none font-normal"
             />
           </div>
 
           <div>
-            <label className="text-[10px] font-bold text-zinc-400 block mb-0.5">商品名</label>
+            <label className="text-[12px] font-normal text-zinc-400 block mb-0.5">商品名</label>
             <input
               type="text"
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
-              className="w-full bg-[#27272A] border border-[#FF5500] rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none"
+              className="w-full bg-[#27272A] border border-[#FF5500] rounded-lg px-2 py-1.5 text-[12px] text-white focus:outline-none font-normal"
             />
           </div>
 
           <div>
-            <label className="text-[10px] font-bold text-zinc-400 block mb-0.5">重量(g)</label>
+            <label className="text-[12px] font-normal text-zinc-400 block mb-0.5">重量(g)</label>
             <input
               type="number"
               step="10"
               value={editWeight}
               onChange={(e) => setEditWeight(Number(e.target.value))}
-              className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white font-mono tabular-nums text-right"
+              className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2 py-1.5 text-[12px] text-white font-mono tabular-nums text-right focus:border-[#FF5500] focus:outline-none font-normal"
             />
           </div>
 
           <div>
-            <label className="text-[10px] font-bold text-zinc-400 block mb-0.5">価格(円)</label>
+            <label className="text-[12px] font-normal text-zinc-400 block mb-0.5">価格(円)</label>
             <input
               type="number"
               step="100"
               value={editPrice}
               onChange={(e) => setEditPrice(Number(e.target.value))}
-              className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white font-mono tabular-nums text-right"
+              className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2 py-1.5 text-[12px] text-white font-mono tabular-nums text-right focus:border-[#FF5500] focus:outline-none font-normal"
             />
           </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <div>
-            <label className="text-[10px] font-bold text-zinc-400 block mb-0.5">購入時期</label>
+            <label className="text-[12px] font-normal text-zinc-400 block mb-0.5">購入時期</label>
             <input
               type="month"
               value={editPurchaseDate}
               onChange={(e) => setEditPurchaseDate(e.target.value)}
-              className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none"
+              className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2 py-1 text-[12px] text-white focus:outline-none font-normal"
             />
           </div>
           <div>
-            <label className="text-[10px] font-bold text-zinc-400 block mb-0.5">燃料・電源タイプ</label>
+            <label className="text-[12px] font-normal text-zinc-400 block mb-0.5">燃料・電源タイプ</label>
             <select
               value={editFuelType}
               onChange={(e) => setEditFuelType(e.target.value)}
-              className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none"
+              className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2 py-1.5 text-[12px] text-white focus:outline-none font-normal"
             >
               {FUEL_OPTIONS.map((opt) => (
                 <option key={opt} value={opt}>
@@ -580,17 +582,16 @@ export default function GearItemCard({
         </div>
 
         <div>
-          <label className="text-[10px] font-bold text-zinc-400 block mb-0.5">メモ</label>
+          <label className="text-[12px] font-normal text-zinc-400 block mb-0.5">メモ</label>
           <input
             type="text"
             placeholder="例: リビング棚保管、コンテナA"
             value={editMemo}
             onChange={(e) => setEditMemo(e.target.value)}
-            className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white focus:border-[#FF5500] focus:outline-none"
+            className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2 py-1.5 text-[12px] text-white focus:border-[#FF5500] focus:outline-none font-normal"
           />
         </div>
 
-        {/* 🎯 編集フォームのフッター: 左側に削除ボタン、右側に中止・保存ボタン */}
         <div className="flex items-center justify-between pt-2 border-t border-zinc-800">
           <div>
             {onDeleteGear && (
@@ -602,7 +603,7 @@ export default function GearItemCard({
                     onDeleteGear(item.id);
                   }
                 }}
-                className="text-[#EF4444] hover:text-white hover:bg-[#EF4444]/20 border border-[#EF4444]/40 px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
+                className="text-[#EF4444] hover:text-white hover:bg-[#EF4444]/20 border border-[#EF4444]/40 px-3 py-1.5 rounded-xl text-[12px] font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
                 title="このギアを削除"
               >
                 <span>🗑️</span>
@@ -615,14 +616,14 @@ export default function GearItemCard({
             <button
               type="button"
               onClick={handleCancelEdit}
-              className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-bold px-3.5 py-1.5 rounded-xl cursor-pointer transition"
+              className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[12px] font-normal px-3.5 py-1.5 rounded-xl cursor-pointer transition"
             >
               中止
             </button>
             <button
               type="button"
               onClick={handleSaveEdit}
-              className="bg-[#10B981] hover:bg-emerald-600 text-white text-xs font-bold px-4 py-1.5 rounded-xl cursor-pointer transition active:scale-95 shadow-sm"
+              className="bg-[#10B981] hover:bg-emerald-600 text-white text-[12px] font-bold px-4 py-1.5 rounded-xl cursor-pointer transition active:scale-95 shadow-sm"
             >
               保存 (確定)
             </button>
