@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 export type GearItem = {
   id: string;
@@ -128,6 +128,42 @@ export default function GearItemCard({
   const [editFuelType, setEditFuelType] = useState(item.fuel_type || '不要/なし');
   const [editMemo, setEditMemo] = useState(item.memo || '');
 
+  // 🔄 編集フォームの値を元のデータにリセットする関数
+  const resetEditForm = useCallback(() => {
+    setEditBrand(item.brand || '');
+    setEditName(item.name);
+    setEditCategory(item.category || 'ベース');
+    setEditWeight(item.weight || 0);
+    setEditPrice(item.price || 0);
+    setEditPurchaseDate(item.purchase_date || '');
+    setEditFuelType(item.fuel_type || '不要/なし');
+    setEditMemo(item.memo || '');
+  }, [item]);
+
+  // 親データの変更時または編集終了時にStateを同期
+  useEffect(() => {
+    if (!isEditing) {
+      resetEditForm();
+    }
+  }, [item, isEditing, resetEditForm]);
+
+  // 編集の開閉トグル
+  const handleToggleEdit = () => {
+    if (isEditing) {
+      resetEditForm();
+      setIsEditing(false);
+    } else {
+      resetEditForm();
+      setIsEditing(true);
+    }
+  };
+
+  // 中止ボタン押下時
+  const handleCancelEdit = () => {
+    resetEditForm();
+    setIsEditing(false);
+  };
+
   const isSelected = item.is_selected !== false;
   const badge = getBadgeStyle(item.fuel_type);
   const cleanName = getCleanItemName(item.name, item.brand);
@@ -139,7 +175,6 @@ export default function GearItemCard({
   const usedCount = item.total_used_count || 0;
   const usageRate = broughtCount > 0 ? (usedCount / broughtCount) * 100 : 0;
 
-  // 🎯 推定重量バッジのレンダリング
   const renderWeightEstimatedBadge = () => {
     if (!item.is_weight_estimated) return null;
 
@@ -200,7 +235,6 @@ export default function GearItemCard({
   };
 
   const handleSaveEdit = async () => {
-    // 💡 ユーザーが手動編集して保存した場合は自動的に [確定] (is_weight_estimated: false) とする
     await onUpdateGear(item.id, {
       brand: editBrand,
       name: editName,
@@ -264,7 +298,7 @@ export default function GearItemCard({
 
             <button
               type="button"
-              onClick={() => setIsEditing(!isEditing)}
+              onClick={handleToggleEdit}
               className="text-left flex-1 min-w-0 cursor-pointer group focus:outline-none"
               title="タップしてギア情報を編集"
             >
@@ -377,7 +411,7 @@ export default function GearItemCard({
 
           <button
             type="button"
-            onClick={() => setIsEditing(!isEditing)}
+            onClick={handleToggleEdit}
             className="min-w-0 flex-1 text-left flex items-center gap-1.5 text-xs truncate cursor-pointer group focus:outline-none"
             title="タップしてギア情報を編集"
           >
@@ -438,7 +472,7 @@ export default function GearItemCard({
           )}
 
           <button
-            onClick={() => setIsEditing(!isEditing)}
+            onClick={handleToggleEdit}
             className={`w-7 h-7 flex items-center justify-center rounded-lg text-xs transition border cursor-pointer ${
               isEditing
                 ? 'bg-[#FF5500]/20 border-[#FF5500] text-white'
@@ -573,7 +607,7 @@ export default function GearItemCard({
             保存 (確定)
           </button>
           <button
-            onClick={() => setIsEditing(false)}
+            onClick={handleCancelEdit}
             className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs px-3.5 py-1.5 rounded-xl cursor-pointer transition"
           >
             中止
