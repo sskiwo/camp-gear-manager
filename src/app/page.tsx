@@ -178,6 +178,7 @@ export default function Home() {
           total_brought_count: g.total_brought_count || 0,
           total_used_count: g.total_used_count || 0,
           is_emergency_gear: g.is_emergency_gear || false,
+          is_weight_estimated: g.is_weight_estimated || false, // 💡 複製時にも推定フラグを引き継ぎ
         }));
 
         const { error: cloneErr } = await supabase.from('gears').insert(clonedGears);
@@ -296,6 +297,7 @@ export default function Home() {
     }, 50);
   };
 
+  // 🎯 AIスキャンまたは手動追加時の登録
   const handleAddGear = async (item: any) => {
     if (!selectedCampId) return;
 
@@ -323,6 +325,7 @@ export default function Home() {
       total_brought_count: 0,
       total_used_count: 0,
       is_emergency_gear: false,
+      is_weight_estimated: item.is_weight_estimated ?? false, // 💡 推定フラグを確実に保存
     }]);
     fetchGears();
   };
@@ -424,7 +427,6 @@ export default function Home() {
             </button>
           </div>
 
-          {/* 🎯 改修: キャンプ場選択・管理バー（ドロップダウン ＋ ✏️ 管理ボタンのみ） */}
           <div className="flex items-center justify-between gap-2 bg-[#18181B] px-2 py-1.5 rounded-xl border border-zinc-800 shadow-sm">
             <div className="flex items-center gap-1.5 flex-1 min-w-0">
               <span className="text-xs font-bold text-[#FF5500] pl-0.5 shrink-0">⛺</span>
@@ -454,7 +456,6 @@ export default function Home() {
           </div>
         </header>
 
-        {/* 🎯 改修: キャンプ設定・管理パネル（鉛筆アイコンタップ時に展開） */}
         {isEditCampOpen && (
           <div className="bg-[#18181B] border border-[#FF5500]/50 p-4 rounded-2xl space-y-4 shadow-2xl animate-fade-in">
             <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
@@ -470,7 +471,6 @@ export default function Home() {
               </button>
             </div>
 
-            {/* キャンプ名の変更エリア */}
             <div className="space-y-1.5">
               <label className="text-[10px] font-bold text-zinc-400 block">キャンプ名の変更</label>
               <div className="flex gap-2">
@@ -489,7 +489,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* アクションボタン群（新規作成 ＆ 削除） */}
             <div className="pt-2 border-t border-zinc-800 flex flex-wrap items-center justify-between gap-2">
               <button
                 onClick={handleOpenAddCampModal}
@@ -512,7 +511,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* 新規キャンプ追加モーダル */}
         {isAddCampOpen && (
           <div className="bg-[#18181B] border border-[#FF5500]/50 p-5 rounded-2xl space-y-4 shadow-2xl animate-fade-in">
             <h3 className="text-sm font-extrabold text-white flex items-center gap-1.5">
@@ -622,7 +620,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* 1段目: パッキングサマリー (振り返り・実使用/未使用重量の動的連動) */}
+        {/* 1段目: パッキングサマリー */}
         <WeightsSummary
           gears={gears}
           screenMode={screenMode}
@@ -633,7 +631,7 @@ export default function Home() {
         {/* 2段目: ギアを追加 */}
         <GearSearch onAddGear={handleAddGear} />
 
-        {/* 3段目: パッキングリスト (3モード切替・振り返り集計対応) */}
+        {/* 3段目: パッキングリスト */}
         <GearList
           gears={gears}
           allCampsCount={camps.length}

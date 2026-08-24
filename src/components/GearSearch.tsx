@@ -4,12 +4,13 @@ import React, { useState, useRef } from 'react';
 import Link from 'next/link';
 import { Camera, X, Loader2, Lightbulb, RefreshCw, RotateCcw, CheckSquare, Square, Check } from 'lucide-react';
 
-interface ScannedItem {
+export interface ScannedItem {
   product_name: string;
   brand: string;
   weight: number;
   price: number;
   category: string;
+  is_weight_estimated?: boolean;
 }
 
 interface GearSearchProps {
@@ -149,7 +150,6 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
 
       if (data.results && data.results.length > 0) {
         setScannedResults(data.results);
-        // 初期状態ですべての検出アイテムにチェックを入れる
         setSelectedIndices(new Set(data.results.map((_: any, i: number) => i)));
         setShowModal(true);
       } else {
@@ -193,7 +193,6 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
     setScannedResults(updated);
   };
 
-  // 個別アイテムの選択チェック切り替え
   const toggleItemSelection = (index: number) => {
     setSelectedIndices((prev) => {
       const next = new Set(prev);
@@ -206,7 +205,6 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
     });
   };
 
-  // 全選択・全解除トグル
   const toggleSelectAll = () => {
     if (selectedIndices.size === scannedResults.length) {
       setSelectedIndices(new Set());
@@ -215,7 +213,6 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
     }
   };
 
-  // 🎯 選択したギアの一括登録処理
   const handleBulkAdd = async () => {
     const itemsToAdd = scannedResults.filter((_, i) => selectedIndices.has(i));
     if (itemsToAdd.length === 0 || isSubmittingBulk) return;
@@ -308,7 +305,6 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
         <p className="text-xs text-red-500 font-medium">{errorMessage}</p>
       )}
 
-      {/* 撮影のコツモーダル */}
       {showTipsModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="bg-[#18181B] border border-zinc-800 w-full max-w-sm rounded-2xl shadow-2xl p-5 space-y-4 text-zinc-100">
@@ -373,11 +369,9 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
         </div>
       )}
 
-      {/* 🎯 AI解析結果: 一括確認＆一括登録モーダル */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="bg-[#18181B] border border-zinc-800 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            {/* ヘッダー */}
             <div className="px-5 py-4 border-b border-zinc-800 flex items-center justify-between shrink-0">
               <div>
                 <h3 className="text-zinc-100 font-bold text-base sm:text-lg flex items-center gap-1.5">
@@ -394,7 +388,6 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
               </button>
             </div>
 
-            {/* 一括選択/解除コントロールバー */}
             <div className="px-5 py-2.5 border-b border-zinc-800/80 bg-[#121215] flex items-center justify-between shrink-0">
               <button
                 type="button"
@@ -413,7 +406,6 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
               </span>
             </div>
 
-            {/* アイテム一覧 */}
             <div className="p-4 overflow-y-auto space-y-3 flex-1">
               {isRefreshing ? (
                 <div className="py-12 flex flex-col items-center justify-center gap-3 text-zinc-400">
@@ -481,12 +473,29 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
 
                       <div className="grid grid-cols-2 gap-2">
                         <div className="space-y-0.5">
-                          <label className="text-[10px] text-zinc-400 font-bold block">重量 (g)</label>
+                          <div className="flex items-center justify-between">
+                            <label className="text-[10px] text-zinc-400 font-bold block">重量 (g)</label>
+                            {/* 🎯 推定/確定フラグの切り替えトグル */}
+                            <button
+                              type="button"
+                              onClick={() => handleResultChange(index, 'is_weight_estimated', !item.is_weight_estimated)}
+                              className={`text-[9px] font-bold px-1.5 py-0.2 rounded border cursor-pointer ${
+                                item.is_weight_estimated
+                                  ? 'bg-amber-950/70 border-amber-800/80 text-amber-400'
+                                  : 'bg-emerald-950/70 border-emerald-800/80 text-emerald-400'
+                              }`}
+                            >
+                              {item.is_weight_estimated ? '[推定]' : '[確定]'}
+                            </button>
+                          </div>
                           <input
                             type="number"
                             step="10"
                             value={item.weight}
-                            onChange={(e) => handleResultChange(index, 'weight', Number(e.target.value))}
+                            onChange={(e) => {
+                              handleResultChange(index, 'weight', Number(e.target.value));
+                              handleResultChange(index, 'is_weight_estimated', false); // 手動変更時は確定にする
+                            }}
                             className="w-full bg-[#18181B] border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono tabular-nums text-right focus:outline-none focus:border-[#FF5500]"
                           />
                         </div>
@@ -508,7 +517,6 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
               )}
             </div>
 
-            {/* フッターアクション */}
             <div className="p-4 border-t border-zinc-800 bg-[#18181B] space-y-2 shrink-0">
               <button
                 type="button"

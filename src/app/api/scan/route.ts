@@ -64,7 +64,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // 🎯 複数ギアの個別一括検出プロンプト
+    // 🎯 プロンプトの構築（複数検出＋推定フラグ判定）
     let promptText = `あなたはキャンプギアの専門データベースAIです。`;
 
     if (file && queryHint) {
@@ -81,13 +81,14 @@ export async function POST(request: Request) {
     promptText += `\n\n【必須要件】
 1. 画像内のすべてのギア、またはテキストに合致するギアを配列(リスト)で出力してください（最大10点まで）。
 2. カテゴリーは「ベース」「調理」「衣類」「その他」「消耗品」のいずれか1つに厳密に分類してください。
-3. 重量(g)と価格(円:税込)は、公式データまたは一般的な定価・実売価格の推測値を正確な数値で出力してください。`;
+3. 重量(g)と価格(円:税込)を正確な数値で出力してください。
+4. 【重要】重量の推定判定: 型番や公式スペック、Amazonデータ等から正確な重量が特定できた場合は is_weight_estimated を false に、見た目や一般的相場からの概算・推測の場合は true に設定してください。`;
 
     if (exclude) {
       promptText += `\n\n※以下の商品は除外して別の関連候補を提案してください: ${exclude}`;
     }
 
-    // Structured Outputs (JSONレスポンス定義: 配列形式)
+    // Structured Outputs (JSONレスポンス定義)
     const config = {
       responseMimeType: 'application/json',
       responseSchema: {
@@ -107,8 +108,12 @@ export async function POST(request: Request) {
                   type: Type.STRING,
                   description: 'カテゴリー（ベース, 調理, 衣類, その他, 消耗品 のいずれか）',
                 },
+                is_weight_estimated: {
+                  type: Type.BOOLEAN,
+                  description: '重量がAIの概算・推測値である場合はtrue、公式スペック等で確定している場合はfalse',
+                },
               },
-              required: ['product_name', 'brand', 'weight', 'price', 'category'],
+              required: ['product_name', 'brand', 'weight', 'price', 'category', 'is_weight_estimated'],
             },
           },
         },
@@ -146,7 +151,6 @@ export async function POST(request: Request) {
 
     const contents = [{ role: 'user', parts }];
 
-    // 💡 有効なFlashモデルを指定
     const candidateModels = [
       'gemini-3.6-flash',
       'gemini-flash-latest'

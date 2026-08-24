@@ -24,6 +24,7 @@ export type GearItem = {
   total_brought_count?: number;
   total_used_count?: number;
   is_emergency_gear?: boolean;
+  is_weight_estimated?: boolean;
 };
 
 type Props = {
@@ -134,10 +135,28 @@ export default function GearItemCard({
   const qty = item.quantity || 1;
   const totalWeight = item.weight * qty;
 
-  // 🎯 稼働率バッジ判定ロジック
   const broughtCount = item.total_brought_count || 0;
   const usedCount = item.total_used_count || 0;
   const usageRate = broughtCount > 0 ? (usedCount / broughtCount) * 100 : 0;
+
+  // 🎯 推定重量バッジのレンダリング
+  const renderWeightEstimatedBadge = () => {
+    if (!item.is_weight_estimated) return null;
+
+    return (
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onUpdateGear(item.id, { is_weight_estimated: false });
+        }}
+        className="text-[9px] font-bold text-amber-400 bg-amber-950/70 border border-amber-800/80 px-1 py-0.2 rounded hover:bg-amber-800/80 transition cursor-pointer shrink-0"
+        title="AIによる推測値です。タップして確定状態に変更"
+      >
+        [推定]
+      </button>
+    );
+  };
 
   const renderUsageBadge = () => {
     if (broughtCount === 0) {
@@ -181,6 +200,7 @@ export default function GearItemCard({
   };
 
   const handleSaveEdit = async () => {
+    // 💡 ユーザーが手動編集して保存した場合は自動的に [確定] (is_weight_estimated: false) とする
     await onUpdateGear(item.id, {
       brand: editBrand,
       name: editName,
@@ -191,6 +211,7 @@ export default function GearItemCard({
       purchase_date: editPurchaseDate,
       fuel_type: editFuelType === '不要/なし' ? '' : editFuelType,
       memo: editMemo,
+      is_weight_estimated: false,
     });
     setIsEditing(false);
   };
@@ -209,7 +230,6 @@ export default function GearItemCard({
           }`}
         >
           <div className="flex items-center gap-1.5 min-w-0 flex-1">
-            {/* 持参/お休み */}
             {onToggleSelected && (
               <button
                 onClick={() => onToggleSelected(item.id, isSelected)}
@@ -224,7 +244,6 @@ export default function GearItemCard({
               </button>
             )}
 
-            {/* パッキング完了チェック */}
             {isSelected && onTogglePacked ? (
               <button
                 onClick={() => onTogglePacked(item.id, item.is_packed)}
@@ -243,7 +262,6 @@ export default function GearItemCard({
               </span>
             )}
 
-            {/* 商品名 */}
             <button
               type="button"
               onClick={() => setIsEditing(!isEditing)}
@@ -264,14 +282,16 @@ export default function GearItemCard({
             </button>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 shrink-0">
+            {renderWeightEstimatedBadge()}
+
             {qty > 1 && (
               <span className="text-[11px] font-mono font-black text-[#FFB800] bg-[#FFB800]/15 border border-[#FFB800]/40 px-1.5 py-0.5 rounded shrink-0">
                 ×{qty}
               </span>
             )}
 
-            <span className="text-xs font-mono tabular-nums font-bold text-zinc-300 shrink-0 min-w-[55px] text-right">
+            <span className="text-xs font-mono tabular-nums font-bold text-zinc-300 shrink-0 min-w-[50px] text-right">
               {formatWeight(totalWeight)}
             </span>
           </div>
@@ -294,7 +314,6 @@ export default function GearItemCard({
           }`}
         >
           <div className="flex items-center gap-1.5 min-w-0 flex-1">
-            {/* 未使用トグルボタン */}
             {onToggleUnusedInReview && (
               <button
                 onClick={() => onToggleUnusedInReview(item.id)}
@@ -320,9 +339,9 @@ export default function GearItemCard({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 shrink-0">
             {renderUsageBadge()}
-            <span className="text-xs font-mono tabular-nums font-bold text-zinc-300 shrink-0 min-w-[55px] text-right">
+            <span className="text-xs font-mono tabular-nums font-bold text-zinc-300 shrink-0 min-w-[50px] text-right">
               {formatWeight(totalWeight)}
             </span>
           </div>
@@ -333,7 +352,7 @@ export default function GearItemCard({
     );
   }
 
-  // ✏️ 【3】 ギア編集モード UI (視認性を改善)
+  // ✏️ 【3】 ギア編集モード UI
   return (
     <div
       className={`py-2 px-2.5 border-b border-zinc-800/80 transition-colors select-text hover:bg-[#1F1F23] space-y-1.5 ${
@@ -363,7 +382,7 @@ export default function GearItemCard({
             title="タップしてギア情報を編集"
           >
             {item.brand && (
-              <span className={`font-medium shrink-0 ${!isSelected ? 'text-zinc-400' : 'text-zinc-400'}`}>
+              <span className="text-zinc-400 font-medium shrink-0">
                 {item.brand}
               </span>
             )}
@@ -392,6 +411,7 @@ export default function GearItemCard({
       <div className="flex items-center justify-between gap-2 pt-0.5">
         <div className="text-[11px] font-mono tabular-nums text-zinc-300 flex items-center gap-1.5 shrink-0 pl-1">
           <span className="font-semibold text-zinc-200">{formatWeight(totalWeight)}</span>
+          {renderWeightEstimatedBadge()}
           <span className="text-zinc-500 font-sans">/</span>
           {renderUsageBadge()}
         </div>
@@ -550,7 +570,7 @@ export default function GearItemCard({
             onClick={handleSaveEdit}
             className="bg-[#10B981] hover:bg-emerald-600 text-white text-xs font-bold px-4 py-1.5 rounded-xl cursor-pointer transition active:scale-95"
           >
-            保存
+            保存 (確定)
           </button>
           <button
             onClick={() => setIsEditing(false)}
