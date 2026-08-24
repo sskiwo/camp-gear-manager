@@ -450,6 +450,7 @@ export default function GearItemCard({
           {renderUsageBadge()}
         </div>
 
+        {/* 🎯 一覧上は数量変更と✏️ボタンのみにシンプル化 */}
         <div className="flex items-center gap-1.5 shrink-0">
           {onUpdateQuantity && (
             <div className="flex items-center bg-[#18181B] rounded-lg border border-zinc-700/80">
@@ -482,16 +483,6 @@ export default function GearItemCard({
           >
             ✏️
           </button>
-
-          {onDeleteGear && (
-            <button
-              onClick={() => onDeleteGear(item.id)}
-              className="ml-2 w-7 h-7 flex items-center justify-center text-[#EF4444] hover:text-white hover:bg-[#EF4444]/20 rounded-lg text-xs transition border border-[#EF4444]/40 cursor-pointer"
-              title="ギアを削除"
-            >
-              🗑️
-            </button>
-          )}
         </div>
       </div>
 
@@ -546,7 +537,7 @@ export default function GearItemCard({
               step="10"
               value={editWeight}
               onChange={(e) => setEditWeight(Number(e.target.value))}
-              className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white focus:border-[#FF5500] focus:outline-none font-mono tabular-nums text-right"
+              className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white font-mono tabular-nums text-right"
             />
           </div>
 
@@ -557,7 +548,7 @@ export default function GearItemCard({
               step="100"
               value={editPrice}
               onChange={(e) => setEditPrice(Number(e.target.value))}
-              className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white focus:border-[#FF5500] focus:outline-none font-mono tabular-nums text-right"
+              className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2 py-1.5 text-xs text-white font-mono tabular-nums text-right"
             />
           </div>
         </div>
@@ -599,19 +590,43 @@ export default function GearItemCard({
           />
         </div>
 
-        <div className="flex justify-end gap-2 pt-1">
-          <button
-            onClick={handleSaveEdit}
-            className="bg-[#10B981] hover:bg-emerald-600 text-white text-xs font-bold px-4 py-1.5 rounded-xl cursor-pointer transition active:scale-95"
-          >
-            保存 (確定)
-          </button>
-          <button
-            onClick={handleCancelEdit}
-            className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs px-3.5 py-1.5 rounded-xl cursor-pointer transition"
-          >
-            中止
-          </button>
+        {/* 🎯 編集フォームのフッター: 左側に削除ボタン、右側に中止・保存ボタン */}
+        <div className="flex items-center justify-between pt-2 border-t border-zinc-800">
+          <div>
+            {onDeleteGear && (
+              <button
+                type="button"
+                onClick={() => {
+                  const confirmed = window.confirm(`「${item.name}」を削除してもよろしいですか？`);
+                  if (confirmed) {
+                    onDeleteGear(item.id);
+                  }
+                }}
+                className="text-[#EF4444] hover:text-white hover:bg-[#EF4444]/20 border border-[#EF4444]/40 px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
+                title="このギアを削除"
+              >
+                <span>🗑️</span>
+                <span>ギアを削除</span>
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleCancelEdit}
+              className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-bold px-3.5 py-1.5 rounded-xl cursor-pointer transition"
+            >
+              中止
+            </button>
+            <button
+              type="button"
+              onClick={handleSaveEdit}
+              className="bg-[#10B981] hover:bg-emerald-600 text-white text-xs font-bold px-4 py-1.5 rounded-xl cursor-pointer transition active:scale-95 shadow-sm"
+            >
+              保存 (確定)
+            </button>
+          </div>
         </div>
       </div>
     );
