@@ -296,7 +296,6 @@ export default function GearItemCard({
               </span>
             )}
 
-            {/* アイテム名（12px Regular） */}
             <button
               type="button"
               onClick={handleToggleEdit}
@@ -363,7 +362,6 @@ export default function GearItemCard({
               </button>
             )}
 
-            {/* アイテム名（12px Regular） */}
             <div className="text-left flex-1 min-w-0">
               <span
                 className={`text-[12px] font-normal truncate block ${
@@ -411,7 +409,6 @@ export default function GearItemCard({
             </button>
           )}
 
-          {/* アイテム名（12px Regular） */}
           <button
             type="button"
             onClick={handleToggleEdit}
@@ -430,11 +427,6 @@ export default function GearItemCard({
             >
               {cleanName}
             </span>
-            {!isSelected && (
-              <span className="text-[12px] text-zinc-400 bg-zinc-800/80 border border-zinc-700 px-1 py-0.2 rounded shrink-0 font-normal">
-                お留守番
-              </span>
-            )}
           </button>
         </div>
 
@@ -446,7 +438,7 @@ export default function GearItemCard({
       </div>
 
       <div className="flex items-center justify-between gap-2 pt-0.5">
-        <div className="text-[12px] font-mono tabular-nums text-zinc-300 flex items-center gap-1.5 shrink-0 pl-1 font-normal">
+        <div className="text-[11px] font-mono tabular-nums text-zinc-300 flex items-center gap-1.5 shrink-0 pl-1 font-normal">
           <span className="text-zinc-200">{formatWeight(totalWeight)}</span>
           {renderWeightEstimatedBadge()}
           <span className="text-zinc-500 font-sans">/</span>
