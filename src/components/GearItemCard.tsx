@@ -323,7 +323,6 @@ export default function GearItemCard({
           <div className="flex items-center gap-1.5 shrink-0">
             {renderWeightEstimatedBadge()}
 
-            {/* 🎯 数量が2以上の時だけ表示 */}
             {qty > 1 && (
               <span className="text-[12px] font-mono font-bold text-[#FFB800] bg-[#FFB800]/15 border border-[#FFB800]/40 px-1.5 py-0.5 rounded shrink-0">
                 ×{qty}
@@ -341,36 +340,39 @@ export default function GearItemCard({
     );
   }
 
-  // ⛺ 【2】 振り返りモード UI
+  // ⛺ 【2】 振り返りモード UI（使用率は非表示、チェック外し方式に統一）
   if (mode === 'review') {
     return (
       <div className="space-y-1">
         <div
           className={`h-[48px] px-2 rounded-xl border transition-all duration-150 flex items-center justify-between gap-2 select-text ${
             isUnusedInReview
-              ? 'bg-amber-950/30 border-amber-800/80 shadow-sm'
-              : 'bg-[#1F1F23] border-zinc-800/80'
+              ? 'bg-[#18181B] border-zinc-800/80 opacity-60'
+              : 'bg-[#27272A] border-zinc-700/80 shadow-sm'
           }`}
         >
           <div className="flex items-center gap-1.5 min-w-0 flex-1">
+            {/* 🎯 使った(✅) / 未使用(⬜)の切り替えボタン */}
             {onToggleUnusedInReview && (
               <button
                 onClick={() => onToggleUnusedInReview(item.id)}
                 className={`w-8 h-8 rounded-lg text-[12px] transition flex items-center justify-center border shrink-0 cursor-pointer active:scale-95 ${
                   isUnusedInReview
-                    ? 'bg-amber-500/20 border-amber-500 text-amber-400 font-bold'
-                    : 'bg-zinc-800 border-zinc-700 text-zinc-400'
+                    ? 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white'
+                    : 'bg-[#10B981] border-[#10B981] text-white shadow-sm'
                 }`}
                 title={isUnusedInReview ? '使わなかった（タップで使用済みに変更）' : '使った（タップで未使用に変更）'}
               >
-                {isUnusedInReview ? '⚠️' : '✅'}
+                {isUnusedInReview ? '⬜' : '✅'}
               </button>
             )}
 
             <div className="text-left flex-1 min-w-0">
               <span
-                className={`text-[12px] font-normal truncate block ${
-                  isUnusedInReview ? 'text-amber-300 font-bold' : 'text-zinc-100'
+                className={`text-[12px] truncate block ${
+                  isUnusedInReview
+                    ? 'text-zinc-500 line-through font-normal'
+                    : 'text-white font-bold'
                 }`}
               >
                 {cleanName}
@@ -379,14 +381,18 @@ export default function GearItemCard({
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
-            {/* 🎯 数量が2以上の時だけ表示 */}
+            {/* 🎯 数量バッジ（2個以上のみ表示） */}
             {qty > 1 && (
               <span className="text-[12px] font-mono font-bold text-[#FFB800] bg-[#FFB800]/15 border border-[#FFB800]/40 px-1.5 py-0.5 rounded shrink-0">
                 ×{qty}
               </span>
             )}
-            {renderUsageBadge()}
-            <span className="text-[12px] font-mono tabular-nums font-normal text-zinc-300 shrink-0 min-w-[50px] text-right">
+            
+            {/* 💡 振り返り画面では使用率バッジは非表示 */}
+
+            <span className={`text-[12px] font-mono tabular-nums min-w-[50px] text-right ${
+              isUnusedInReview ? 'text-zinc-500 font-normal' : 'text-zinc-300 font-bold'
+            }`}>
               {formatWeight(totalWeight)}
             </span>
           </div>
@@ -397,7 +403,7 @@ export default function GearItemCard({
     );
   }
 
-  // ✏️ 【3】 ギア編集モード UI (一覧行の「- 1 +」ボタンを削除)
+  // ✏️ 【3】 ギア編集モード UI
   return (
     <div
       className={`py-2 px-2.5 border-b border-zinc-800/80 transition-colors select-text hover:bg-[#1F1F23] space-y-1.5 ${
@@ -452,7 +458,6 @@ export default function GearItemCard({
         <div className="text-[11px] font-mono tabular-nums text-zinc-300 flex items-center gap-1.5 shrink-0 pl-1 font-normal">
           <span className="text-zinc-200">{formatWeight(totalWeight)}</span>
           {renderWeightEstimatedBadge()}
-          {/* 🎯 数量が2以上の時だけ表示 */}
           {qty > 1 && (
             <span className="text-[11px] font-mono font-bold text-[#FFB800] bg-[#FFB800]/15 border border-[#FFB800]/40 px-1 py-0.2 rounded shrink-0">
               ×{qty}
@@ -462,7 +467,6 @@ export default function GearItemCard({
           {renderUsageBadge()}
         </div>
 
-        {/* 🎯 一覧右側は✏️ボタンのみにシンプル化 */}
         <div className="flex items-center gap-1.5 shrink-0">
           <button
             onClick={handleToggleEdit}
@@ -522,7 +526,6 @@ export default function GearItemCard({
             />
           </div>
 
-          {/* 🎯 重量入力欄 ＆ 推定/確定 切り替えトグル */}
           <div>
             <div className="flex items-center justify-between mb-0.5">
               <label className="text-[12px] font-normal text-zinc-400 block">重量(g)</label>
@@ -553,7 +556,6 @@ export default function GearItemCard({
             />
           </div>
 
-          {/* 🎯 数量入力欄（フォーム内に統合） */}
           <div>
             <label className="text-[12px] font-normal text-zinc-400 block mb-0.5">数量</label>
             <input

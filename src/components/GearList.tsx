@@ -70,7 +70,6 @@ export default function GearList({
   onToggleCategoryOpen,
   onTogglePacked,
   onToggleSelected,
-  onUpdateQuantity,
   onUpdateGear,
   onDeleteGear,
   onResetAllPacked,
@@ -255,6 +254,7 @@ export default function GearList({
         </div>
       </div>
 
+      {/* 🎯 振り返りモード時のガイダンスカード（文言更新） */}
       {screenMode === 'review' && (
         <div className="bg-amber-950/30 border border-amber-800/60 p-3.5 rounded-2xl space-y-1.5">
           <div className="flex items-center gap-2">
@@ -263,12 +263,13 @@ export default function GearList({
               キャンプお疲れ様でした！持参ギアを振り返りましょう
             </span>
           </div>
-          <p className="text-[12px] text-zinc-400 leading-relaxed font-normal">
-            今回持参したギアのうち、<strong className="text-amber-400 font-bold">「持っていったが使わなかった（未使用）」</strong>ギアにチェックを入れてください。完了すると各ギアの稼働実績が更新されます。
+          <p className="text-[12px] text-zinc-300 leading-relaxed font-normal">
+            持っていったが<strong className="text-amber-400 font-bold">「使わなかった（未使用）」ギアのチェック（✅）をタップして外してください</strong>。完了すると次回の軽量化データに反映されます。
           </p>
         </div>
       )}
 
+      {/* パッキング進捗カード */}
       {screenMode === 'packing' && totalCount > 0 && (
         <div className="bg-[#27272A]/80 p-3.5 rounded-2xl border border-zinc-700/70 space-y-2 shadow-inner">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -452,7 +453,6 @@ export default function GearList({
                         onTogglePacked={onTogglePacked}
                         onToggleSelected={onToggleSelected}
                         onToggleUnusedInReview={handleToggleUnused}
-                        onUpdateQuantity={onUpdateQuantity}
                         onUpdateGear={onUpdateGear}
                         onDeleteGear={onDeleteGear}
                       />
@@ -465,6 +465,7 @@ export default function GearList({
         })
       )}
 
+      {/* 振り返り完了ボタン */}
       {screenMode === 'review' && selectedGears.length > 0 && (
         <div className="pt-2">
           <button
@@ -487,6 +488,7 @@ export default function GearList({
         </div>
       )}
 
+      {/* 振り返り結果モーダル */}
       {reviewResultModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="bg-[#18181B] border border-zinc-800 w-full max-w-sm rounded-2xl shadow-2xl p-5 space-y-4 text-zinc-100">
