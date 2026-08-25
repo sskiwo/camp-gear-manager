@@ -18,6 +18,7 @@ type Props = {
   onToggleCategoryOpen: (catName: string) => void;
   onTogglePacked: (id: string, currentStatus: boolean) => void;
   onToggleSelected: (id: string, currentStatus: boolean) => void;
+  onUpdateQuantity?: (id: string, currentQty: number, delta: number) => void;
   onUpdateGear: (id: string, data: any) => Promise<void>;
   onDeleteGear: (id: string) => void;
   onDeleteAllGears?: () => void;
@@ -65,6 +66,7 @@ export default function GearList({
   onToggleCategoryOpen,
   onTogglePacked,
   onToggleSelected,
+  onUpdateQuantity,
   onUpdateGear,
   onDeleteGear,
   onResetAllPacked,
@@ -545,7 +547,7 @@ export default function GearList({
         </div>
       )}
 
-      {/* 🎯 切り出したリザルトモーダルコンポーネントの呼び出し */}
+      {/* リザルトモーダル */}
       <ReviewResultModal
         result={reviewResultModal}
         isApplyingNext={isApplyingNext}
