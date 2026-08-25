@@ -209,7 +209,6 @@ export default function GearList({
     <section className="bg-[#18181B] p-4 md:p-6 rounded-2xl border border-zinc-800 space-y-4 shadow-xl">
       {/* リストヘッダー */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-3">
-        {/* 🎯 「点」を削除 */}
         <h2 className="text-[18px] font-bold text-zinc-100 flex items-center gap-1.5">
           {screenMode === 'packing'
             ? 'パッキングリスト'
@@ -218,7 +217,7 @@ export default function GearList({
             : `キャンプ振り返り (${selectedGears.length})`}
         </h2>
 
-        {/* 🎯 画面横幅にぴったり収まる3分割トグルバー */}
+        {/* 画面横幅にフィットする3分割トグルバー */}
         <div className="grid grid-cols-3 gap-1 bg-[#09090B] p-1 rounded-xl border border-zinc-800 w-full sm:w-auto">
           <button
             onClick={() => handleModeChange('packing')}
@@ -455,7 +454,7 @@ export default function GearList({
                         onToggleUnusedInReview={handleToggleUnused}
                         onUpdateQuantity={onUpdateQuantity}
                         onUpdateGear={onUpdateGear}
-                        onDeleteGear={deleteGear}
+                        onDeleteGear={onDeleteGear}
                       />
                     ))
                   )}
