@@ -127,6 +127,8 @@ export default function GearItemCard({
   const [editPurchaseDate, setEditPurchaseDate] = useState(item.purchase_date || '');
   const [editFuelType, setEditFuelType] = useState(item.fuel_type || '不要/なし');
   const [editMemo, setEditMemo] = useState(item.memo || '');
+  // 🎯 重量推定フラグの編集用ステート
+  const [editIsWeightEstimated, setEditIsWeightEstimated] = useState(item.is_weight_estimated ?? false);
 
   const resetEditForm = useCallback(() => {
     setEditBrand(item.brand || '');
@@ -137,6 +139,7 @@ export default function GearItemCard({
     setEditPurchaseDate(item.purchase_date || '');
     setEditFuelType(item.fuel_type || '不要/なし');
     setEditMemo(item.memo || '');
+    setEditIsWeightEstimated(item.is_weight_estimated ?? false);
   }, [item]);
 
   useEffect(() => {
@@ -230,6 +233,7 @@ export default function GearItemCard({
     );
   };
 
+  // 🎯 保存処理：推定ステートの状態をそのまま保存
   const handleSaveEdit = async () => {
     const finalName = editName.trim() || item.name;
     const finalBrand = editBrand.trim();
@@ -245,7 +249,7 @@ export default function GearItemCard({
       purchase_date: editPurchaseDate,
       fuel_type: editFuelType === '不要/なし' ? '' : editFuelType,
       memo: editMemo.trim(),
-      is_weight_estimated: false,
+      is_weight_estimated: editIsWeightEstimated,
     });
     setIsEditing(false);
   };
@@ -524,14 +528,35 @@ export default function GearItemCard({
             />
           </div>
 
+          {/* 🎯 重量入力欄 ＆ [推定]/[確定] 切り替えトグル */}
           <div>
-            <label className="text-[12px] font-normal text-zinc-400 block mb-0.5">重量(g)</label>
+            <div className="flex items-center justify-between mb-0.5">
+              <label className="text-[12px] font-normal text-zinc-400 block">重量(g)</label>
+              <button
+                type="button"
+                onClick={() => setEditIsWeightEstimated(!editIsWeightEstimated)}
+                className={`text-[12px] font-normal px-1.5 py-0.2 rounded border cursor-pointer ${
+                  editIsWeightEstimated
+                    ? 'bg-amber-950/70 border-amber-800/80 text-amber-400 font-bold'
+                    : 'bg-emerald-950/70 border-emerald-800/80 text-emerald-400 font-bold'
+                }`}
+                title="タップして推定/確定を切り替え"
+              >
+                {editIsWeightEstimated ? '[推定]' : '[確定]'}
+              </button>
+            </div>
             <input
               type="number"
               step="10"
-              value={editWeight}
-              onChange={(e) => setEditWeight(Number(e.target.value))}
-              className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2 py-1.5 text-[12px] text-white font-mono tabular-nums text-right focus:border-[#FF5500] focus:outline-none font-normal"
+              value={editWeight === 0 ? '' : editWeight}
+              placeholder="0"
+              onChange={(e) => {
+                const val = e.target.value === '' ? 0 : Number(e.target.value);
+                setEditWeight(val);
+                // 手動で数値を書き換えた場合は自動で確定状態に昇格
+                setEditIsWeightEstimated(false);
+              }}
+              className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2.5 py-1.5 text-[12px] text-white font-mono tabular-nums text-right focus:border-[#FF5500] focus:outline-none font-normal"
             />
           </div>
 
@@ -540,9 +565,10 @@ export default function GearItemCard({
             <input
               type="number"
               step="100"
-              value={editPrice}
-              onChange={(e) => setEditPrice(Number(e.target.value))}
-              className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2 py-1.5 text-[12px] text-white font-mono tabular-nums text-right focus:border-[#FF5500] focus:outline-none font-normal"
+              value={editPrice === 0 ? '' : editPrice}
+              placeholder="0"
+              onChange={(e) => setEditPrice(e.target.value === '' ? 0 : Number(e.target.value))}
+              className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2.5 py-1.5 text-[12px] text-white font-mono tabular-nums text-right focus:border-[#FF5500] focus:outline-none font-normal"
             />
           </div>
         </div>
@@ -580,7 +606,7 @@ export default function GearItemCard({
             placeholder="例: リビング棚保管、コンテナA"
             value={editMemo}
             onChange={(e) => setEditMemo(e.target.value)}
-            className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2 py-1.5 text-[12px] text-white focus:border-[#FF5500] focus:outline-none font-normal"
+            className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2.5 py-1.5 text-[12px] text-white focus:border-[#FF5500] focus:outline-none font-normal"
           />
         </div>
 
@@ -612,12 +638,13 @@ export default function GearItemCard({
             >
               中止
             </button>
+            {/* 🎯 文言を「保存」に統一 */}
             <button
               type="button"
               onClick={handleSaveEdit}
               className="bg-[#10B981] hover:bg-emerald-600 text-white text-[12px] font-bold px-4 py-1.5 rounded-xl cursor-pointer transition active:scale-95 shadow-sm"
             >
-              保存 (確定)
+              保存
             </button>
           </div>
         </div>
