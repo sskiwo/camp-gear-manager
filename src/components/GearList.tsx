@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import GearItemCard, { GearItem } from './GearItemCard';
+import ReviewResultModal, { ReviewResultData } from './ReviewResultModal';
 import { CheckCircle2, Sparkles, Loader2 } from 'lucide-react';
 
 type Props = {
@@ -9,6 +10,7 @@ type Props = {
   allCampsCount?: number;
   allGearsInUserAccount?: GearItem[];
   screenMode?: 'packing' | 'edit' | 'review';
+  targetWeightKg?: number;
   onScreenModeChange?: (mode: 'packing' | 'edit' | 'review') => void;
   unusedGearIds?: Set<string>;
   onToggleUnusedGear?: (id: string) => void;
@@ -16,7 +18,6 @@ type Props = {
   onToggleCategoryOpen: (catName: string) => void;
   onTogglePacked: (id: string, currentStatus: boolean) => void;
   onToggleSelected: (id: string, currentStatus: boolean) => void;
-  onUpdateQuantity: (id: string, currentQty: number, delta: number) => void;
   onUpdateGear: (id: string, data: any) => Promise<void>;
   onDeleteGear: (id: string) => void;
   onDeleteAllGears?: () => void;
@@ -51,18 +52,12 @@ const normalizeCategory = (
   return 'その他';
 };
 
-const formatUnusedWeight = (grams: number): string => {
-  if (grams >= 1000) {
-    return `未使用: ${(grams / 1000).toFixed(2)}kg`;
-  }
-  return `未使用: ${Math.round(grams)}g`;
-};
-
 export default function GearList({
   gears,
   allCampsCount = 1,
   allGearsInUserAccount = [],
   screenMode: externalScreenMode,
+  targetWeightKg = 15.0,
   onScreenModeChange,
   unusedGearIds: externalUnusedGearIds,
   onToggleUnusedGear,
@@ -115,11 +110,8 @@ export default function GearList({
   const unusedGearIds = externalUnusedGearIds !== undefined ? externalUnusedGearIds : internalUnusedGearIds;
 
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
-  const [reviewResultModal, setReviewResultModal] = useState<{
-    unusedWeightGrams: number;
-    unusedCount: number;
-    totalCount: number;
-  } | null>(null);
+  const [isApplyingNext, setIsApplyingNext] = useState(false);
+  const [reviewResultModal, setReviewResultModal] = useState<ReviewResultData | null>(null);
 
   const selectedGears = gears.filter((g) => g.is_selected !== false);
   const packedCount = selectedGears.filter((g) => g.is_packed).length;
@@ -173,16 +165,20 @@ export default function GearList({
     setIsSubmittingReview(true);
 
     try {
+      let totalWeight = 0;
       let totalUnusedWeight = 0;
       let totalUnusedGearsCount = 0;
 
       for (const gear of selectedGears) {
         const isUnused = unusedGearIds.has(gear.id);
+        const gearWeight = (gear.weight || 0) * (gear.quantity || 1);
+        totalWeight += gearWeight;
+
         const nextBrought = (gear.total_brought_count || 0) + 1;
         const nextUsed = (gear.total_used_count || 0) + (isUnused ? 0 : 1);
 
         if (isUnused) {
-          totalUnusedWeight += (gear.weight || 0) * (gear.quantity || 1);
+          totalUnusedWeight += gearWeight;
           totalUnusedGearsCount += 1;
         }
 
@@ -192,15 +188,79 @@ export default function GearList({
         });
       }
 
+      const totalItemsCount = selectedGears.length;
+      const usedItemsCount = totalItemsCount - totalUnusedGearsCount;
+      const actualUsedWeight = Math.max(0, totalWeight - totalUnusedWeight);
+
+      // ① 装備稼働スコア (60点満点)
+      const weightUsageRate = totalWeight > 0 ? actualUsedWeight / totalWeight : 1;
+      const countUsageRate = totalItemsCount > 0 ? usedItemsCount / totalItemsCount : 1;
+      const operationScore = 60 * (weightUsageRate * 0.6 + countUsageRate * 0.4);
+
+      // ② 目標重量達成スコア (40点満点)
+      const targetGrams = (targetWeightKg || 15.0) * 1000;
+      let targetScore = 40;
+      if (totalWeight > targetGrams && targetGrams > 0) {
+        const overRatio = ((totalWeight - targetGrams) / targetGrams) * 100;
+        targetScore = Math.max(0, 40 - overRatio);
+      }
+
+      const finalScore = Math.min(100, Math.max(0, Math.round(operationScore + targetScore)));
+
+      // ③ ランク判定
+      let rank: 'S' | 'A' | 'B' | 'C' = 'C';
+      let rankTitle = '伸びしろキャンパー';
+      let rankIcon = '🥉';
+
+      if (finalScore >= 95) {
+        rank = 'S';
+        rankTitle = '神パッキング（ULマスター）';
+        rankIcon = '🏆';
+      } else if (finalScore >= 85) {
+        rank = 'A';
+        rankTitle = 'ベテランULキャンパー';
+        rankIcon = '🥇';
+      } else if (finalScore >= 70) {
+        rank = 'B';
+        rankTitle = '快適重視のバランスキャンパー';
+        rankIcon = '🥈';
+      }
+
       setReviewResultModal({
+        totalWeightGrams: totalWeight,
         unusedWeightGrams: totalUnusedWeight,
+        usedWeightGrams: actualUsedWeight,
+        totalCount: totalItemsCount,
         unusedCount: totalUnusedGearsCount,
-        totalCount: selectedGears.length,
+        usedCount: usedItemsCount,
+        score: finalScore,
+        rank,
+        rankTitle,
+        rankIcon,
+        targetWeightKg: targetWeightKg || 15.0,
       });
     } catch (err) {
       console.error('振り返り更新エラー:', err);
     } finally {
       setIsSubmittingReview(false);
+    }
+  };
+
+  const handleApplyToNextPacking = async () => {
+    if (!reviewResultModal || isApplyingNext) return;
+    setIsApplyingNext(true);
+
+    try {
+      for (const gearId of Array.from(unusedGearIds)) {
+        await onUpdateGear(gearId, { is_selected: false });
+      }
+      setReviewResultModal(null);
+      handleModeChange('packing');
+    } catch (err) {
+      console.error('次回パッキング反映エラー:', err);
+      alert('パッキング設定の反映中にエラーが発生しました');
+    } finally {
+      setIsApplyingNext(false);
     }
   };
 
@@ -216,7 +276,6 @@ export default function GearList({
             : `キャンプ振り返り (${selectedGears.length})`}
         </h2>
 
-        {/* 画面横幅にフィットする3分割トグルバー */}
         <div className="grid grid-cols-3 gap-1 bg-[#09090B] p-1 rounded-xl border border-zinc-800 w-full sm:w-auto">
           <button
             onClick={() => handleModeChange('packing')}
@@ -254,7 +313,6 @@ export default function GearList({
         </div>
       </div>
 
-      {/* 🎯 振り返りモード時のガイダンスカード（文言更新） */}
       {screenMode === 'review' && (
         <div className="bg-amber-950/30 border border-amber-800/60 p-3.5 rounded-2xl space-y-1.5">
           <div className="flex items-center gap-2">
@@ -269,7 +327,6 @@ export default function GearList({
         </div>
       )}
 
-      {/* パッキング進捗カード */}
       {screenMode === 'packing' && totalCount > 0 && (
         <div className="bg-[#27272A]/80 p-3.5 rounded-2xl border border-zinc-700/70 space-y-2 shadow-inner">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -471,68 +528,33 @@ export default function GearList({
           <button
             onClick={handleCompleteReview}
             disabled={isSubmittingReview}
-            className="w-full py-3.5 bg-[#FF5500] hover:bg-[#e04c00] text-white font-bold rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-[12px] cursor-pointer disabled:opacity-50"
+            className="w-full py-3.5 bg-[#FF5500] hover:bg-[#e04c00] text-white font-bold rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-[12px] cursor-pointer disabled:opacity-50 active:scale-95"
           >
             {isSubmittingReview ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
-                <span>振り返りを集計中...</span>
+                <span>パッキング精度を集計中...</span>
               </>
             ) : (
               <>
                 <CheckCircle2 className="w-5 h-5" />
-                <span>振り返りを完了する</span>
+                <span>振り返りを完了してスコアを見る</span>
               </>
             )}
           </button>
         </div>
       )}
 
-      {/* 振り返り結果モーダル */}
-      {reviewResultModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="bg-[#18181B] border border-zinc-800 w-full max-w-sm rounded-2xl shadow-2xl p-5 space-y-4 text-zinc-100">
-            <div className="text-center space-y-1">
-              <div className="w-12 h-12 bg-emerald-950/60 border border-emerald-800/80 rounded-full flex items-center justify-center mx-auto text-2xl">
-                ⛺
-              </div>
-              <h3 className="font-semibold text-[14px] text-white">振り返りが完了しました！</h3>
-              <p className="text-[12px] text-zinc-400 font-normal">ギアの稼働実績データが更新されました。</p>
-            </div>
-
-            <div className="bg-[#27272A]/70 p-3.5 rounded-xl border border-zinc-700/60 space-y-2 text-[12px]">
-              <div className="flex items-center justify-between">
-                <span className="text-zinc-400 font-normal">持参ギア総数:</span>
-                <span className="font-mono tabular-nums text-right font-normal text-white">{reviewResultModal.totalCount}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-amber-400 font-normal">使わなかったギア:</span>
-                <span className="font-mono tabular-nums text-right font-bold text-amber-400">{reviewResultModal.unusedCount}</span>
-              </div>
-              <div className="flex items-center justify-between pt-2 border-t border-zinc-700/60">
-                <span className="text-zinc-300 font-normal">今回の未使用重量:</span>
-                <span className="font-mono tabular-nums text-right font-bold text-[#FF5500] text-[14px]">
-                  {formatUnusedWeight(reviewResultModal.unusedWeightGrams)}
-                </span>
-              </div>
-            </div>
-
-            <p className="text-[12px] text-zinc-400 leading-relaxed text-center font-normal">
-              使わなかったギアはお留守番候補（低稼働バッジ）として次回以降の軽量化に役立ちます！
-            </p>
-
-            <button
-              onClick={() => {
-                setReviewResultModal(null);
-                handleModeChange('edit');
-              }}
-              className="w-full py-2.5 bg-[#FF5500] hover:bg-[#e04c00] text-white font-bold rounded-xl text-[12px] transition cursor-pointer shadow"
-            >
-              ギア一覧（編集モード）に戻る
-            </button>
-          </div>
-        </div>
-      )}
+      {/* 🎯 切り出したリザルトモーダルコンポーネントの呼び出し */}
+      <ReviewResultModal
+        result={reviewResultModal}
+        isApplyingNext={isApplyingNext}
+        onClose={() => {
+          setReviewResultModal(null);
+          handleModeChange('edit');
+        }}
+        onApplyNextPacking={handleApplyToNextPacking}
+      />
     </section>
   );
 }
