@@ -295,6 +295,7 @@ export default function Home() {
     }, 50);
   };
 
+  // 🎯 AIスキャン・手動追加の保存ハンドラー（追加項目を完全対応）
   const handleAddGear = async (item: any) => {
     if (!selectedCampId) return;
 
@@ -319,6 +320,9 @@ export default function Home() {
       is_selected: true,
       is_consumable: cat === '消耗品',
       product_url: item.productUrl || '',
+      purchase_date: item.purchase_date || '',
+      fuel_type: item.fuel_type === '不要/なし' ? '' : (item.fuel_type || ''),
+      memo: (item.memo || '').trim(),
       total_brought_count: 0,
       total_used_count: 0,
       is_emergency_gear: false,
@@ -430,7 +434,6 @@ export default function Home() {
             </button>
           </div>
 
-          {/* キャンプ場選択バー（アイコンと管理文字を削除し、大見出し18px Boldを適用） */}
           <div className="flex items-center justify-between gap-2 bg-[#18181B] px-3 py-2 rounded-xl border border-zinc-800 shadow-sm">
             <div className="flex-1 min-w-0">
               <select

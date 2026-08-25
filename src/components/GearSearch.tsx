@@ -11,6 +11,9 @@ export interface ScannedItem {
   price: number;
   category: string;
   is_weight_estimated?: boolean;
+  purchase_date?: string;
+  fuel_type?: string;
+  memo?: string;
 }
 
 interface GearSearchProps {
@@ -75,6 +78,20 @@ const compressImage = (file: File, maxWidth = 1024, maxHeight = 1024, quality = 
 };
 
 const CATEGORIES = ['ベース', '調理', '衣類', 'その他', '消耗品'];
+
+const FUEL_OPTIONS = [
+  '不要/なし',
+  'USB-C充電',
+  '単3電池',
+  '単4電池',
+  'CB缶',
+  'OD缶',
+  'ホワイトガソリン',
+  '灯油/ケロシン',
+  '薪/炭',
+  'ACコンセント',
+  'その他',
+];
 
 export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearchProps) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -149,8 +166,14 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
       }
 
       if (data.results && data.results.length > 0) {
-        setScannedResults(data.results);
-        setSelectedIndices(new Set(data.results.map((_: any, i: number) => i)));
+        const formattedResults = data.results.map((item: any) => ({
+          ...item,
+          purchase_date: '',
+          fuel_type: '不要/なし',
+          memo: '',
+        }));
+        setScannedResults(formattedResults);
+        setSelectedIndices(new Set(formattedResults.map((_: any, i: number) => i)));
         setShowModal(true);
       } else {
         setErrorMessage('該当するギア情報が見つかりませんでした。別の写真やキーワードでお試しください。');
@@ -184,13 +207,16 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
     runAiSearch(lastSelectedFile, searchQuery, true);
   };
 
-  const handleResultChange = (index: number, field: keyof ScannedItem, value: any) => {
-    const updated = [...scannedResults];
-    updated[index] = {
-      ...updated[index],
-      [field]: value,
-    };
-    setScannedResults(updated);
+  // 🔄 安全なオブジェクト一括更新関数（重量が消えるバグを解消）
+  const handleResultChange = (index: number, updates: Partial<ScannedItem>) => {
+    setScannedResults((prev) => {
+      const updated = [...prev];
+      updated[index] = {
+        ...updated[index],
+        ...updates,
+      };
+      return updated;
+    });
   };
 
   const toggleItemSelection = (index: number) => {
@@ -238,7 +264,6 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
   return (
     <div className="bg-[#18181B] border border-zinc-800 rounded-2xl p-5 shadow-lg space-y-4">
       <div className="flex items-center justify-between">
-        {/* セクション大見出し（18px Bold） */}
         <h2 className="text-white font-bold text-[18px]">ギアを追加</h2>
         <button
           type="button"
@@ -370,6 +395,7 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
         </div>
       )}
 
+      {/* 🎯 AI検出結果モーダル（重量編集修正＆追加項目を統合） */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="bg-[#18181B] border border-zinc-800 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
@@ -379,7 +405,7 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
                   <span>✨</span>
                   <span>AI検出結果 ({scannedResults.length}件)</span>
                 </h3>
-                <p className="text-zinc-400 text-[12px] font-normal">追加するアイテムを選択し、必要に応じて修正してください</p>
+                <p className="text-zinc-400 text-[12px] font-normal">追加するアイテムを選択し、詳細情報を入力・修正してください</p>
               </div>
               <button
                 onClick={() => setShowModal(false)}
@@ -420,7 +446,7 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
                   return (
                     <div
                       key={index}
-                      className={`border rounded-xl p-3.5 space-y-2.5 transition ${
+                      className={`border rounded-xl p-3.5 space-y-3 transition ${
                         isChecked
                           ? 'bg-[#27272A]/80 border-zinc-700 shadow-sm'
                           : 'bg-[#18181B]/50 border-zinc-800/70 opacity-60'
@@ -434,14 +460,14 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
                             onChange={() => toggleItemSelection(index)}
                             className="w-4 h-4 accent-[#FF5500] rounded cursor-pointer shrink-0"
                           />
-                          <span className="text-[12px] font-normal text-white">
+                          <span className="text-[12px] font-bold text-white">
                             アイテム #{index + 1}
                           </span>
                         </label>
 
                         <select
                           value={item.category || 'ベース'}
-                          onChange={(e) => handleResultChange(index, 'category', e.target.value)}
+                          onChange={(e) => handleResultChange(index, { category: e.target.value })}
                           className="bg-[#18181B] text-[#FF5500] border border-zinc-700 rounded-lg px-2 py-1 text-[12px] font-semibold focus:outline-none focus:border-[#FF5500] cursor-pointer"
                         >
                           {CATEGORIES.map((cat) => (
@@ -450,13 +476,14 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
                         </select>
                       </div>
 
+                      {/* 商品名・ブランド */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <div className="space-y-0.5">
                           <label className="text-[12px] text-zinc-400 font-normal block">商品名・型番</label>
                           <input
                             type="text"
                             value={item.product_name}
-                            onChange={(e) => handleResultChange(index, 'product_name', e.target.value)}
+                            onChange={(e) => handleResultChange(index, { product_name: e.target.value })}
                             className="w-full bg-[#18181B] border border-zinc-700 rounded-lg px-2.5 py-1.5 text-[12px] text-white focus:outline-none focus:border-[#FF5500] font-normal"
                           />
                         </div>
@@ -466,19 +493,20 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
                           <input
                             type="text"
                             value={item.brand || ''}
-                            onChange={(e) => handleResultChange(index, 'brand', e.target.value)}
+                            onChange={(e) => handleResultChange(index, { brand: e.target.value })}
                             className="w-full bg-[#18181B] border border-zinc-700 rounded-lg px-2.5 py-1.5 text-[12px] text-white focus:outline-none focus:border-[#FF5500] font-normal"
                           />
                         </div>
                       </div>
 
+                      {/* 重量・価格 */}
                       <div className="grid grid-cols-2 gap-2">
                         <div className="space-y-0.5">
                           <div className="flex items-center justify-between">
                             <label className="text-[12px] text-zinc-400 font-normal block">重量 (g)</label>
                             <button
                               type="button"
-                              onClick={() => handleResultChange(index, 'is_weight_estimated', !item.is_weight_estimated)}
+                              onClick={() => handleResultChange(index, { is_weight_estimated: !item.is_weight_estimated })}
                               className={`text-[12px] font-normal px-1.5 py-0.2 rounded border cursor-pointer ${
                                 item.is_weight_estimated
                                   ? 'bg-amber-950/70 border-amber-800/80 text-amber-400 font-bold'
@@ -491,10 +519,14 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
                           <input
                             type="number"
                             step="10"
-                            value={item.weight}
+                            value={item.weight === 0 ? '' : item.weight}
+                            placeholder="0"
                             onChange={(e) => {
-                              handleResultChange(index, 'weight', Number(e.target.value));
-                              handleResultChange(index, 'is_weight_estimated', false);
+                              const val = e.target.value === '' ? 0 : Number(e.target.value);
+                              handleResultChange(index, {
+                                weight: val,
+                                is_weight_estimated: false,
+                              });
                             }}
                             className="w-full bg-[#18181B] border border-zinc-700 rounded-lg px-2.5 py-1.5 text-[12px] text-white font-mono tabular-nums text-right focus:outline-none focus:border-[#FF5500] font-normal"
                           />
@@ -505,11 +537,55 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
                           <input
                             type="number"
                             step="100"
-                            value={item.price}
-                            onChange={(e) => handleResultChange(index, 'price', Number(e.target.value))}
+                            value={item.price === 0 ? '' : item.price}
+                            placeholder="0"
+                            onChange={(e) => {
+                              const val = e.target.value === '' ? 0 : Number(e.target.value);
+                              handleResultChange(index, { price: val });
+                            }}
                             className="w-full bg-[#18181B] border border-zinc-700 rounded-lg px-2.5 py-1.5 text-[12px] text-white font-mono tabular-nums text-right focus:outline-none focus:border-[#FF5500] font-normal"
                           />
                         </div>
+                      </div>
+
+                      {/* 🎯 追加項目: 購入時期・燃料タイプ */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div className="space-y-0.5">
+                          <label className="text-[12px] text-zinc-400 font-normal block">購入時期</label>
+                          <input
+                            type="month"
+                            value={item.purchase_date || ''}
+                            onChange={(e) => handleResultChange(index, { purchase_date: e.target.value })}
+                            className="w-full bg-[#18181B] border border-zinc-700 rounded-lg px-2.5 py-1.5 text-[12px] text-white focus:outline-none font-normal"
+                          />
+                        </div>
+
+                        <div className="space-y-0.5">
+                          <label className="text-[12px] text-zinc-400 font-normal block">燃料・電源タイプ</label>
+                          <select
+                            value={item.fuel_type || '不要/なし'}
+                            onChange={(e) => handleResultChange(index, { fuel_type: e.target.value })}
+                            className="w-full bg-[#18181B] border border-zinc-700 rounded-lg px-2.5 py-1.5 text-[12px] text-white focus:outline-none font-normal cursor-pointer"
+                          >
+                            {FUEL_OPTIONS.map((opt) => (
+                              <option key={opt} value={opt}>
+                                {opt}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* 🎯 追加項目: メモ */}
+                      <div className="space-y-0.5">
+                        <label className="text-[12px] text-zinc-400 font-normal block">メモ</label>
+                        <input
+                          type="text"
+                          placeholder="例: リビング棚保管、コンテナA"
+                          value={item.memo || ''}
+                          onChange={(e) => handleResultChange(index, { memo: e.target.value })}
+                          className="w-full bg-[#18181B] border border-zinc-700 rounded-lg px-2.5 py-1.5 text-[12px] text-white focus:outline-none focus:border-[#FF5500] font-normal"
+                        />
                       </div>
                     </div>
                   );
