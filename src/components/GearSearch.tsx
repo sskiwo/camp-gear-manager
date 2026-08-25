@@ -2,7 +2,7 @@
 
 import React, { useState, useRef } from 'react';
 import Link from 'next/link';
-import { Camera, X, Loader2, Lightbulb, RefreshCw, RotateCcw, CheckSquare, Square, Check } from 'lucide-react';
+import { Camera, Search, X, Loader2, Lightbulb, RefreshCw, RotateCcw, CheckSquare, Square, Check } from 'lucide-react';
 
 export interface ScannedItem {
   product_name: string;
@@ -282,44 +282,52 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
         className="hidden"
       />
 
+      {/* 🎯 検索フォーム: 検索ボタンをダークグレーのアイコン(🔍)化、カメラボタンをメインのオレンジ(📷)化 */}
       <form onSubmit={handleFormSubmit} className="flex gap-2 items-center">
-        <div className="relative flex-1">
+        <div className="relative flex-1 min-w-0">
           <input
             type="text"
             value={searchQuery}
             onChange={handleSearchChange}
             placeholder="型番・商品名・Amazon URLを入力"
-            className="w-full bg-[#27272A] border border-zinc-700 rounded-xl px-4 py-3 text-zinc-100 placeholder-zinc-500 text-[12px] focus:outline-none focus:border-[#FF5500] transition shadow-inner font-normal"
+            className="w-full bg-[#27272A] border border-zinc-700 rounded-xl px-3.5 py-2.5 text-zinc-100 placeholder-zinc-500 text-[12px] focus:outline-none focus:border-[#FF5500] transition shadow-inner font-normal"
           />
         </div>
 
+        {/* サブアクション: テキスト検索ボタン [🔍] */}
         <button
           type="submit"
           disabled={isScanning || isRefreshing}
-          className="py-3 px-5 bg-[#FF5500] hover:bg-[#e04c00] text-white font-bold rounded-xl shadow transition flex items-center justify-center shrink-0 text-[12px] cursor-pointer disabled:opacity-50"
+          className="h-10 w-10 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded-xl border border-zinc-700 transition flex items-center justify-center shrink-0 cursor-pointer disabled:opacity-50 active:scale-95 shadow-sm"
+          title="キーワードで検索"
         >
-          {isScanning ? (
-            <Loader2 className="w-5 h-5 animate-spin text-white" />
+          {isScanning && !lastSelectedFile ? (
+            <Loader2 className="w-4 h-4 animate-spin text-[#FF5500]" />
           ) : (
-            <span>検索</span>
+            <Search className="w-4 h-4" />
           )}
         </button>
 
+        {/* メインアクション: 写真スキャンボタン [📷] */}
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={isScanning || isRefreshing}
-          className="py-3 px-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-xl transition flex items-center justify-center shrink-0 cursor-pointer disabled:opacity-50"
-          title="写真またはアルバムから自動入力"
+          className="h-10 w-11 bg-[#FF5500] hover:bg-[#e04c00] text-white rounded-xl shadow-md transition flex items-center justify-center shrink-0 cursor-pointer disabled:opacity-50 active:scale-95"
+          title="カメラで撮影または写真から自動認識"
         >
-          <Camera className="w-5 h-5" />
+          {isScanning && lastSelectedFile ? (
+            <Loader2 className="w-4 h-4 animate-spin text-white" />
+          ) : (
+            <Camera className="w-5 h-5" />
+          )}
         </button>
       </form>
 
-      <div className="pt-2 pb-2">
+      <div className="pt-1 pb-1">
         <Link
           href="/community"
-          className="w-full inline-flex items-center justify-center gap-2 bg-transparent hover:bg-[#FF5500]/10 text-white border border-[#FF5500] px-4 py-3 rounded-xl text-[12px] font-bold transition shadow-sm group cursor-pointer"
+          className="w-full inline-flex items-center justify-center gap-2 bg-transparent hover:bg-[#FF5500]/10 text-white border border-[#FF5500] px-4 py-2.5 rounded-xl text-[12px] font-bold transition shadow-sm group cursor-pointer"
         >
           <span>みんなのギアから追加</span>
           <span className="group-hover:translate-x-1 transition-transform">➔</span>
@@ -474,6 +482,7 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
                         </select>
                       </div>
 
+                      {/* 商品名・ブランド */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <div className="space-y-0.5">
                           <label className="text-[12px] text-zinc-400 font-normal block">商品名・型番</label>
@@ -496,11 +505,11 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
                         </div>
                       </div>
 
+                      {/* 重量・価格 */}
                       <div className="grid grid-cols-2 gap-2">
                         <div className="space-y-0.5">
                           <div className="flex items-center justify-between">
                             <label className="text-[12px] text-zinc-400 font-normal block">重量 (g)</label>
-                            {/* 🎯 かっこを削除した「推定」/「確定」切り替えトグル */}
                             <button
                               type="button"
                               onClick={() => handleResultChange(index, { is_weight_estimated: !item.is_weight_estimated })}
@@ -545,6 +554,7 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
                         </div>
                       </div>
 
+                      {/* 購入時期・燃料タイプ */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <div className="space-y-0.5">
                           <label className="text-[12px] text-zinc-400 font-normal block">購入時期</label>
@@ -572,6 +582,7 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
                         </div>
                       </div>
 
+                      {/* メモ */}
                       <div className="space-y-0.5">
                         <label className="text-[12px] text-zinc-400 font-normal block">メモ</label>
                         <input
