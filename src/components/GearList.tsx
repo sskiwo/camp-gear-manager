@@ -207,47 +207,51 @@ export default function GearList({
 
   return (
     <section className="bg-[#18181B] p-4 md:p-6 rounded-2xl border border-zinc-800 space-y-4 shadow-xl">
-      {/* セクション大見出し（18px Bold） */}
+      {/* リストヘッダー */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-3">
+        {/* 🎯 「点」を削除 */}
         <h2 className="text-[18px] font-bold text-zinc-100 flex items-center gap-1.5">
           {screenMode === 'packing'
             ? 'パッキングリスト'
             : screenMode === 'edit'
-            ? `ギア選定 (${totalCount} / ${gears.length}点)`
-            : `キャンプ振り返り (${selectedGears.length}点)`}
+            ? `ギア選定 (${totalCount} / ${gears.length})`
+            : `キャンプ振り返り (${selectedGears.length})`}
         </h2>
 
-        {/* 3モード切替トグル */}
-        <div className="flex items-center bg-[#09090B] p-1 rounded-xl border border-zinc-800 self-start sm:self-auto overflow-x-auto max-w-full">
+        {/* 🎯 画面横幅にぴったり収まる3分割トグルバー */}
+        <div className="grid grid-cols-3 gap-1 bg-[#09090B] p-1 rounded-xl border border-zinc-800 w-full sm:w-auto">
           <button
             onClick={() => handleModeChange('packing')}
-            className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-[12px] font-bold transition cursor-pointer flex items-center gap-1 shrink-0 ${
+            className={`px-2 py-1.5 rounded-lg text-[12px] font-bold transition cursor-pointer flex items-center justify-center gap-1 whitespace-nowrap text-center ${
               screenMode === 'packing'
                 ? 'bg-[#FF5500] text-white shadow-md'
                 : 'text-zinc-400 hover:text-white'
             }`}
           >
-            ☑️ パッキング
+            <span>☑️</span>
+            <span>パッキング</span>
           </button>
           <button
             onClick={() => handleModeChange('edit')}
-            className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-[12px] font-bold transition cursor-pointer flex items-center gap-1 shrink-0 ${
+            className={`px-2 py-1.5 rounded-lg text-[12px] font-bold transition cursor-pointer flex items-center justify-center gap-1 whitespace-nowrap text-center ${
               screenMode === 'edit'
                 ? 'bg-[#FF5500] text-white shadow-md'
                 : 'text-zinc-400 hover:text-white'
             }`}
           >
-            ✏️ ギア編集
+            <span>✏️</span>
+            <span>ギア編集</span>
           </button>
           <button
             onClick={() => handleModeChange('review')}
-            className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-[12px] font-bold transition cursor-pointer flex items-center gap-1 shrink-0 ${
+            className={`px-2 py-1.5 rounded-lg text-[12px] font-bold transition cursor-pointer flex items-center justify-center gap-1 whitespace-nowrap text-center ${
               screenMode === 'review'
                 ? 'bg-[#FF5500] text-white shadow-md'
                 : 'text-zinc-400 hover:text-white'
             }`}
           >
-            ⛺ 振り返り
+            <span>⛺</span>
+            <span>振り返り</span>
           </button>
         </div>
       </div>
@@ -274,7 +278,7 @@ export default function GearList({
                 パッキング済み:
               </span>
               <span className="text-[12px] font-normal text-white font-mono tabular-nums text-right">
-                {packedCount} / {totalCount} 点
+                {packedCount} / {totalCount}
               </span>
             </div>
 
@@ -368,7 +372,7 @@ export default function GearList({
             screenMode === 'packing'
               ? `${packedGearsInCat.length} / ${selectedGearsInCat.length}`
               : screenMode === 'review'
-              ? `${selectedGearsInCat.length}点`
+              ? `${selectedGearsInCat.length}`
               : `${selectedGearsInCat.length} / ${categoryAllGears.length}`;
 
           const catIcon =
@@ -389,7 +393,6 @@ export default function GearList({
               className="border rounded-xl overflow-hidden shadow-md scroll-mt-6"
               style={{ borderColor: `${catColor}50` }}
             >
-              {/* カテゴリー見出し（14px Semi-bold） */}
               <div
                 style={{ backgroundColor: '#18181B', borderColor: `${catColor}40` }}
                 className="sticky top-0 z-10 w-full flex items-center justify-between px-3 sm:px-4 py-2 border-b backdrop-blur-md gap-2"
@@ -452,7 +455,7 @@ export default function GearList({
                         onToggleUnusedInReview={handleToggleUnused}
                         onUpdateQuantity={onUpdateQuantity}
                         onUpdateGear={onUpdateGear}
-                        onDeleteGear={onDeleteGear}
+                        onDeleteGear={deleteGear}
                       />
                     ))
                   )}
@@ -499,11 +502,11 @@ export default function GearList({
             <div className="bg-[#27272A]/70 p-3.5 rounded-xl border border-zinc-700/60 space-y-2 text-[12px]">
               <div className="flex items-center justify-between">
                 <span className="text-zinc-400 font-normal">持参ギア総数:</span>
-                <span className="font-mono tabular-nums text-right font-normal text-white">{reviewResultModal.totalCount} 点</span>
+                <span className="font-mono tabular-nums text-right font-normal text-white">{reviewResultModal.totalCount}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-amber-400 font-normal">使わなかったギア:</span>
-                <span className="font-mono tabular-nums text-right font-bold text-amber-400">{reviewResultModal.unusedCount} 点</span>
+                <span className="font-mono tabular-nums text-right font-bold text-amber-400">{reviewResultModal.unusedCount}</span>
               </div>
               <div className="flex items-center justify-between pt-2 border-t border-zinc-700/60">
                 <span className="text-zinc-300 font-normal">今回の未使用重量:</span>
