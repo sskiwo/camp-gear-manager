@@ -207,7 +207,6 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
     runAiSearch(lastSelectedFile, searchQuery, true);
   };
 
-  // 🔄 安全なオブジェクト一括更新関数（重量が消えるバグを解消）
   const handleResultChange = (index: number, updates: Partial<ScannedItem>) => {
     setScannedResults((prev) => {
       const updated = [...prev];
@@ -395,7 +394,6 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
         </div>
       )}
 
-      {/* 🎯 AI検出結果モーダル（重量編集修正＆追加項目を統合） */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="bg-[#18181B] border border-zinc-800 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
@@ -476,7 +474,6 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
                         </select>
                       </div>
 
-                      {/* 商品名・ブランド */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <div className="space-y-0.5">
                           <label className="text-[12px] text-zinc-400 font-normal block">商品名・型番</label>
@@ -499,11 +496,11 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
                         </div>
                       </div>
 
-                      {/* 重量・価格 */}
                       <div className="grid grid-cols-2 gap-2">
                         <div className="space-y-0.5">
                           <div className="flex items-center justify-between">
                             <label className="text-[12px] text-zinc-400 font-normal block">重量 (g)</label>
+                            {/* 🎯 かっこを削除した「推定」/「確定」切り替えトグル */}
                             <button
                               type="button"
                               onClick={() => handleResultChange(index, { is_weight_estimated: !item.is_weight_estimated })}
@@ -513,7 +510,7 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
                                   : 'bg-emerald-950/70 border-emerald-800/80 text-emerald-400 font-bold'
                               }`}
                             >
-                              {item.is_weight_estimated ? '[推定]' : '[確定]'}
+                              {item.is_weight_estimated ? '推定' : '確定'}
                             </button>
                           </div>
                           <input
@@ -548,7 +545,6 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
                         </div>
                       </div>
 
-                      {/* 🎯 追加項目: 購入時期・燃料タイプ */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <div className="space-y-0.5">
                           <label className="text-[12px] text-zinc-400 font-normal block">購入時期</label>
@@ -576,7 +572,6 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
                         </div>
                       </div>
 
-                      {/* 🎯 追加項目: メモ */}
                       <div className="space-y-0.5">
                         <label className="text-[12px] text-zinc-400 font-normal block">メモ</label>
                         <input

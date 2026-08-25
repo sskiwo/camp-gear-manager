@@ -127,7 +127,6 @@ export default function GearItemCard({
   const [editPurchaseDate, setEditPurchaseDate] = useState(item.purchase_date || '');
   const [editFuelType, setEditFuelType] = useState(item.fuel_type || '不要/なし');
   const [editMemo, setEditMemo] = useState(item.memo || '');
-  // 🎯 重量推定フラグの編集用ステート
   const [editIsWeightEstimated, setEditIsWeightEstimated] = useState(item.is_weight_estimated ?? false);
 
   const resetEditForm = useCallback(() => {
@@ -174,6 +173,7 @@ export default function GearItemCard({
   const usedCount = item.total_used_count || 0;
   const usageRate = broughtCount > 0 ? (usedCount / broughtCount) * 100 : 0;
 
+  // 🎯 かっこを削除した「推定」バッジ
   const renderWeightEstimatedBadge = () => {
     if (!item.is_weight_estimated) return null;
 
@@ -187,11 +187,12 @@ export default function GearItemCard({
         className="text-[12px] font-normal text-amber-400 bg-amber-950/70 border border-amber-800/80 px-1 py-0.2 rounded hover:bg-amber-800/80 transition cursor-pointer shrink-0"
         title="AIによる推測値です。タップして確定状態に変更"
       >
-        [推定]
+        推定
       </button>
     );
   };
 
+  // 🎯 火のアイコンを削除した利用回数バッジ
   const renderUsageBadge = () => {
     if (broughtCount === 0) {
       return (
@@ -207,7 +208,7 @@ export default function GearItemCard({
           className="px-1.5 py-0.5 rounded text-[12px] font-normal bg-emerald-950/60 text-emerald-300 border border-emerald-700/60 font-mono tabular-nums text-right"
           title={`高稼働: 使用率 ${usageRate.toFixed(0)}% (${usedCount}/${broughtCount}回)`}
         >
-          🔥 {usedCount}/{broughtCount}回
+          {usedCount}/{broughtCount}回
         </span>
       );
     }
@@ -233,7 +234,6 @@ export default function GearItemCard({
     );
   };
 
-  // 🎯 保存処理：推定ステートの状態をそのまま保存
   const handleSaveEdit = async () => {
     const finalName = editName.trim() || item.name;
     const finalBrand = editBrand.trim();
@@ -528,7 +528,7 @@ export default function GearItemCard({
             />
           </div>
 
-          {/* 🎯 重量入力欄 ＆ [推定]/[確定] 切り替えトグル */}
+          {/* 🎯 かっこを削除した「推定」/「確定」切り替えトグル */}
           <div>
             <div className="flex items-center justify-between mb-0.5">
               <label className="text-[12px] font-normal text-zinc-400 block">重量(g)</label>
@@ -542,7 +542,7 @@ export default function GearItemCard({
                 }`}
                 title="タップして推定/確定を切り替え"
               >
-                {editIsWeightEstimated ? '[推定]' : '[確定]'}
+                {editIsWeightEstimated ? '推定' : '確定'}
               </button>
             </div>
             <input
@@ -553,7 +553,6 @@ export default function GearItemCard({
               onChange={(e) => {
                 const val = e.target.value === '' ? 0 : Number(e.target.value);
                 setEditWeight(val);
-                // 手動で数値を書き換えた場合は自動で確定状態に昇格
                 setEditIsWeightEstimated(false);
               }}
               className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2.5 py-1.5 text-[12px] text-white font-mono tabular-nums text-right focus:border-[#FF5500] focus:outline-none font-normal"
@@ -638,7 +637,6 @@ export default function GearItemCard({
             >
               中止
             </button>
-            {/* 🎯 文言を「保存」に統一 */}
             <button
               type="button"
               onClick={handleSaveEdit}
