@@ -113,7 +113,6 @@ export default function GearItemCard({
   onTogglePacked,
   onToggleSelected,
   onToggleUnusedInReview,
-  onUpdateQuantity,
   onUpdateGear,
   onDeleteGear,
 }: Props) {
@@ -124,6 +123,7 @@ export default function GearItemCard({
   const [editCategory, setEditCategory] = useState(item.category || 'ベース');
   const [editWeight, setEditWeight] = useState(item.weight || 0);
   const [editPrice, setEditPrice] = useState(item.price || 0);
+  const [editQuantity, setEditQuantity] = useState(item.quantity || 1);
   const [editPurchaseDate, setEditPurchaseDate] = useState(item.purchase_date || '');
   const [editFuelType, setEditFuelType] = useState(item.fuel_type || '不要/なし');
   const [editMemo, setEditMemo] = useState(item.memo || '');
@@ -135,6 +135,7 @@ export default function GearItemCard({
     setEditCategory(item.category || 'ベース');
     setEditWeight(item.weight || 0);
     setEditPrice(item.price || 0);
+    setEditQuantity(item.quantity || 1);
     setEditPurchaseDate(item.purchase_date || '');
     setEditFuelType(item.fuel_type || '不要/なし');
     setEditMemo(item.memo || '');
@@ -173,7 +174,6 @@ export default function GearItemCard({
   const usedCount = item.total_used_count || 0;
   const usageRate = broughtCount > 0 ? (usedCount / broughtCount) * 100 : 0;
 
-  // 🎯 かっこを削除した「推定」バッジ
   const renderWeightEstimatedBadge = () => {
     if (!item.is_weight_estimated) return null;
 
@@ -192,7 +192,6 @@ export default function GearItemCard({
     );
   };
 
-  // 🎯 火のアイコンを削除した利用回数バッジ
   const renderUsageBadge = () => {
     if (broughtCount === 0) {
       return (
@@ -246,6 +245,7 @@ export default function GearItemCard({
       is_consumable: editCategory === '消耗品',
       weight: Math.max(0, Number(editWeight) || 0),
       price: Math.max(0, Number(editPrice) || 0),
+      quantity: Math.max(1, Number(editQuantity) || 1),
       purchase_date: editPurchaseDate,
       fuel_type: editFuelType === '不要/なし' ? '' : editFuelType,
       memo: editMemo.trim(),
@@ -323,8 +323,9 @@ export default function GearItemCard({
           <div className="flex items-center gap-1.5 shrink-0">
             {renderWeightEstimatedBadge()}
 
+            {/* 🎯 数量が2以上の時だけ表示 */}
             {qty > 1 && (
-              <span className="text-[12px] font-mono text-[#FFB800] bg-[#FFB800]/15 border border-[#FFB800]/40 px-1.5 py-0.5 rounded shrink-0 font-normal">
+              <span className="text-[12px] font-mono font-bold text-[#FFB800] bg-[#FFB800]/15 border border-[#FFB800]/40 px-1.5 py-0.5 rounded shrink-0">
                 ×{qty}
               </span>
             )}
@@ -378,6 +379,12 @@ export default function GearItemCard({
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
+            {/* 🎯 数量が2以上の時だけ表示 */}
+            {qty > 1 && (
+              <span className="text-[12px] font-mono font-bold text-[#FFB800] bg-[#FFB800]/15 border border-[#FFB800]/40 px-1.5 py-0.5 rounded shrink-0">
+                ×{qty}
+              </span>
+            )}
             {renderUsageBadge()}
             <span className="text-[12px] font-mono tabular-nums font-normal text-zinc-300 shrink-0 min-w-[50px] text-right">
               {formatWeight(totalWeight)}
@@ -390,7 +397,7 @@ export default function GearItemCard({
     );
   }
 
-  // ✏️ 【3】 ギア編集モード UI
+  // ✏️ 【3】 ギア編集モード UI (一覧行の「- 1 +」ボタンを削除)
   return (
     <div
       className={`py-2 px-2.5 border-b border-zinc-800/80 transition-colors select-text hover:bg-[#1F1F23] space-y-1.5 ${
@@ -445,31 +452,18 @@ export default function GearItemCard({
         <div className="text-[11px] font-mono tabular-nums text-zinc-300 flex items-center gap-1.5 shrink-0 pl-1 font-normal">
           <span className="text-zinc-200">{formatWeight(totalWeight)}</span>
           {renderWeightEstimatedBadge()}
+          {/* 🎯 数量が2以上の時だけ表示 */}
+          {qty > 1 && (
+            <span className="text-[11px] font-mono font-bold text-[#FFB800] bg-[#FFB800]/15 border border-[#FFB800]/40 px-1 py-0.2 rounded shrink-0">
+              ×{qty}
+            </span>
+          )}
           <span className="text-zinc-500 font-sans">/</span>
           {renderUsageBadge()}
         </div>
 
+        {/* 🎯 一覧右側は✏️ボタンのみにシンプル化 */}
         <div className="flex items-center gap-1.5 shrink-0">
-          {onUpdateQuantity && (
-            <div className="flex items-center bg-[#18181B] rounded-lg border border-zinc-700/80">
-              <button
-                onClick={() => onUpdateQuantity(item.id, qty, -1)}
-                className="w-7 h-6 flex items-center justify-center text-zinc-400 hover:text-white font-normal text-[12px] cursor-pointer rounded-l-lg"
-              >
-                -
-              </button>
-              <span className="px-1.5 text-[12px] font-mono tabular-nums font-normal text-white">
-                {qty}
-              </span>
-              <button
-                onClick={() => onUpdateQuantity(item.id, qty, 1)}
-                className="w-7 h-6 flex items-center justify-center text-zinc-400 hover:text-white font-normal text-[12px] cursor-pointer rounded-r-lg"
-              >
-                +
-              </button>
-            </div>
-          )}
-
           <button
             onClick={handleToggleEdit}
             className={`w-7 h-7 flex items-center justify-center rounded-lg text-[12px] transition border cursor-pointer ${
@@ -491,7 +485,7 @@ export default function GearItemCard({
   function renderEditForm() {
     return (
       <div className="mt-2 pt-2 border-t border-zinc-800 space-y-2.5 bg-[#18181B] p-3 rounded-xl animate-fade-in text-left">
-        <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-6 gap-2">
           <div>
             <label className="text-[12px] font-normal text-zinc-400 block mb-0.5">カテゴリー</label>
             <select
@@ -518,7 +512,7 @@ export default function GearItemCard({
             />
           </div>
 
-          <div>
+          <div className="sm:col-span-2">
             <label className="text-[12px] font-normal text-zinc-400 block mb-0.5">商品名</label>
             <input
               type="text"
@@ -528,7 +522,7 @@ export default function GearItemCard({
             />
           </div>
 
-          {/* 🎯 かっこを削除した「推定」/「確定」切り替えトグル */}
+          {/* 🎯 重量入力欄 ＆ 推定/確定 切り替えトグル */}
           <div>
             <div className="flex items-center justify-between mb-0.5">
               <label className="text-[12px] font-normal text-zinc-400 block">重量(g)</label>
@@ -559,6 +553,21 @@ export default function GearItemCard({
             />
           </div>
 
+          {/* 🎯 数量入力欄（フォーム内に統合） */}
+          <div>
+            <label className="text-[12px] font-normal text-zinc-400 block mb-0.5">数量</label>
+            <input
+              type="number"
+              min="1"
+              step="1"
+              value={editQuantity}
+              onChange={(e) => setEditQuantity(Math.max(1, Number(e.target.value) || 1))}
+              className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2.5 py-1.5 text-[12px] text-white font-mono tabular-nums text-right focus:border-[#FF5500] focus:outline-none font-normal"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           <div>
             <label className="text-[12px] font-normal text-zinc-400 block mb-0.5">価格(円)</label>
             <input
@@ -570,9 +579,6 @@ export default function GearItemCard({
               className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2.5 py-1.5 text-[12px] text-white font-mono tabular-nums text-right focus:border-[#FF5500] focus:outline-none font-normal"
             />
           </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <div>
             <label className="text-[12px] font-normal text-zinc-400 block mb-0.5">購入時期</label>
             <input
