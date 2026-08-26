@@ -125,7 +125,7 @@ export default function WeightsSummary({
   };
 
   return (
-    // 🎯 sticky top-2 z-30 と背景の半透明ブラー(backdrop-blur-md)でスクロール時も常時上部固定
+    // 🎯 sticky top-2 z-30 で常時上部固定
     <section className="sticky top-2 z-30 bg-[#18181B]/95 backdrop-blur-md border border-zinc-800 rounded-2xl p-3.5 sm:p-4 shadow-2xl space-y-3 w-full overflow-hidden transition-all duration-200">
       {/* ヘッダー */}
       <div
@@ -160,7 +160,7 @@ export default function WeightsSummary({
         </button>
       </div>
 
-      {/* 【常時上部に表示】目標重量ゲージ＆プログレスバー */}
+      {/* 【常時表示】目標重量ゲージ＆プログレスバー */}
       <div className="bg-[#27272A]/70 hover:bg-[#27272A] border border-zinc-700/60 hover:border-zinc-600 rounded-xl p-2.5 sm:p-3 space-y-1.5 transition-all duration-200">
         <div className="flex items-center justify-between text-[11px] sm:text-[12px] gap-2">
           <div className="flex items-center gap-1.5 text-zinc-300 min-w-0">

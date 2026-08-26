@@ -440,7 +440,7 @@ export default function Home() {
   const currentSelectedCamp = camps.find((c) => c.id === selectedCampId);
 
   return (
-    <main className="min-h-screen bg-[#09090B] text-zinc-100 p-3 sm:p-4 md:p-8 font-sans overflow-x-hidden">
+    <main className="min-h-screen bg-[#09090B] text-zinc-100 p-3 sm:p-4 md:p-8 font-sans">
       <div className="max-w-5xl mx-auto space-y-4 w-full">
         
         {/* ヘッダーエリア */}
@@ -468,9 +468,8 @@ export default function Home() {
               </h1>
             </Link>
 
-            {/* 🎯 ヘッダー右側アクションボタン群（高さ・角丸・スタイルを完全統一） */}
+            {/* ヘッダー右側アクションボタン群 */}
             <div className="flex items-center gap-1.5 shrink-0">
-              {/* 「？」使い方ボタン */}
               <button
                 type="button"
                 onClick={() => setIsHelpOpen(true)}
@@ -481,7 +480,6 @@ export default function Home() {
                 <HelpCircle className="w-4 h-4" />
               </button>
 
-              {/* 「公開 / 非公開」ボタン */}
               <button
                 type="button"
                 onClick={handleTogglePublic}
