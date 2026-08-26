@@ -227,7 +227,7 @@ export default function WeightsSummary({
             </div>
           </>
         ) : screenMode === 'review' ? (
-          /* レビューモード時：コロン・分母・点数を削除した左右対比ミニマルレイアウト */
+          /* レビューモード時 */
           <>
             <div className="flex items-center justify-between text-[11px] sm:text-[12px] font-mono tabular-nums">
               <div className="flex items-center gap-1.5 font-bold text-white min-w-0">
@@ -250,11 +250,11 @@ export default function WeightsSummary({
             </div>
           </>
         ) : (
-          /* エディット時 */
+          /* 🎯 エディット時：「:」「差分:」を削除し、「残り」を白文字に統一 */
           <>
             <div className="flex items-center justify-between text-[11px] sm:text-[12px] gap-2">
               <div className="flex items-center gap-1.5 text-zinc-300 min-w-0">
-                <span className="font-semibold text-white shrink-0">目標:</span>
+                <span className="font-semibold text-white shrink-0">目標</span>
                 {isEditingTarget ? (
                   <div className="flex items-center gap-1">
                     <input
@@ -297,9 +297,8 @@ export default function WeightsSummary({
               </div>
 
               <div className="text-right shrink-0 font-mono text-[11px] sm:text-[12px]">
-                <span className="text-zinc-400">差分: </span>
                 <span
-                  className={`font-bold ${isOverTarget ? 'text-[#EF4444]' : 'text-[#10B981]'}`}
+                  className={`font-bold ${isOverTarget ? 'text-[#EF4444]' : 'text-white'}`}
                 >
                   {isOverTarget
                     ? `+${formatWeight(outboundTotalWeight - targetGrams)} 超過`
