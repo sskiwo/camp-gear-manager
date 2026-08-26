@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { HelpCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import WeightsSummary from '@/components/WeightsSummary';
 import GearSearch from '@/components/GearSearch';
@@ -49,7 +50,6 @@ export default function Home() {
     消耗品: false,
   });
 
-  // 初回ロード時: タブ状態の復元 & 使い方ガイドの初回自動オープンチェック
   useEffect(() => {
     try {
       const savedMode = localStorage.getItem(STORAGE_KEY_SCREEN_MODE) as 'edit' | 'packing' | 'review' | null;
@@ -470,14 +470,15 @@ export default function Home() {
 
             {/* ヘッダー右側アクションボタン群 */}
             <div className="flex items-center gap-1.5 shrink-0">
+              {/* 🎯 Lucide HelpCircle アイコンに統一 */}
               <button
                 type="button"
                 onClick={() => setIsHelpOpen(true)}
-                className="w-8 h-8 rounded-xl text-sm font-bold transition border border-zinc-700 bg-zinc-800 text-zinc-200 hover:text-white hover:bg-zinc-700 cursor-pointer shadow-sm flex items-center justify-center active:scale-95 shrink-0"
+                className="w-8 h-8 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center hover:bg-zinc-700 transition cursor-pointer shadow-sm active:scale-95 shrink-0"
                 title="アプリの使い方ガイドを表示"
                 aria-label="使い方ガイド"
               >
-                ❓
+                <HelpCircle className="w-4 h-4 text-amber-400" />
               </button>
 
               <button
@@ -680,7 +681,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* 🎯 完全レスポンシブ化したサマリー */}
         <WeightsSummary
           gears={gears}
           screenMode={screenMode}
