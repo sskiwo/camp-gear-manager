@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { HelpCircle } from 'lucide-react';
+import { HelpCircle, Lock, Globe } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import WeightsSummary from '@/components/WeightsSummary';
 import GearSearch from '@/components/GearSearch';
@@ -468,29 +468,40 @@ export default function Home() {
               </h1>
             </Link>
 
-            {/* ヘッダー右側アクションボタン群 */}
+            {/* 🎯 ヘッダー右側アクションボタン群（高さ・角丸・スタイルを完全統一） */}
             <div className="flex items-center gap-1.5 shrink-0">
-              {/* 🎯 Lucide HelpCircle アイコンに統一 */}
+              {/* 「？」使い方ボタン */}
               <button
                 type="button"
                 onClick={() => setIsHelpOpen(true)}
-                className="w-8 h-8 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center hover:bg-zinc-700 transition cursor-pointer shadow-sm active:scale-95 shrink-0"
-                title="アプリの使い方ガイドを表示"
+                className="h-8 w-8 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-amber-400 border border-zinc-700 flex items-center justify-center transition cursor-pointer shadow-sm active:scale-95 shrink-0"
+                title="使い方ガイド"
                 aria-label="使い方ガイド"
               >
-                <HelpCircle className="w-4 h-4 text-amber-400" />
+                <HelpCircle className="w-4 h-4" />
               </button>
 
+              {/* 「公開 / 非公開」ボタン */}
               <button
                 type="button"
                 onClick={handleTogglePublic}
-                className={`px-2.5 py-1 rounded-xl text-[11px] font-bold transition border cursor-pointer shrink-0 shadow-sm flex items-center gap-1 ${
+                className={`h-8 px-2.5 sm:px-3 rounded-xl text-[12px] font-bold transition border flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer shrink-0 ${
                   currentSelectedCamp?.is_public
-                    ? 'bg-[#10B981] text-white border-transparent hover:bg-emerald-600'
-                    : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white'
+                    ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/30'
+                    : 'bg-zinc-800 text-zinc-300 border-zinc-700 hover:bg-zinc-700 hover:text-white'
                 }`}
               >
-                <span>{currentSelectedCamp?.is_public ? '🌐 公開中' : '🔒 非公開'}</span>
+                {currentSelectedCamp?.is_public ? (
+                  <>
+                    <Globe className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>公開中</span>
+                  </>
+                ) : (
+                  <>
+                    <Lock className="w-3.5 h-3.5 text-zinc-400" />
+                    <span>非公開</span>
+                  </>
+                )}
               </button>
             </div>
           </div>

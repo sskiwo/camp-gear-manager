@@ -126,7 +126,7 @@ export default function WeightsSummary({
 
   return (
     <section className="bg-[#18181B] border border-zinc-800 rounded-2xl p-4 sm:p-5 shadow-xl space-y-3.5 w-full overflow-hidden">
-      {/* ヘッダー（パッキング中バッジを削除し、見出しと開閉ボタンを配置） */}
+      {/* ヘッダー */}
       <div className="flex items-center justify-between gap-2 border-b border-zinc-800/80 pb-2.5">
         <div className="flex items-center gap-2.5 min-w-0">
           <h2 className="text-[17px] sm:text-[18px] font-bold text-white tracking-tight shrink-0 whitespace-nowrap">
@@ -144,15 +144,15 @@ export default function WeightsSummary({
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className="w-8 h-8 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white flex items-center justify-center transition cursor-pointer shrink-0"
+          className="h-8 w-8 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-zinc-700 flex items-center justify-center transition cursor-pointer shrink-0 active:scale-95"
           aria-label="詳細サマリーを開閉"
-          title={isOpen ? "詳細サマリーを折りたたむ" : "詳細サマリーを展開"}
+          title={isOpen ? "詳細を折りたたむ" : "詳細を展開"}
         >
           {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </button>
       </div>
 
-      {/* 🎯 常に表示：目標重量ゲージ＆プログレスバー */}
+      {/* 🎯 【常時表示】目標重量ゲージ＆プログレスバー */}
       <div className="bg-[#27272A]/70 border border-zinc-700/60 rounded-xl p-3 sm:p-3.5 space-y-2">
         <div className="flex items-center justify-between text-[11px] sm:text-[12px] gap-2">
           <div className="flex items-center gap-1.5 text-zinc-300 min-w-0">
@@ -219,7 +219,7 @@ export default function WeightsSummary({
         </div>
       </div>
 
-      {/* 🎯 開閉対象：詳細サマリー（3分割カード & 積載バランス） */}
+      {/* 🎯 【開閉対象】3分割サマリーカード ＆ 積載バランス */}
       {isOpen && (
         <div className="space-y-3.5 pt-0.5">
           {/* 3分割サマリーカード */}
@@ -274,7 +274,7 @@ export default function WeightsSummary({
             </div>
           </div>
 
-          {/* 積載バランスセクション */}
+          {/* 積載バランス */}
           <div className="space-y-2 pt-1 border-t border-zinc-800/80">
             <span className="text-[12px] font-bold text-zinc-300 block">積載バランス</span>
 

@@ -330,7 +330,6 @@ export default function GearList({
         </div>
       )}
 
-      {/* 🎯 配色と階層を整理したレビュー案内カード */}
       {screenMode === 'review' && (
         <div className="bg-[#27272A]/40 border border-zinc-700/60 p-3.5 rounded-2xl space-y-1.5">
           <div className="flex items-center gap-2">
@@ -345,7 +344,7 @@ export default function GearList({
         </div>
       )}
 
-      {/* パッキング進捗バー */}
+      {/* 🎯 パッキング進捗バー（エメラルドグリーン #10B981 に統一） */}
       {screenMode === 'packing' && totalCount > 0 && (
         <div className="bg-[#27272A]/80 p-3.5 rounded-2xl border border-zinc-700/70 space-y-2 shadow-inner">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -363,7 +362,7 @@ export default function GearList({
                 onClick={() => setFilterMode(filterMode === 'all' ? 'unpacked' : 'all')}
                 className={`text-[12px] font-normal px-2.5 py-1 rounded-lg border transition cursor-pointer ${
                   filterMode === 'unpacked'
-                    ? 'bg-[#FF5500] text-white border-[#FF5500] font-bold'
+                    ? 'bg-[#10B981] text-white border-[#10B981] font-bold'
                     : 'bg-zinc-800 text-zinc-300 border-zinc-700 hover:text-white'
                 }`}
               >
@@ -384,7 +383,7 @@ export default function GearList({
 
           <div className="w-full bg-zinc-800 rounded-full h-2.5 overflow-hidden border border-zinc-700">
             <div
-              className="bg-[#FF5500] h-2.5 rounded-full transition-all duration-300 shadow-sm"
+              className="bg-[#10B981] h-2.5 rounded-full transition-all duration-300 shadow-sm"
               style={{ width: `${totalCount > 0 ? (packedCount / totalCount) * 100 : 0}%` }}
             />
           </div>
