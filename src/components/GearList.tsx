@@ -278,7 +278,7 @@ export default function GearList({
             : `キャンプ振り返り (${selectedGears.length})`}
         </h2>
 
-        {/* 🎯 時系列順タブ: ① ✏️ ギア編集 ➔ ② 🎒 パッキング ➔ ③ ⛺ 振り返り */}
+        {/* 時系列順タブ: ① ✏️ ギア編集 ➔ ② 🎒 パッキング ➔ ③ ⛺ 振り返り */}
         <div className="grid grid-cols-3 gap-1 bg-[#09090B] p-1 rounded-xl border border-zinc-800 w-full sm:w-auto">
           <button
             onClick={() => handleModeChange('edit')}
@@ -522,7 +522,7 @@ export default function GearList({
                         onToggleSelected={onToggleSelected}
                         onToggleUnusedInReview={handleToggleUnused}
                         onUpdateGear={onUpdateGear}
-                        onDeleteGear={deleteGear}
+                        onDeleteGear={onDeleteGear}
                       />
                     ))
                   )}
