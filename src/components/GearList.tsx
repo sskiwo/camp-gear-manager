@@ -267,7 +267,6 @@ export default function GearList({
     <section className="bg-[#18181B] p-4 md:p-6 rounded-2xl border border-zinc-800 space-y-4 shadow-xl">
       {/* リストヘッダー */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-3">
-        {/* 🎯 セクション見出しを「レビュー」に更新 */}
         <h2 className="text-[18px] font-bold text-zinc-100 flex items-center gap-1.5">
           {screenMode === 'edit'
             ? `ギア選定 (${totalCount} / ${gears.length})`
@@ -276,7 +275,7 @@ export default function GearList({
             : `レビュー (${selectedGears.length})`}
         </h2>
 
-        {/* 🎯 モード切替タブ：第3タブを「⛺ レビュー」に更新 */}
+        {/* モード切替タブ */}
         <div className="grid grid-cols-3 gap-1 bg-[#09090B] p-1 rounded-xl border border-zinc-800 w-full sm:w-auto">
           <button
             onClick={() => handleModeChange('edit')}
@@ -331,16 +330,17 @@ export default function GearList({
         </div>
       )}
 
+      {/* 🎯 配色と階層を整理したレビュー案内カード */}
       {screenMode === 'review' && (
-        <div className="bg-amber-950/30 border border-amber-800/60 p-3.5 rounded-2xl space-y-1.5">
+        <div className="bg-[#27272A]/40 border border-zinc-700/60 p-3.5 rounded-2xl space-y-1.5">
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
-            <span className="text-[12px] font-bold text-amber-300">
+            <span className="text-[13px] font-bold text-white">
               キャンプお疲れ様でした！持参ギアのレビューを行いましょう
             </span>
           </div>
           <p className="text-[12px] text-zinc-300 leading-relaxed font-normal">
-            持っていったが<strong className="text-amber-400 font-bold">「使わなかった（未使用）」ギアのチェック（✅）をタップして外してください</strong>。完了すると次回の軽量化データに反映されます。
+            持っていったが<span className="text-amber-400 font-bold">「使わなかった（未使用）」</span>ギアのチェック（✅）を外してください。完了すると次回の軽量化データに反映されます。
           </p>
         </div>
       )}
