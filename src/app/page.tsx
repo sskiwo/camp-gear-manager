@@ -440,17 +440,17 @@ export default function Home() {
   const currentSelectedCamp = camps.find((c) => c.id === selectedCampId);
 
   return (
-    <main className="min-h-screen bg-[#09090B] text-zinc-100 p-3 sm:p-4 md:p-8 font-sans">
-      <div className="max-w-5xl mx-auto space-y-4">
+    <main className="min-h-screen bg-[#09090B] text-zinc-100 p-3 sm:p-4 md:p-8 font-sans overflow-x-hidden">
+      <div className="max-w-5xl mx-auto space-y-4 w-full">
         
         {/* ヘッダーエリア */}
-        <header className="border-b border-zinc-800 pb-3 space-y-3">
-          <div className="flex items-center justify-between gap-2">
+        <header className="border-b border-zinc-800 pb-3 space-y-3 w-full">
+          <div className="flex items-center justify-between gap-2 w-full">
             
-            {/* 🎯 ヘッダーロゴ＆タイトル（shrink-0 & whitespace-nowrap で文字切れ防止） */}
+            {/* ヘッダーロゴ＆タイトル */}
             <Link
               href="/"
-              className="flex items-center gap-2 whitespace-nowrap shrink-0 hover:opacity-85 transition-opacity cursor-pointer group"
+              className="flex items-center gap-2 whitespace-nowrap shrink-0 hover:opacity-85 transition-opacity cursor-pointer group min-w-0"
               title="トップページを表示"
             >
               <div className="relative w-8 h-8 sm:w-10 sm:h-10 shrink-0 drop-shadow-md transition-transform group-hover:scale-105">
@@ -468,9 +468,8 @@ export default function Home() {
               </h1>
             </Link>
 
-            {/* 🎯 ヘッダー右側アクションボタン群（コンパクト化） */}
+            {/* ヘッダー右側アクションボタン群 */}
             <div className="flex items-center gap-1.5 shrink-0">
-              {/* 使い方ボタン（アイコン化 w-8 h-8） */}
               <button
                 type="button"
                 onClick={() => setIsHelpOpen(true)}
@@ -481,7 +480,6 @@ export default function Home() {
                 ❓
               </button>
 
-              {/* 公開 / 非公開ボタン（px-2.5 py-1 text-[11px] でスリム化） */}
               <button
                 type="button"
                 onClick={handleTogglePublic}
@@ -496,15 +494,15 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between gap-2 bg-[#18181B] px-3.5 py-2.5 rounded-xl border border-zinc-800 shadow-sm">
+          <div className="flex items-center justify-between gap-2 bg-[#18181B] px-3.5 py-2.5 rounded-xl border border-zinc-800 shadow-sm w-full">
             <div className="flex-1 min-w-0">
               <select
                 value={selectedCampId}
                 onChange={(e) => setSelectedCampId(e.target.value)}
-                className="w-full bg-transparent text-white text-[18px] font-bold focus:outline-none cursor-pointer truncate"
+                className="w-full bg-transparent text-white text-[16px] sm:text-[18px] font-bold focus:outline-none cursor-pointer truncate"
               >
                 {camps.map((camp) => (
-                  <option key={camp.id} value={camp.id} className="bg-[#18181B] text-white text-[18px] font-bold">
+                  <option key={camp.id} value={camp.id} className="bg-[#18181B] text-white text-[16px] sm:text-[18px] font-bold">
                     {camp.title}
                   </option>
                 ))}
@@ -524,7 +522,7 @@ export default function Home() {
         </header>
 
         {isEditCampOpen && (
-          <div className="bg-[#18181B] border border-[#FF5500]/50 p-4 rounded-2xl space-y-4 shadow-2xl animate-fade-in">
+          <div className="bg-[#18181B] border border-[#FF5500]/50 p-4 rounded-2xl space-y-4 shadow-2xl animate-fade-in w-full">
             <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
               <h3 className="text-[14px] font-semibold text-white">キャンプ設定・管理</h3>
               <button
@@ -576,7 +574,7 @@ export default function Home() {
         )}
 
         {isAddCampOpen && (
-          <div className="bg-[#18181B] border border-[#FF5500]/50 p-5 rounded-2xl space-y-4 shadow-2xl animate-fade-in">
+          <div className="bg-[#18181B] border border-[#FF5500]/50 p-5 rounded-2xl space-y-4 shadow-2xl animate-fade-in w-full">
             <h3 className="text-[14px] font-semibold text-white">新しいキャンプを追加</h3>
 
             <div className="space-y-1">
@@ -682,6 +680,7 @@ export default function Home() {
           </div>
         )}
 
+        {/* 🎯 完全レスポンシブ化したサマリー */}
         <WeightsSummary
           gears={gears}
           screenMode={screenMode}
@@ -713,7 +712,6 @@ export default function Home() {
 
         <CsvManager gears={gears} selectedCampId={selectedCampId} onGearsUpdated={fetchGears} />
 
-        {/* 使い方ガイドモーダル */}
         <HelpGuideModal
           isOpen={isHelpOpen}
           onClose={() => setIsHelpOpen(false)}
