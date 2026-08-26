@@ -60,22 +60,29 @@ export default function WeightsSummary({
     }
   };
 
+  // 持参対象ギア（お留守番を除く）
   const selectedGears = gears.filter((g) => g.is_selected !== false);
 
+  // 行き総重量（満載時）
   const outboundTotalWeight = selectedGears.reduce(
     (sum, g) => sum + (Number(g.weight) || 0) * (Number(g.quantity) || 1),
     0
   );
 
+  // 帰り総重量（消耗品を引いた重量）
   const inboundTotalWeight = selectedGears
     .filter((g) => !g.is_consumable)
     .reduce((sum, g) => sum + (Number(g.weight) || 0) * (Number(g.quantity) || 1), 0);
 
+  // レビュー用: 実使用重量・未使用重量
   const unusedTotalWeight = selectedGears
     .filter((g) => unusedGearIds.has(g.id))
     .reduce((sum, g) => sum + (Number(g.weight) || 0) * (Number(g.quantity) || 1), 0);
 
   const usedTotalWeight = Math.max(0, outboundTotalWeight - unusedTotalWeight);
+
+  // レビューモード時は実使用重量を基準にプログレスバーを計算
+  const currentTotalWeight = screenMode === 'review' ? usedTotalWeight : outboundTotalWeight;
 
   const totalPrice = selectedGears.reduce(
     (sum, g) => sum + (Number(g.price) || 0) * (Number(g.quantity) || 1),
@@ -83,10 +90,11 @@ export default function WeightsSummary({
   );
 
   const targetGrams = (targetKg || 15.0) * 1000;
-  const currentTotalWeight = outboundTotalWeight;
   const progressRatio = targetGrams > 0 ? Math.min(100, (currentTotalWeight / targetGrams) * 100) : 0;
+  const unusedRatio = targetGrams > 0 && screenMode === 'review' ? Math.min(100 - progressRatio, (unusedTotalWeight / targetGrams) * 100) : 0;
   const isOverTarget = currentTotalWeight > targetGrams;
 
+  // カテゴリ別重量集計（レビューモード時は未使用品を除外した実使用重量で集計）
   const categoryWeights: Record<string, number> = {
     ベース: 0,
     調理: 0,
@@ -96,9 +104,15 @@ export default function WeightsSummary({
   };
 
   selectedGears.forEach((g) => {
+    // レビューモードで未使用チェックされている場合は除外
+    if (screenMode === 'review' && unusedGearIds.has(g.id)) {
+      return;
+    }
     const cat = normalizeCategory(g.category, g.is_consumable);
     categoryWeights[cat] += (Number(g.weight) || 0) * (Number(g.quantity) || 1);
   });
+
+  const displayTotalCategoryWeight = screenMode === 'review' ? usedTotalWeight : outboundTotalWeight;
 
   const formatWeight = (grams: number) => {
     if (grams >= 1000) {
@@ -125,13 +139,12 @@ export default function WeightsSummary({
   };
 
   return (
-    // 🎯 sticky top-2 z-30 で常時上部固定
     <section className="sticky top-2 z-30 bg-[#18181B]/95 backdrop-blur-md border border-zinc-800 rounded-2xl p-3.5 sm:p-4 shadow-2xl space-y-3 w-full overflow-hidden transition-all duration-200">
       {/* ヘッダー */}
       <div
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center justify-between gap-2 border-b border-zinc-800/80 pb-2 cursor-pointer select-none group/header hover:opacity-90 transition-opacity"
-        title={isOpen ? "クリックして詳細を折りたたむ" : "クリックして詳細を展開"}
+        title={isOpen ? 'クリックして詳細を折りたたむ' : 'クリックして詳細を展開'}
       >
         <div className="flex items-center gap-2 min-w-0">
           <h2 className="text-[16px] sm:text-[17px] font-bold text-white tracking-tight shrink-0 whitespace-nowrap group-hover/header:text-[#FF5500] transition-colors">
@@ -154,7 +167,7 @@ export default function WeightsSummary({
           }}
           className="h-7 w-7 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-zinc-700 flex items-center justify-center transition-all cursor-pointer shrink-0 active:scale-95 shadow-sm group-hover/header:border-zinc-500"
           aria-label="詳細サマリーを開閉"
-          title={isOpen ? "詳細を折りたたむ" : "詳細を展開"}
+          title={isOpen ? '詳細を折りたたむ' : '詳細を展開'}
         >
           {isOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
         </button>
@@ -200,9 +213,15 @@ export default function WeightsSummary({
           </div>
 
           {screenMode === 'review' ? (
-            <div className="text-right shrink-0 font-mono text-[11px] sm:text-[12px]">
-              <span className="text-zinc-400">未使用: </span>
-              <span className="text-amber-400 font-bold">{formatWeight(unusedTotalWeight)}</span>
+            <div className="text-right shrink-0 font-mono text-[11px] sm:text-[12px] flex items-center gap-2">
+              <div>
+                <span className="text-zinc-400">実使用: </span>
+                <span className="text-white font-bold">{formatWeight(usedTotalWeight)}</span>
+              </div>
+              <div>
+                <span className="text-zinc-400">未使用: </span>
+                <span className="text-amber-400 font-bold">{formatWeight(unusedTotalWeight)}</span>
+              </div>
             </div>
           ) : (
             <div className="text-right shrink-0 font-mono text-[11px] sm:text-[12px]">
@@ -216,14 +235,22 @@ export default function WeightsSummary({
           )}
         </div>
 
-        {/* プログレスバー */}
-        <div className="w-full bg-zinc-800 rounded-full h-2 overflow-hidden border border-zinc-700/80">
+        {/* 🎯 プログレスバー（レビュー時は実使用と未使用がリアルタイムに反映） */}
+        <div className="w-full bg-zinc-800 rounded-full h-2 overflow-hidden border border-zinc-700/80 flex">
           <div
-            className={`h-2 rounded-full transition-all duration-300 ${
+            className={`h-2 transition-all duration-300 ${
               isOverTarget ? 'bg-[#EF4444]' : 'bg-[#FF5500]'
             }`}
             style={{ width: `${progressRatio}%` }}
+            title={`実使用重量: ${formatWeight(usedTotalWeight)}`}
           />
+          {screenMode === 'review' && unusedRatio > 0 && (
+            <div
+              className="h-2 bg-amber-500/80 transition-all duration-300"
+              style={{ width: `${unusedRatio}%` }}
+              title={`未使用重量: ${formatWeight(unusedTotalWeight)}`}
+            />
+          )}
         </div>
       </div>
 
@@ -282,15 +309,24 @@ export default function WeightsSummary({
             </div>
           </div>
 
-          {/* 積載バランス */}
+          {/* 🎯 積載バランス（レビュー時は未使用品を除いた実使用割合でリアルタイム更新） */}
           <div className="space-y-1.5 pt-1 border-t border-zinc-800/80">
-            <span className="text-[11px] font-bold text-zinc-300 block">積載バランス</span>
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-zinc-300 block">
+                {screenMode === 'review' ? '実使用 積載バランス' : '積載バランス'}
+              </span>
+              {screenMode === 'review' && (
+                <span className="text-[10px] text-zinc-400 font-mono">
+                  実使用合計: {formatWeight(usedTotalWeight)}
+                </span>
+              )}
+            </div>
 
             <div className="w-full bg-zinc-800 h-2 rounded-full overflow-hidden flex border border-zinc-700">
-              {outboundTotalWeight > 0 ? (
+              {displayTotalCategoryWeight > 0 ? (
                 CATEGORIES.map((cat) => {
                   const weight = categoryWeights[cat] || 0;
-                  const percent = (weight / outboundTotalWeight) * 100;
+                  const percent = (weight / displayTotalCategoryWeight) * 100;
                   if (percent === 0) return null;
                   return (
                     <div
