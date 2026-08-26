@@ -86,7 +86,7 @@ export default function WeightsSummary({
       ? 100
       : 0;
 
-  // 🎯 レビュー用: 実使用重量・未使用重量・未使用点数
+  // レビュー用: 実使用重量・未使用重量・未使用点数
   const unusedGears = selectedGears.filter((g) => unusedGearIds.has(String(g.id)));
   const unusedCount = unusedGears.length;
   const unusedTotalWeight = unusedGears.reduce(
@@ -95,7 +95,7 @@ export default function WeightsSummary({
   );
   const usedTotalWeight = Math.max(0, outboundTotalWeight - unusedTotalWeight);
 
-  // 🎯 レビュー用ゲージ幅（持参総重量に対する実使用重量の比率）
+  // レビュー用ゲージ幅
   const reviewUsedRatio =
     outboundTotalWeight > 0
       ? Math.min(100, (usedTotalWeight / outboundTotalWeight) * 100)
@@ -112,7 +112,7 @@ export default function WeightsSummary({
     0
   );
 
-  // 🎯 カテゴリ別重量集計（レビューモード時は未使用品を除外した実使用重量で集計）
+  // カテゴリ別重量集計（レビューモード時は未使用品を除外）
   const categoryWeights: Record<string, number> = {
     ベース: 0,
     調理: 0,
@@ -136,6 +136,16 @@ export default function WeightsSummary({
       return `${(grams / 1000).toFixed(2)}kg`;
     }
     return `${Math.round(grams)}g`;
+  };
+
+  // 🎯 パッキング完了重量比率フォーマット (例: "5.79 / 8.91kg")
+  const formatPackedWeightRatio = (packedGrams: number, totalGrams: number) => {
+    if (totalGrams >= 1000) {
+      const packedVal = (packedGrams / 1000).toFixed(2);
+      const totalVal = `${(totalGrams / 1000).toFixed(2)}kg`;
+      return `${packedVal} / ${totalVal}`;
+    }
+    return `${Math.round(packedGrams)} / ${Math.round(totalGrams)}g`;
   };
 
   const getCategoryIcon = (catName: string) => {
@@ -193,13 +203,13 @@ export default function WeightsSummary({
       {/* 【常時表示】モードに応じたプログレスバー */}
       <div className="bg-[#27272A]/70 hover:bg-[#27272A] border border-zinc-700/60 hover:border-zinc-600 rounded-xl p-2.5 sm:p-3 space-y-1.5 transition-all duration-200">
         {screenMode === 'packing' ? (
-          /* パッキングモード時：完了重量 / 総重量 */
+          /* 🎯 パッキングモード時：「:」なし ＆ 左側「kg」なし */
           <>
             <div className="flex items-center justify-between text-[11px] sm:text-[12px] gap-2 font-mono tabular-nums">
               <div className="flex items-center gap-1.5 text-zinc-300 font-bold min-w-0">
-                <span className="text-white font-sans font-semibold shrink-0">パッキング完了:</span>
+                <span className="text-white font-sans font-semibold shrink-0">パッキング完了</span>
                 <span>
-                  {formatWeight(packedTotalWeight)} / {formatWeight(outboundTotalWeight)}
+                  {formatPackedWeightRatio(packedTotalWeight, outboundTotalWeight)}
                 </span>
               </div>
 
@@ -218,7 +228,7 @@ export default function WeightsSummary({
             </div>
           </>
         ) : screenMode === 'review' ? (
-          /* 🎯 レビューモード時：実使用（緑）の削り出し方式 */
+          /* レビューモード時：実使用（緑）の削り出し方式 */
           <>
             <div className="flex items-center justify-between text-[11px] sm:text-[12px] gap-2 font-mono tabular-nums">
               <div className="flex items-center gap-1.5 text-zinc-300 font-bold min-w-0">
