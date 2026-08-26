@@ -39,25 +39,22 @@ const normalizeCategory = (
 };
 
 export default function WeightsSummary({
-  gears,
+  gears = [],
   screenMode = 'edit',
   unusedGearIds = new Set(),
   onCategoryClick,
-  targetWeightKg: externalTargetKg,
+  targetWeightKg = 15.0,
   onTargetWeightChange,
 }: WeightsSummaryProps) {
   const [isOpen, setIsOpen] = useState(true);
   const [isEditingTarget, setIsEditingTarget] = useState(false);
-  const [internalTargetKg, setInternalTargetKg] = useState<number>(15.0);
+  const [tempTargetInput, setTempTargetInput] = useState<number>(targetWeightKg);
 
-  const targetKg = externalTargetKg !== undefined ? externalTargetKg : internalTargetKg;
-
-  const handleTargetChange = (newVal: number) => {
+  const handleSaveTarget = () => {
     if (onTargetWeightChange) {
-      onTargetWeightChange(newVal);
-    } else {
-      setInternalTargetKg(newVal);
+      onTargetWeightChange(Number(tempTargetInput) || 15.0);
     }
+    setIsEditingTarget(false);
   };
 
   // 持参対象ギア（お留守番を除く）
@@ -76,7 +73,7 @@ export default function WeightsSummary({
     .reduce((sum, g) => sum + (Number(g.weight) || 0) * (Number(g.quantity) || 1), 0);
 
   // 🎯 パッキング進捗用: パッキング完了重量 & 完了点数
-  const packedGears = selectedGears.filter((g) => g.is_packed);
+  const packedGears = selectedGears.filter((g) => Boolean(g.is_packed));
   const packedCount = packedGears.length;
   const packedTotalWeight = packedGears.reduce(
     (sum, g) => sum + (Number(g.weight) || 0) * (Number(g.quantity) || 1),
@@ -89,16 +86,16 @@ export default function WeightsSummary({
       ? 100
       : 0;
 
-  // レビュー用: 実使用重量・未使用重量
+  // 🎯 レビュー用: 実使用重量・未使用重量 (IDを文字列比較で完全に一致判定)
   const unusedTotalWeight = selectedGears
-    .filter((g) => unusedGearIds.has(g.id))
+    .filter((g) => unusedGearIds.has(String(g.id)))
     .reduce((sum, g) => sum + (Number(g.weight) || 0) * (Number(g.quantity) || 1), 0);
 
   const usedTotalWeight = Math.max(0, outboundTotalWeight - unusedTotalWeight);
 
   // 目標プログレス計算
   const currentTotalWeight = screenMode === 'review' ? usedTotalWeight : outboundTotalWeight;
-  const targetGrams = (targetKg || 15.0) * 1000;
+  const targetGrams = (targetWeightKg || 15.0) * 1000;
   const progressRatio = targetGrams > 0 ? Math.min(100, (currentTotalWeight / targetGrams) * 100) : 0;
   const unusedRatio =
     targetGrams > 0 && screenMode === 'review'
@@ -122,7 +119,7 @@ export default function WeightsSummary({
   };
 
   selectedGears.forEach((g) => {
-    if (screenMode === 'review' && unusedGearIds.has(g.id)) {
+    if (screenMode === 'review' && unusedGearIds.has(String(g.id))) {
       return;
     }
     const cat = normalizeCategory(g.category, g.is_consumable);
@@ -190,10 +187,9 @@ export default function WeightsSummary({
         </button>
       </div>
 
-      {/* 【常時表示】モードに応じた重量プログレスバー */}
+      {/* 【常時表示】プログレスバー */}
       <div className="bg-[#27272A]/70 hover:bg-[#27272A] border border-zinc-700/60 hover:border-zinc-600 rounded-xl p-2.5 sm:p-3 space-y-1.5 transition-all duration-200">
         {screenMode === 'packing' ? (
-          /* 🎯 パッキングモード時：簡潔な「完了重量 / 総重量」と「完了点数 / 総点数」 */
           <>
             <div className="flex items-center justify-between text-[11px] sm:text-[12px] gap-2 font-mono tabular-nums">
               <div className="flex items-center gap-1.5 text-zinc-300 font-bold min-w-0">
@@ -218,7 +214,6 @@ export default function WeightsSummary({
             </div>
           </>
         ) : (
-          /* エディット・レビュー時：目標重量ゲージ */
           <>
             <div className="flex items-center justify-between text-[11px] sm:text-[12px] gap-2">
               <div className="flex items-center gap-1.5 text-zinc-300 min-w-0">
@@ -230,15 +225,15 @@ export default function WeightsSummary({
                       step="0.5"
                       min="1"
                       max="50"
-                      value={targetKg}
-                      onChange={(e) => handleTargetChange(Number(e.target.value))}
+                      value={tempTargetInput}
+                      onChange={(e) => setTempTargetInput(Number(e.target.value))}
                       className="w-16 bg-[#18181B] border border-[#FF5500] text-white rounded px-1.5 py-0.5 text-[11px] font-mono font-bold focus:outline-none"
                       autoFocus
                     />
                     <span className="text-zinc-400 font-bold">kg</span>
                     <button
                       type="button"
-                      onClick={() => setIsEditingTarget(false)}
+                      onClick={handleSaveTarget}
                       className="px-2 py-0.5 bg-[#FF5500] hover:bg-[#e04c00] text-white rounded text-[10px] font-bold cursor-pointer transition active:scale-95"
                     >
                       完了
@@ -247,12 +242,15 @@ export default function WeightsSummary({
                 ) : (
                   <button
                     type="button"
-                    onClick={() => setIsEditingTarget(true)}
+                    onClick={() => {
+                      setTempTargetInput(targetWeightKg);
+                      setIsEditingTarget(true);
+                    }}
                     className="flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-zinc-700/70 font-mono font-bold text-white transition cursor-pointer group/edit"
                     title="目標重量を変更"
                   >
                     <span className="group-hover/edit:text-[#FF5500] transition-colors">
-                      {targetKg.toFixed(2)} kg
+                      {(targetWeightKg || 15.0).toFixed(2)} kg
                     </span>
                     <span className="text-[10px] text-zinc-400 group-hover/edit:text-[#FF5500] transition-colors">
                       ✏️
@@ -309,7 +307,6 @@ export default function WeightsSummary({
       {/* 【開閉対象】3分割サマリーカード ＆ 積載バランス */}
       {isOpen && (
         <div className="space-y-3 pt-0.5 animate-fade-in">
-          {/* 🎯 3分割サマリーカード（ラベルをシンプル化） */}
           <div className="grid grid-cols-3 gap-1.5 sm:gap-2 text-center">
             {screenMode === 'review' ? (
               <>
@@ -361,7 +358,6 @@ export default function WeightsSummary({
             </div>
           </div>
 
-          {/* 積載バランス */}
           <div className="space-y-1.5 pt-1 border-t border-zinc-800/80">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-bold text-zinc-300 block">

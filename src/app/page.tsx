@@ -21,6 +21,7 @@ type Camp = {
 };
 
 const STORAGE_KEY_SCREEN_MODE = 'camp_active_screen_mode';
+const STORAGE_KEY_TARGET_WEIGHT = 'camp_target_weight_kg';
 
 export default function Home() {
   const [camps, setCamps] = useState<Camp[]>([]);
@@ -30,6 +31,7 @@ export default function Home() {
 
   const [screenMode, setScreenMode] = useState<'edit' | 'packing' | 'review'>('edit');
   const [unusedGearIds, setUnusedGearIds] = useState<Set<string>>(new Set());
+  const [targetWeightKg, setTargetWeightKg] = useState<number>(15.0);
 
   const [isAddCampOpen, setIsAddCampOpen] = useState(false);
   const [newCampTitle, setNewCampTitle] = useState('');
@@ -39,7 +41,6 @@ export default function Home() {
 
   const [isEditCampOpen, setIsEditCampOpen] = useState(false);
   const [editCampTitle, setEditCampTitle] = useState('');
-
   const [isHelpOpen, setIsHelpOpen] = useState(false);
 
   const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({
@@ -50,6 +51,7 @@ export default function Home() {
     消耗品: false,
   });
 
+  // 初回ロード時の設定復元
   useEffect(() => {
     try {
       const savedMode = localStorage.getItem(STORAGE_KEY_SCREEN_MODE) as 'edit' | 'packing' | 'review' | null;
@@ -57,12 +59,17 @@ export default function Home() {
         setScreenMode(savedMode);
       }
 
+      const savedWeight = localStorage.getItem(STORAGE_KEY_TARGET_WEIGHT);
+      if (savedWeight && !isNaN(Number(savedWeight))) {
+        setTargetWeightKg(Number(savedWeight));
+      }
+
       const hasSeenGuide = localStorage.getItem(STORAGE_KEY_GUIDE_SEEN);
       if (!hasSeenGuide) {
         setIsHelpOpen(true);
       }
     } catch (err) {
-      console.warn('LocalStorage error:', err);
+      console.warn('LocalStorage load error:', err);
     }
   }, []);
 
@@ -71,7 +78,16 @@ export default function Home() {
     try {
       localStorage.setItem(STORAGE_KEY_SCREEN_MODE, mode);
     } catch (err) {
-      console.warn('Failed to save screen mode to localStorage:', err);
+      console.warn('Failed to save screen mode:', err);
+    }
+  };
+
+  const handleTargetWeightChange = (newTargetKg: number) => {
+    setTargetWeightKg(newTargetKg);
+    try {
+      localStorage.setItem(STORAGE_KEY_TARGET_WEIGHT, String(newTargetKg));
+    } catch (err) {
+      console.warn('Failed to save target weight:', err);
     }
   };
 
@@ -211,10 +227,7 @@ export default function Home() {
           is_weight_estimated: g.is_weight_estimated || false,
         }));
 
-        const { error: cloneErr } = await supabase.from('gears').insert(clonedGears);
-        if (cloneErr) {
-          console.error('Clone Gears Error:', cloneErr);
-        }
+        await supabase.from('gears').insert(clonedGears);
       }
     }
 
@@ -337,7 +350,7 @@ export default function Home() {
     if (cat === 'その他・日用品') cat = 'その他';
     if (cat === '食料・消耗品') cat = '消耗品';
 
-    await supabase.from('gears').insert([{
+    const newGearData = {
       camp_id: selectedCampId,
       name: fullName || item.name,
       brand: item.brand || '',
@@ -358,14 +371,20 @@ export default function Home() {
       total_used_count: 0,
       is_emergency_gear: false,
       is_weight_estimated: item.is_weight_estimated ?? false,
-    }]);
+    };
+
+    const { data } = await supabase.from('gears').insert([newGearData]).select().single();
+    if (data) {
+      setGears((prev) => [data as GearItem, ...prev]);
+    }
     fetchGears();
   };
 
+  // 🎯 即時State更新 ➔ サマリーへ瞬時反映
   const togglePacked = async (id: string, currentStatus: boolean) => {
     const nextStatus = !currentStatus;
     setGears((prev) =>
-      prev.map((g) => (g.id === id ? { ...g, is_packed: nextStatus } : g))
+      prev.map((g) => (String(g.id) === String(id) ? { ...g, is_packed: nextStatus } : g))
     );
 
     const { error } = await supabase.from('gears').update({ is_packed: nextStatus }).eq('id', id);
@@ -378,10 +397,10 @@ export default function Home() {
   const toggleSelected = async (id: string, currentStatus: boolean) => {
     const nextStatus = !currentStatus;
     setGears((prev) =>
-      prev.map((g) => (g.id === id ? { ...g, is_selected: nextStatus } : g))
+      prev.map((g) => (String(g.id) === String(id) ? { ...g, is_selected: nextStatus } : g))
     );
     setAllGearsInAccount((prev) =>
-      prev.map((g) => (g.id === id ? { ...g, is_selected: nextStatus } : g))
+      prev.map((g) => (String(g.id) === String(id) ? { ...g, is_selected: nextStatus } : g))
     );
 
     const { error } = await supabase.from('gears').update({ is_selected: nextStatus }).eq('id', id);
@@ -391,13 +410,15 @@ export default function Home() {
     }
   };
 
+  // 🎯 レビュー時の未使用チェックを確実に新規SetとしてState更新
   const handleToggleUnusedGear = (gearId: string) => {
+    const cleanId = String(gearId);
     setUnusedGearIds((prev) => {
       const next = new Set(prev);
-      if (next.has(gearId)) {
-        next.delete(gearId);
+      if (next.has(cleanId)) {
+        next.delete(cleanId);
       } else {
-        next.add(gearId);
+        next.add(cleanId);
       }
       return next;
     });
@@ -406,7 +427,7 @@ export default function Home() {
   const updateQuantity = async (id: string, currentQty: number, delta: number) => {
     const newQty = Math.max(1, currentQty + delta);
     setGears((prev) =>
-      prev.map((g) => (g.id === id ? { ...g, quantity: newQty } : g))
+      prev.map((g) => (String(g.id) === String(id) ? { ...g, quantity: newQty } : g))
     );
 
     await supabase.from('gears').update({ quantity: newQty }).eq('id', id);
@@ -414,7 +435,7 @@ export default function Home() {
 
   const updateGear = async (id: string, updateData: any) => {
     setGears((prev) =>
-      prev.map((g) => (g.id === id ? { ...g, ...updateData } : g))
+      prev.map((g) => (String(g.id) === String(id) ? { ...g, ...updateData } : g))
     );
 
     const { error } = await supabase.from('gears').update(updateData).eq('id', id);
@@ -428,7 +449,7 @@ export default function Home() {
   };
 
   const deleteGear = async (id: string) => {
-    setGears((prev) => prev.filter((g) => g.id !== id));
+    setGears((prev) => prev.filter((g) => String(g.id) !== String(id)));
     await supabase.from('gears').delete().eq('id', id);
     fetchGears();
   };
@@ -447,7 +468,6 @@ export default function Home() {
         <header className="border-b border-zinc-800 pb-3 space-y-3 w-full">
           <div className="flex items-center justify-between gap-2 w-full">
             
-            {/* ヘッダーロゴ＆タイトル */}
             <Link
               href="/"
               className="flex items-center gap-2 whitespace-nowrap shrink-0 hover:opacity-85 transition-opacity cursor-pointer group min-w-0"
@@ -468,7 +488,6 @@ export default function Home() {
               </h1>
             </Link>
 
-            {/* ヘッダー右側アクションボタン群 */}
             <div className="flex items-center gap-1.5 shrink-0">
               <button
                 type="button"
@@ -690,11 +709,14 @@ export default function Home() {
           </div>
         )}
 
+        {/* 🎯 サマリーコンポーネント（全パラメータを完全に同期） */}
         <WeightsSummary
           gears={gears}
           screenMode={screenMode}
           unusedGearIds={unusedGearIds}
           onCategoryClick={scrollToCategory}
+          targetWeightKg={targetWeightKg}
+          onTargetWeightChange={handleTargetWeightChange}
         />
         
         <GearSearch onAddGear={handleAddGear} />
@@ -707,6 +729,7 @@ export default function Home() {
           onScreenModeChange={handleScreenModeChange}
           unusedGearIds={unusedGearIds}
           onToggleUnusedGear={handleToggleUnusedGear}
+          targetWeightKg={targetWeightKg}
           openCategories={openCategories}
           onToggleCategoryOpen={toggleCategoryOpen}
           onTogglePacked={togglePacked}
