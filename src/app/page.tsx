@@ -413,17 +413,17 @@ export default function Home() {
       <div className="max-w-5xl mx-auto space-y-4">
         
         {/* ヘッダーエリア */}
-        <header className="border-b border-zinc-800 pb-2.5 space-y-2">
-          <div className="flex items-center justify-between gap-2">
+        <header className="border-b border-zinc-800 pb-3 space-y-3">
+          <div className="flex items-center justify-between gap-3">
             
-            {/* 🎯 ヘッダーロゴ：バックパック新ロゴSVGを配置 */}
-            <h1 className="text-sm sm:text-base font-black text-white tracking-tight flex items-center gap-2 whitespace-nowrap overflow-hidden truncate">
-              <div className="relative w-6 h-6 sm:w-7 sm:h-7 shrink-0 rounded-lg overflow-hidden shadow-sm">
+            {/* 🎯 ヘッダーロゴ：アイコンとタイトルを存在感あるサイズに拡大 */}
+            <h1 className="text-[17px] sm:text-[22px] font-black text-white tracking-tight flex items-center gap-2.5 whitespace-nowrap overflow-hidden truncate">
+              <div className="relative w-8 h-8 sm:w-10 sm:h-10 shrink-0 rounded-xl overflow-hidden shadow-md border border-stone-300/40">
                 <Image
                   src="/logo.svg"
                   alt="Camp Gear Manager Logo"
                   fill
-                  sizes="28px"
+                  sizes="40px"
                   className="object-contain"
                   priority
                 />
@@ -435,17 +435,17 @@ export default function Home() {
 
             <button
               onClick={handleTogglePublic}
-              className={`px-2.5 py-1 rounded-xl text-[12px] font-bold transition border cursor-pointer shrink-0 shadow-sm ${
+              className={`px-3 py-1.5 rounded-xl text-[12px] font-bold transition border cursor-pointer shrink-0 shadow-sm flex items-center gap-1.5 ${
                 currentSelectedCamp?.is_public
                   ? 'bg-[#10B981] text-white border-transparent hover:bg-emerald-600'
                   : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white'
               }`}
             >
-              {currentSelectedCamp?.is_public ? '🌐 公開中' : '🔒 非公開'}
+              <span>{currentSelectedCamp?.is_public ? '🌐 公開中' : '🔒 非公開'}</span>
             </button>
           </div>
 
-          <div className="flex items-center justify-between gap-2 bg-[#18181B] px-3 py-2 rounded-xl border border-zinc-800 shadow-sm">
+          <div className="flex items-center justify-between gap-2 bg-[#18181B] px-3.5 py-2.5 rounded-xl border border-zinc-800 shadow-sm">
             <div className="flex-1 min-w-0">
               <select
                 value={selectedCampId}
