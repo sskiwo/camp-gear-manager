@@ -115,9 +115,35 @@ export default function GearList({
   const [isApplyingNext, setIsApplyingNext] = useState(false);
   const [reviewResultModal, setReviewResultModal] = useState<ReviewResultData | null>(null);
 
+  // 持参対象ギア
   const selectedGears = gears.filter((g) => g.is_selected !== false);
-  const packedCount = selectedGears.filter((g) => g.is_packed).length;
   const totalCount = selectedGears.length;
+
+  // 🎯 重量ベースのパッキング進捗計算
+  const totalSelectedWeight = selectedGears.reduce(
+    (sum, g) => sum + (Number(g.weight) || 0) * (Number(g.quantity) || 1),
+    0
+  );
+
+  const packedGears = selectedGears.filter((g) => g.is_packed);
+  const packedCount = packedGears.length;
+  const packedTotalWeight = packedGears.reduce(
+    (sum, g) => sum + (Number(g.weight) || 0) * (Number(g.quantity) || 1),
+    0
+  );
+  const packingProgressRatio =
+    totalSelectedWeight > 0
+      ? Math.min(100, (packedTotalWeight / totalSelectedWeight) * 100)
+      : totalCount > 0 && packedCount === totalCount
+      ? 100
+      : 0;
+
+  const formatWeight = (grams: number) => {
+    if (grams >= 1000) {
+      return `${(grams / 1000).toFixed(2)}kg`;
+    }
+    return `${Math.round(grams)}g`;
+  };
 
   const getFilteredGears = () => {
     if (screenMode === 'packing') {
@@ -344,16 +370,20 @@ export default function GearList({
         </div>
       )}
 
-      {/* 🎯 パッキング進捗バー（エメラルドグリーン #10B981 に統一） */}
+      {/* 🎯 【重量ベース】パッキング進捗バー */}
       {screenMode === 'packing' && totalCount > 0 && (
         <div className="bg-[#27272A]/80 p-3.5 rounded-2xl border border-zinc-700/70 space-y-2 shadow-inner">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <span className="text-[12px] font-normal text-white">
-                パッキング済み:
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[12px] font-normal text-white">パッキング完了:</span>
+              <span className="text-[12px] font-bold text-white font-mono tabular-nums">
+                {formatWeight(packedTotalWeight)} / {formatWeight(totalSelectedWeight)}
               </span>
-              <span className="text-[12px] font-normal text-white font-mono tabular-nums text-right">
-                {packedCount} / {totalCount}
+              <span className="text-[12px] font-bold text-[#10B981] font-mono">
+                ({Math.round(packingProgressRatio)}%)
+              </span>
+              <span className="text-[11px] text-zinc-400 font-mono font-normal">
+                [{packedCount} / {totalCount}点]
               </span>
             </div>
 
@@ -384,7 +414,7 @@ export default function GearList({
           <div className="w-full bg-zinc-800 rounded-full h-2.5 overflow-hidden border border-zinc-700">
             <div
               className="bg-[#10B981] h-2.5 rounded-full transition-all duration-300 shadow-sm"
-              style={{ width: `${totalCount > 0 ? (packedCount / totalCount) * 100 : 0}%` }}
+              style={{ width: `${packingProgressRatio}%` }}
             />
           </div>
         </div>
@@ -478,7 +508,10 @@ export default function GearList({
                   className="flex items-center gap-1.5 sm:gap-2 text-left cursor-pointer flex-1 min-w-0 overflow-hidden"
                 >
                   <span className="text-[12px] shrink-0">{catIcon}</span>
-                  <span style={{ color: catColor }} className="font-semibold text-[14px] tracking-wide shrink-0 whitespace-nowrap">
+                  <span
+                    style={{ color: catColor }}
+                    className="font-semibold text-[14px] tracking-wide shrink-0 whitespace-nowrap"
+                  >
                     {catName}
                   </span>
                   <span className="text-[12px] text-zinc-300 font-normal shrink-0 whitespace-nowrap font-mono tabular-nums text-right">
