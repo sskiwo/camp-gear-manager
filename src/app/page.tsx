@@ -416,9 +416,9 @@ export default function Home() {
         <header className="border-b border-zinc-800 pb-3 space-y-3">
           <div className="flex items-center justify-between gap-3">
             
-            {/* 🎯 ヘッダーロゴ：アイコンとタイトルを存在感あるサイズに拡大 */}
-            <h1 className="text-[17px] sm:text-[22px] font-black text-white tracking-tight flex items-center gap-2.5 whitespace-nowrap overflow-hidden truncate">
-              <div className="relative w-8 h-8 sm:w-10 sm:h-10 shrink-0 rounded-xl overflow-hidden shadow-md border border-stone-300/40">
+            {/* 🎯 背景透過ロゴを配置 */}
+            <h1 className="text-[18px] sm:text-[22px] font-black text-white tracking-tight flex items-center gap-2.5 whitespace-nowrap overflow-hidden truncate">
+              <div className="relative w-8 h-8 sm:w-10 sm:h-10 shrink-0 drop-shadow-md">
                 <Image
                   src="/logo.svg"
                   alt="Camp Gear Manager Logo"
