@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 import WeightsSummary from '@/components/WeightsSummary';
@@ -416,7 +415,7 @@ export default function Home() {
         <header className="border-b border-zinc-800 pb-3 space-y-3">
           <div className="flex items-center justify-between gap-3">
             
-            {/* 🎯 背景透過ロゴを配置 */}
+            {/* ヘッダーロゴ */}
             <h1 className="text-[18px] sm:text-[22px] font-black text-white tracking-tight flex items-center gap-2.5 whitespace-nowrap overflow-hidden truncate">
               <div className="relative w-8 h-8 sm:w-10 sm:h-10 shrink-0 drop-shadow-md">
                 <Image
@@ -662,10 +661,8 @@ export default function Home() {
 
         <CsvManager gears={gears} selectedCampId={selectedCampId} onGearsUpdated={fetchGears} />
 
-        <footer className="pt-8 pb-10 text-center border-t border-zinc-800 space-y-3">
-          <Link href="/split-bill" className="inline-flex items-center justify-center gap-2 bg-[#FF5500] text-white px-6 py-3.5 rounded-2xl text-[12px] font-bold shadow-md hover:bg-[#e04c00] transition">
-            💰 スマート割り勘計算ページへ進む →
-          </Link>
+        {/* フッター（割り勘リンクを削除してシンプル化） */}
+        <footer className="pt-6 pb-8 text-center border-t border-zinc-800">
           <p className="text-[12px] text-zinc-500 font-normal">🏕️ Camp Gear Manager & Packing Tool</p>
         </footer>
       </div>
