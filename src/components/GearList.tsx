@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import GearItemCard, { GearItem } from './GearItemCard';
 import ReviewResultModal, { ReviewResultData } from './ReviewResultModal';
-import { CheckCircle2, Sparkles, Loader2 } from 'lucide-react';
+import { CheckCircle2, Sparkles, Loader2, RotateCcw } from 'lucide-react';
 
 type Props = {
   gears: GearItem[];
@@ -117,33 +117,8 @@ export default function GearList({
 
   // 持参対象ギア
   const selectedGears = gears.filter((g) => g.is_selected !== false);
+  const packedCount = selectedGears.filter((g) => g.is_packed).length;
   const totalCount = selectedGears.length;
-
-  // 🎯 重量ベースのパッキング進捗計算
-  const totalSelectedWeight = selectedGears.reduce(
-    (sum, g) => sum + (Number(g.weight) || 0) * (Number(g.quantity) || 1),
-    0
-  );
-
-  const packedGears = selectedGears.filter((g) => g.is_packed);
-  const packedCount = packedGears.length;
-  const packedTotalWeight = packedGears.reduce(
-    (sum, g) => sum + (Number(g.weight) || 0) * (Number(g.quantity) || 1),
-    0
-  );
-  const packingProgressRatio =
-    totalSelectedWeight > 0
-      ? Math.min(100, (packedTotalWeight / totalSelectedWeight) * 100)
-      : totalCount > 0 && packedCount === totalCount
-      ? 100
-      : 0;
-
-  const formatWeight = (grams: number) => {
-    if (grams >= 1000) {
-      return `${(grams / 1000).toFixed(2)}kg`;
-    }
-    return `${Math.round(grams)}g`;
-  };
 
   const getFilteredGears = () => {
     if (screenMode === 'packing') {
@@ -339,7 +314,7 @@ export default function GearList({
         </div>
       </div>
 
-      {/* モード別説明ガイドカード */}
+      {/* ギア編集モード ガイドカード */}
       {screenMode === 'edit' && (
         <div className="bg-[#27272A]/40 border border-zinc-700/60 p-3 rounded-xl">
           <p className="text-[12px] text-zinc-300 font-normal leading-relaxed">
@@ -348,14 +323,40 @@ export default function GearList({
         </div>
       )}
 
+      {/* 🎯 パッキングモード：スリムな操作バー（ガイド ＋ フィルター＆リセットボタン） */}
       {screenMode === 'packing' && (
-        <div className="bg-[#27272A]/40 border border-zinc-700/60 p-3 rounded-xl">
+        <div className="bg-[#27272A]/40 border border-zinc-700/60 p-2.5 sm:p-3 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
           <p className="text-[12px] text-zinc-300 font-normal leading-relaxed">
-            💡 ザックに詰めたギアにチェック（✅）を入れてください。「未チェックのみ」ボタンで残りの荷造りアイテムを絞り込めます。
+            💡 ザックに詰めたギアにチェック（✅）
           </p>
+
+          <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
+            <button
+              onClick={() => setFilterMode(filterMode === 'all' ? 'unpacked' : 'all')}
+              className={`text-[11px] sm:text-[12px] font-normal px-2.5 py-1 rounded-lg border transition cursor-pointer ${
+                filterMode === 'unpacked'
+                  ? 'bg-[#10B981] text-white border-[#10B981] font-bold shadow-sm'
+                  : 'bg-zinc-800 text-zinc-300 border-zinc-700 hover:text-white hover:bg-zinc-700'
+              }`}
+            >
+              {filterMode === 'unpacked' ? '全て表示' : '未チェックのみ'}
+            </button>
+
+            {onResetAllPacked && (
+              <button
+                onClick={onResetAllPacked}
+                className="text-[11px] sm:text-[12px] font-normal px-2.5 py-1 rounded-lg bg-zinc-800 border border-[#EF4444]/60 text-zinc-200 hover:text-white hover:bg-[#EF4444]/20 transition cursor-pointer flex items-center gap-1"
+                title="当日のパッキング完了チェックをリセットします"
+              >
+                <RotateCcw className="w-3 h-3 text-[#EF4444]" />
+                <span>リセット</span>
+              </button>
+            )}
+          </div>
         </div>
       )}
 
+      {/* レビューモード ガイドカード */}
       {screenMode === 'review' && (
         <div className="bg-[#27272A]/40 border border-zinc-700/60 p-3.5 rounded-2xl space-y-1.5">
           <div className="flex items-center gap-2">
@@ -367,56 +368,6 @@ export default function GearList({
           <p className="text-[12px] text-zinc-300 leading-relaxed font-normal">
             持っていったが<span className="text-amber-400 font-bold">「使わなかった（未使用）」</span>ギアのチェック（✅）を外してください。完了すると次回の軽量化データに反映されます。
           </p>
-        </div>
-      )}
-
-      {/* 🎯 【重量ベース】パッキング進捗バー */}
-      {screenMode === 'packing' && totalCount > 0 && (
-        <div className="bg-[#27272A]/80 p-3.5 rounded-2xl border border-zinc-700/70 space-y-2 shadow-inner">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[12px] font-normal text-white">パッキング完了:</span>
-              <span className="text-[12px] font-bold text-white font-mono tabular-nums">
-                {formatWeight(packedTotalWeight)} / {formatWeight(totalSelectedWeight)}
-              </span>
-              <span className="text-[12px] font-bold text-[#10B981] font-mono">
-                ({Math.round(packingProgressRatio)}%)
-              </span>
-              <span className="text-[11px] text-zinc-400 font-mono font-normal">
-                [{packedCount} / {totalCount}点]
-              </span>
-            </div>
-
-            <div className="flex items-center gap-1.5">
-              <button
-                onClick={() => setFilterMode(filterMode === 'all' ? 'unpacked' : 'all')}
-                className={`text-[12px] font-normal px-2.5 py-1 rounded-lg border transition cursor-pointer ${
-                  filterMode === 'unpacked'
-                    ? 'bg-[#10B981] text-white border-[#10B981] font-bold'
-                    : 'bg-zinc-800 text-zinc-300 border-zinc-700 hover:text-white'
-                }`}
-              >
-                {filterMode === 'unpacked' ? '全て表示' : '未チェックのみ'}
-              </button>
-
-              {onResetAllPacked && (
-                <button
-                  onClick={onResetAllPacked}
-                  className="text-[12px] font-normal px-2.5 py-1 rounded-lg bg-zinc-800 border border-[#EF4444]/60 text-white hover:bg-[#EF4444]/20 transition cursor-pointer"
-                  title="当日のパッキング完了チェックをリセットします"
-                >
-                  リセット
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className="w-full bg-zinc-800 rounded-full h-2.5 overflow-hidden border border-zinc-700">
-            <div
-              className="bg-[#10B981] h-2.5 rounded-full transition-all duration-300 shadow-sm"
-              style={{ width: `${packingProgressRatio}%` }}
-            />
-          </div>
         </div>
       )}
 

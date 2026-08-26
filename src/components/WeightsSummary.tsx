@@ -75,15 +75,13 @@ export default function WeightsSummary({
     .filter((g) => !g.is_consumable)
     .reduce((sum, g) => sum + (Number(g.weight) || 0) * (Number(g.quantity) || 1), 0);
 
-  // 🎯 パッキング進捗用: パッキング完了重量 & 未完了点数
+  // 🎯 パッキング進捗用: パッキング完了重量 & 完了点数
   const packedGears = selectedGears.filter((g) => g.is_packed);
   const packedCount = packedGears.length;
-  const unpackedCount = Math.max(0, totalCount - packedCount);
   const packedTotalWeight = packedGears.reduce(
     (sum, g) => sum + (Number(g.weight) || 0) * (Number(g.quantity) || 1),
     0
   );
-  const remainingPackingWeight = Math.max(0, outboundTotalWeight - packedTotalWeight);
   const packingProgressRatio =
     outboundTotalWeight > 0
       ? Math.min(100, (packedTotalWeight / outboundTotalWeight) * 100)
@@ -192,27 +190,22 @@ export default function WeightsSummary({
         </button>
       </div>
 
-      {/* 🎯 【常時表示】モードに応じた重量プログレスバー */}
+      {/* 【常時表示】モードに応じた重量プログレスバー */}
       <div className="bg-[#27272A]/70 hover:bg-[#27272A] border border-zinc-700/60 hover:border-zinc-600 rounded-xl p-2.5 sm:p-3 space-y-1.5 transition-all duration-200">
         {screenMode === 'packing' ? (
-          /* パッキングモード時：重量ベースの完了ゲージ */
+          /* 🎯 パッキングモード時：簡潔な「完了重量 / 総重量」と「完了点数 / 総点数」 */
           <>
-            <div className="flex items-center justify-between text-[11px] sm:text-[12px] gap-2">
-              <div className="flex items-center gap-1 text-zinc-300 min-w-0">
-                <span className="font-semibold text-white shrink-0">パッキング完了:</span>
-                <span className="font-mono font-bold text-white">
-                  {formatWeight(packedTotalWeight)}
-                </span>
-                <span className="text-zinc-400">/ {formatWeight(outboundTotalWeight)}</span>
-                <span className="text-[#10B981] font-bold font-mono ml-0.5">
-                  ({Math.round(packingProgressRatio)}%)
+            <div className="flex items-center justify-between text-[11px] sm:text-[12px] gap-2 font-mono tabular-nums">
+              <div className="flex items-center gap-1.5 text-zinc-300 font-bold min-w-0">
+                <span className="text-white font-sans font-semibold shrink-0">パッキング完了:</span>
+                <span>
+                  {formatWeight(packedTotalWeight)} / {formatWeight(outboundTotalWeight)}
                 </span>
               </div>
 
-              <div className="text-right shrink-0 font-mono text-[11px] sm:text-[12px]">
-                <span className="text-zinc-400">残り: </span>
-                <span className="text-[#10B981] font-bold">
-                  {formatWeight(remainingPackingWeight)} ({unpackedCount}点)
+              <div className="text-right shrink-0 text-zinc-300 font-bold">
+                <span>
+                  {packedCount} / {totalCount} 点
                 </span>
               </div>
             </div>
@@ -316,7 +309,7 @@ export default function WeightsSummary({
       {/* 【開閉対象】3分割サマリーカード ＆ 積載バランス */}
       {isOpen && (
         <div className="space-y-3 pt-0.5 animate-fade-in">
-          {/* 3分割サマリーカード */}
+          {/* 🎯 3分割サマリーカード（ラベルをシンプル化） */}
           <div className="grid grid-cols-3 gap-1.5 sm:gap-2 text-center">
             {screenMode === 'review' ? (
               <>
@@ -341,7 +334,7 @@ export default function WeightsSummary({
               <>
                 <div className="bg-[#27272A]/50 hover:bg-[#27272A]/80 border border-zinc-700/60 hover:border-zinc-600 rounded-xl p-2 sm:p-2.5 transition-all duration-200">
                   <span className="text-[10px] sm:text-[11px] text-zinc-400 block font-normal truncate">
-                    行き (満載)
+                    行き
                   </span>
                   <span className="text-[13px] sm:text-[14px] font-bold text-white font-mono block mt-0.5">
                     {formatWeight(outboundTotalWeight)}
@@ -349,7 +342,7 @@ export default function WeightsSummary({
                 </div>
                 <div className="bg-[#27272A]/50 hover:bg-[#27272A]/80 border border-zinc-700/60 hover:border-zinc-600 rounded-xl p-2 sm:p-2.5 transition-all duration-200">
                   <span className="text-[10px] sm:text-[11px] text-zinc-400 block font-normal truncate">
-                    帰り (消費後)
+                    帰り
                   </span>
                   <span className="text-[13px] sm:text-[14px] font-bold text-emerald-400 font-mono block mt-0.5">
                     {formatWeight(inboundTotalWeight)}
