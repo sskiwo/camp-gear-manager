@@ -14,9 +14,15 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Camp Gear Manager | キャンプギア重量＆パッキング管理",
-  description: "AI写真スキャンによるギア登録、行き帰りの重量シミュレーション、パッキング精度判定、スマート割り勘ができるキャンパー専用アプリ",
+  description: "AI写真スキャンによるギア登録、行き帰りの重量シミュレーション、パッキング精度判定ができるキャンパー専用アプリ",
   icons: {
     icon: "/icon.svg",
+    apple: "/logo.svg",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Camp Gear",
   },
 };
 
