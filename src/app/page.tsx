@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 import WeightsSummary from '@/components/WeightsSummary';
@@ -415,9 +416,13 @@ export default function Home() {
         <header className="border-b border-zinc-800 pb-3 space-y-3">
           <div className="flex items-center justify-between gap-3">
             
-            {/* ヘッダーロゴ */}
-            <h1 className="text-[18px] sm:text-[22px] font-black text-white tracking-tight flex items-center gap-2.5 whitespace-nowrap overflow-hidden truncate">
-              <div className="relative w-8 h-8 sm:w-10 sm:h-10 shrink-0 drop-shadow-md">
+            {/* 🎯 ヘッダーロゴ＆タイトル（タップでトップページへリンク） */}
+            <Link
+              href="/"
+              className="flex items-center gap-2.5 whitespace-nowrap overflow-hidden truncate hover:opacity-85 transition-opacity cursor-pointer group"
+              title="トップページを表示"
+            >
+              <div className="relative w-8 h-8 sm:w-10 sm:h-10 shrink-0 drop-shadow-md transition-transform group-hover:scale-105">
                 <Image
                   src="/logo.svg"
                   alt="Camp Gear Manager Logo"
@@ -427,10 +432,10 @@ export default function Home() {
                   priority
                 />
               </div>
-              <span className="truncate">
+              <h1 className="text-[18px] sm:text-[22px] font-black text-white tracking-tight truncate">
                 <span className="text-[#FF5500]">Camp Gear</span> Manager
-              </span>
-            </h1>
+              </h1>
+            </Link>
 
             <button
               onClick={handleTogglePublic}
@@ -661,7 +666,6 @@ export default function Home() {
 
         <CsvManager gears={gears} selectedCampId={selectedCampId} onGearsUpdated={fetchGears} />
 
-        {/* フッター（割り勘リンクを削除してシンプル化） */}
         <footer className="pt-6 pb-8 text-center border-t border-zinc-800">
           <p className="text-[12px] text-zinc-500 font-normal">🏕️ Camp Gear Manager & Packing Tool</p>
         </footer>
