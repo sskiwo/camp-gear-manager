@@ -61,7 +61,7 @@ export default function WeightsSummary({
   const selectedGears = gears.filter((g) => g.is_selected !== false);
   const totalCount = selectedGears.length;
 
-  // 行き総重量（満載時）
+  // 行き総重量（持参総重量・満載時）
   const outboundTotalWeight = selectedGears.reduce(
     (sum, g) => sum + (Number(g.weight) || 0) * (Number(g.quantity) || 1),
     0
@@ -72,7 +72,7 @@ export default function WeightsSummary({
     .filter((g) => !g.is_consumable)
     .reduce((sum, g) => sum + (Number(g.weight) || 0) * (Number(g.quantity) || 1), 0);
 
-  // 🎯 パッキング進捗用: パッキング完了重量 & 完了点数
+  // パッキング進捗用: パッキング完了重量 & 完了点数
   const packedGears = selectedGears.filter((g) => Boolean(g.is_packed));
   const packedCount = packedGears.length;
   const packedTotalWeight = packedGears.reduce(
@@ -86,22 +86,25 @@ export default function WeightsSummary({
       ? 100
       : 0;
 
-  // 🎯 レビュー用: 実使用重量・未使用重量 (IDを文字列比較で完全に一致判定)
-  const unusedTotalWeight = selectedGears
-    .filter((g) => unusedGearIds.has(String(g.id)))
-    .reduce((sum, g) => sum + (Number(g.weight) || 0) * (Number(g.quantity) || 1), 0);
-
+  // 🎯 レビュー用: 実使用重量・未使用重量・未使用点数
+  const unusedGears = selectedGears.filter((g) => unusedGearIds.has(String(g.id)));
+  const unusedCount = unusedGears.length;
+  const unusedTotalWeight = unusedGears.reduce(
+    (sum, g) => sum + (Number(g.weight) || 0) * (Number(g.quantity) || 1),
+    0
+  );
   const usedTotalWeight = Math.max(0, outboundTotalWeight - unusedTotalWeight);
 
-  // 目標プログレス計算
-  const currentTotalWeight = screenMode === 'review' ? usedTotalWeight : outboundTotalWeight;
-  const targetGrams = (targetWeightKg || 15.0) * 1000;
-  const progressRatio = targetGrams > 0 ? Math.min(100, (currentTotalWeight / targetGrams) * 100) : 0;
-  const unusedRatio =
-    targetGrams > 0 && screenMode === 'review'
-      ? Math.min(100 - progressRatio, (unusedTotalWeight / targetGrams) * 100)
+  // 🎯 レビュー用ゲージ幅（持参総重量に対する実使用重量の比率）
+  const reviewUsedRatio =
+    outboundTotalWeight > 0
+      ? Math.min(100, (usedTotalWeight / outboundTotalWeight) * 100)
       : 0;
-  const isOverTarget = currentTotalWeight > targetGrams;
+
+  // 目標プログレス計算 (エディット時)
+  const targetGrams = (targetWeightKg || 15.0) * 1000;
+  const editProgressRatio = targetGrams > 0 ? Math.min(100, (outboundTotalWeight / targetGrams) * 100) : 0;
+  const isOverTarget = outboundTotalWeight > targetGrams;
 
   // 合計金額
   const totalPrice = selectedGears.reduce(
@@ -109,7 +112,7 @@ export default function WeightsSummary({
     0
   );
 
-  // カテゴリ別重量集計（レビューモード時は未使用品を除外）
+  // 🎯 カテゴリ別重量集計（レビューモード時は未使用品を除外した実使用重量で集計）
   const categoryWeights: Record<string, number> = {
     ベース: 0,
     調理: 0,
@@ -187,9 +190,10 @@ export default function WeightsSummary({
         </button>
       </div>
 
-      {/* 【常時表示】プログレスバー */}
+      {/* 【常時表示】モードに応じたプログレスバー */}
       <div className="bg-[#27272A]/70 hover:bg-[#27272A] border border-zinc-700/60 hover:border-zinc-600 rounded-xl p-2.5 sm:p-3 space-y-1.5 transition-all duration-200">
         {screenMode === 'packing' ? (
+          /* パッキングモード時：完了重量 / 総重量 */
           <>
             <div className="flex items-center justify-between text-[11px] sm:text-[12px] gap-2 font-mono tabular-nums">
               <div className="flex items-center gap-1.5 text-zinc-300 font-bold min-w-0">
@@ -213,7 +217,35 @@ export default function WeightsSummary({
               />
             </div>
           </>
+        ) : screenMode === 'review' ? (
+          /* 🎯 レビューモード時：実使用（緑）の削り出し方式 */
+          <>
+            <div className="flex items-center justify-between text-[11px] sm:text-[12px] gap-2 font-mono tabular-nums">
+              <div className="flex items-center gap-1.5 text-zinc-300 font-bold min-w-0">
+                <span className="text-white font-sans font-semibold shrink-0">実使用重量:</span>
+                <span className="text-[#10B981]">
+                  {formatWeight(usedTotalWeight)}
+                </span>
+                <span className="text-zinc-400">/ {formatWeight(outboundTotalWeight)}</span>
+              </div>
+
+              <div className="text-right shrink-0 font-bold">
+                <span className="text-zinc-400">未使用: </span>
+                <span className="text-amber-400">{formatWeight(unusedTotalWeight)}</span>
+                <span className="text-zinc-400 font-normal ml-1">({unusedCount}点)</span>
+              </div>
+            </div>
+
+            <div className="w-full bg-zinc-800 rounded-full h-2 overflow-hidden border border-zinc-700/80">
+              <div
+                className="h-2 bg-[#10B981] rounded-full transition-all duration-300"
+                style={{ width: `${reviewUsedRatio}%` }}
+                title={`実使用重量: ${formatWeight(usedTotalWeight)} / 持参総重量: ${formatWeight(outboundTotalWeight)}`}
+              />
+            </div>
+          </>
         ) : (
+          /* エディット時：目標重量ゲージ */
           <>
             <div className="flex items-center justify-between text-[11px] sm:text-[12px] gap-2">
               <div className="flex items-center gap-1.5 text-zinc-300 min-w-0">
@@ -259,46 +291,26 @@ export default function WeightsSummary({
                 )}
               </div>
 
-              {screenMode === 'review' ? (
-                <div className="text-right shrink-0 font-mono text-[11px] sm:text-[12px] flex items-center gap-2">
-                  <div>
-                    <span className="text-zinc-400">実使用: </span>
-                    <span className="text-white font-bold">{formatWeight(usedTotalWeight)}</span>
-                  </div>
-                  <div>
-                    <span className="text-zinc-400">未使用: </span>
-                    <span className="text-amber-400 font-bold">{formatWeight(unusedTotalWeight)}</span>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-right shrink-0 font-mono text-[11px] sm:text-[12px]">
-                  <span className="text-zinc-400">差分: </span>
-                  <span
-                    className={`font-bold ${isOverTarget ? 'text-[#EF4444]' : 'text-[#10B981]'}`}
-                  >
-                    {isOverTarget
-                      ? `+${formatWeight(currentTotalWeight - targetGrams)} 超過`
-                      : `残り ${formatWeight(targetGrams - currentTotalWeight)}`}
-                  </span>
-                </div>
-              )}
+              <div className="text-right shrink-0 font-mono text-[11px] sm:text-[12px]">
+                <span className="text-zinc-400">差分: </span>
+                <span
+                  className={`font-bold ${isOverTarget ? 'text-[#EF4444]' : 'text-[#10B981]'}`}
+                >
+                  {isOverTarget
+                    ? `+${formatWeight(outboundTotalWeight - targetGrams)} 超過`
+                    : `残り ${formatWeight(targetGrams - outboundTotalWeight)}`}
+                </span>
+              </div>
             </div>
 
-            <div className="w-full bg-zinc-800 rounded-full h-2 overflow-hidden border border-zinc-700/80 flex">
+            <div className="w-full bg-zinc-800 rounded-full h-2 overflow-hidden border border-zinc-700/80">
               <div
                 className={`h-2 transition-all duration-300 ${
                   isOverTarget ? 'bg-[#EF4444]' : 'bg-[#FF5500]'
                 }`}
-                style={{ width: `${progressRatio}%` }}
-                title={`実使用重量: ${formatWeight(usedTotalWeight)}`}
+                style={{ width: `${editProgressRatio}%` }}
+                title={`持参総重量: ${formatWeight(outboundTotalWeight)}`}
               />
-              {screenMode === 'review' && unusedRatio > 0 && (
-                <div
-                  className="h-2 bg-amber-500/80 transition-all duration-300"
-                  style={{ width: `${unusedRatio}%` }}
-                  title={`未使用重量: ${formatWeight(unusedTotalWeight)}`}
-                />
-              )}
             </div>
           </>
         )}
