@@ -39,7 +39,6 @@ export default function Home() {
   const [isEditCampOpen, setIsEditCampOpen] = useState(false);
   const [editCampTitle, setEditCampTitle] = useState('');
 
-  // 🎯 使い方ガイドモーダルの表示状態
   const [isHelpOpen, setIsHelpOpen] = useState(false);
 
   const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({
@@ -446,12 +445,12 @@ export default function Home() {
         
         {/* ヘッダーエリア */}
         <header className="border-b border-zinc-800 pb-3 space-y-3">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center justify-between gap-2">
             
-            {/* ヘッダーロゴ＆タイトル */}
+            {/* 🎯 ヘッダーロゴ＆タイトル（shrink-0 & whitespace-nowrap で文字切れ防止） */}
             <Link
               href="/"
-              className="flex items-center gap-2.5 whitespace-nowrap overflow-hidden truncate hover:opacity-85 transition-opacity cursor-pointer group"
+              className="flex items-center gap-2 whitespace-nowrap shrink-0 hover:opacity-85 transition-opacity cursor-pointer group"
               title="トップページを表示"
             >
               <div className="relative w-8 h-8 sm:w-10 sm:h-10 shrink-0 drop-shadow-md transition-transform group-hover:scale-105">
@@ -464,29 +463,29 @@ export default function Home() {
                   priority
                 />
               </div>
-              <h1 className="text-[18px] sm:text-[22px] font-black text-white tracking-tight truncate">
+              <h1 className="text-[17px] sm:text-[22px] font-black text-white tracking-tight shrink-0 whitespace-nowrap">
                 <span className="text-[#FF5500]">Camp Gear</span> Manager
               </h1>
             </Link>
 
-            {/* ヘッダー右側アクションボタン群 */}
-            <div className="flex items-center gap-2 shrink-0">
-              {/* 🎯 使い方ボタン */}
+            {/* 🎯 ヘッダー右側アクションボタン群（コンパクト化） */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              {/* 使い方ボタン（アイコン化 w-8 h-8） */}
               <button
                 type="button"
                 onClick={() => setIsHelpOpen(true)}
-                className="px-2.5 sm:px-3 py-1.5 rounded-xl text-[12px] font-bold transition border border-zinc-700 bg-zinc-800 text-zinc-200 hover:text-white hover:bg-zinc-700 cursor-pointer shadow-sm flex items-center gap-1"
+                className="w-8 h-8 rounded-xl text-sm font-bold transition border border-zinc-700 bg-zinc-800 text-zinc-200 hover:text-white hover:bg-zinc-700 cursor-pointer shadow-sm flex items-center justify-center active:scale-95 shrink-0"
                 title="アプリの使い方ガイドを表示"
+                aria-label="使い方ガイド"
               >
-                <span>❓</span>
-                <span>使い方</span>
+                ❓
               </button>
 
-              {/* 公開 / 非公開ボタン */}
+              {/* 公開 / 非公開ボタン（px-2.5 py-1 text-[11px] でスリム化） */}
               <button
                 type="button"
                 onClick={handleTogglePublic}
-                className={`px-3 py-1.5 rounded-xl text-[12px] font-bold transition border cursor-pointer shadow-sm flex items-center gap-1.5 ${
+                className={`px-2.5 py-1 rounded-xl text-[11px] font-bold transition border cursor-pointer shrink-0 shadow-sm flex items-center gap-1 ${
                   currentSelectedCamp?.is_public
                     ? 'bg-[#10B981] text-white border-transparent hover:bg-emerald-600'
                     : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white'
