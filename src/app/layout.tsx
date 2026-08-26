@@ -13,8 +13,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Camp Gear Manager",
-  description: "キャンプギア重量＆パッキング管理アプリ",
+  title: "Camp Gear Manager | キャンプギア重量＆パッキング管理",
+  description: "AI写真スキャンによるギア登録、行き帰りの重量シミュレーション、パッキング精度判定、スマート割り勘ができるキャンパー専用アプリ",
+  icons: {
+    icon: "/icon.svg",
+  },
 };
 
 export default function RootLayout({
@@ -27,7 +30,9 @@ export default function RootLayout({
       lang="ja"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col bg-[#09090B] text-zinc-100">
+        {children}
+      </body>
     </html>
   );
 }

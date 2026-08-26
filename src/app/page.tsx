@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 import WeightsSummary from '@/components/WeightsSummary';
 import GearSearch from '@/components/GearSearch';
@@ -295,7 +296,6 @@ export default function Home() {
     }, 50);
   };
 
-  // 🎯 AIスキャン・手動追加の保存ハンドラー（追加項目を完全対応）
   const handleAddGear = async (item: any) => {
     if (!selectedCampId) return;
 
@@ -415,8 +415,19 @@ export default function Home() {
         {/* ヘッダーエリア */}
         <header className="border-b border-zinc-800 pb-2.5 space-y-2">
           <div className="flex items-center justify-between gap-2">
-            <h1 className="text-sm sm:text-base font-black text-white tracking-tight flex items-center gap-1.5 whitespace-nowrap overflow-hidden truncate">
-              <span>⛺</span>
+            
+            {/* 🎯 ヘッダーロゴ：バックパック新ロゴSVGを配置 */}
+            <h1 className="text-sm sm:text-base font-black text-white tracking-tight flex items-center gap-2 whitespace-nowrap overflow-hidden truncate">
+              <div className="relative w-6 h-6 sm:w-7 sm:h-7 shrink-0 rounded-lg overflow-hidden shadow-sm">
+                <Image
+                  src="/logo.svg"
+                  alt="Camp Gear Manager Logo"
+                  fill
+                  sizes="28px"
+                  className="object-contain"
+                  priority
+                />
+              </div>
               <span className="truncate">
                 <span className="text-[#FF5500]">Camp Gear</span> Manager
               </span>
@@ -652,7 +663,7 @@ export default function Home() {
         <CsvManager gears={gears} selectedCampId={selectedCampId} onGearsUpdated={fetchGears} />
 
         <footer className="pt-8 pb-10 text-center border-t border-zinc-800 space-y-3">
-          <Link href="/split-bill" className="inline-flex items-center justify-center gap-2 bg-[#FF5500] text-white px-6 py-3.5 rounded-2xl text-[12px] font-bold">
+          <Link href="/split-bill" className="inline-flex items-center justify-center gap-2 bg-[#FF5500] text-white px-6 py-3.5 rounded-2xl text-[12px] font-bold shadow-md hover:bg-[#e04c00] transition">
             💰 スマート割り勘計算ページへ進む →
           </Link>
           <p className="text-[12px] text-zinc-500 font-normal">🏕️ Camp Gear Manager & Packing Tool</p>

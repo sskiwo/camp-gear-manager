@@ -1,0 +1,44 @@
+<svg viewBox="0 0 512 512" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景：角丸オフホワイト -->
+  <rect width="512" height="512" rx="100" fill="#FAF8F5"/>
+  
+  <!-- バックパック本体 -->
+  <g transform="translate(0, 12)">
+    <!-- 1. 持ち手（上部中央の黒ハンドル） -->
+    <rect x="216" y="60" width="80" height="46" rx="18" fill="#18181B"/>
+    <rect x="232" y="74" width="48" height="32" rx="10" fill="#FAF8F5"/>
+
+    <!-- 2. 左右サイドポケット -->
+    <rect x="76" y="296" width="60" height="116" rx="26" fill="#FAF8F5" stroke="#18181B" stroke-width="14" stroke-linejoin="round"/>
+    <path d="M 76 338 H 136" stroke="#18181B" stroke-width="12"/>
+
+    <rect x="376" y="296" width="60" height="116" rx="26" fill="#FAF8F5" stroke="#18181B" stroke-width="14" stroke-linejoin="round"/>
+    <path d="M 376 338 H 436" stroke="#18181B" stroke-width="12"/>
+
+    <!-- 3. メインボディ -->
+    <path d="M 126 200 L 126 410 C 126 442, 146 452, 178 452 L 334 452 C 366 452, 386 442, 386 410 L 386 200 Z" fill="#FAF8F5" stroke="#18181B" stroke-width="16" stroke-linejoin="round"/>
+
+    <!-- 4. 上部フラップ（雨蓋） -->
+    <rect x="126" y="98" width="260" height="114" rx="36" fill="#FAF8F5" stroke="#18181B" stroke-width="16" stroke-linejoin="round"/>
+
+    <!-- 5. フロント下部ポケット 2つ -->
+    <rect x="150" y="328" width="94" height="92" rx="18" fill="#FAF8F5" stroke="#18181B" stroke-width="12" stroke-linejoin="round"/>
+    <path d="M 150 354 H 244" stroke="#18181B" stroke-width="10"/>
+
+    <rect x="268" y="328" width="94" height="92" rx="18" fill="#FAF8F5" stroke="#18181B" stroke-width="12" stroke-linejoin="round"/>
+    <path d="M 268 354 H 362" stroke="#18181B" stroke-width="10"/>
+
+    <!-- 6. 2本ストラップ -->
+    <path d="M 174 98 V 268 C 174 284, 198 284, 198 268 V 98" fill="#FAF8F5" stroke="#18181B" stroke-width="12" stroke-linejoin="round"/>
+    <rect x="166" y="234" width="40" height="20" rx="6" fill="#FAF8F5" stroke="#18181B" stroke-width="10"/>
+
+    <path d="M 314 98 V 268 C 314 284, 338 284, 338 268 V 98" fill="#FAF8F5" stroke="#18181B" stroke-width="12" stroke-linejoin="round"/>
+    <rect x="306" y="234" width="40" height="20" rx="6" fill="#FAF8F5" stroke="#18181B" stroke-width="10"/>
+
+    <!-- 7. チェックマーク丸バッジ（#FF5500 + オフホワイトチェック #FAF8F5） -->
+    <g transform="translate(256, 326)">
+      <circle cx="0" cy="0" r="50" fill="#FF5500" stroke="#FAF8F5" stroke-width="8"/>
+      <path d="M -18 1 L -5 14 L 18 -11" fill="none" stroke="#FAF8F5" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+  </g>
+</svg>
