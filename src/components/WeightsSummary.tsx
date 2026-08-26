@@ -125,20 +125,21 @@ export default function WeightsSummary({
   };
 
   return (
-    <section className="bg-[#18181B] border border-zinc-800 rounded-2xl p-4 sm:p-5 shadow-xl space-y-3.5 w-full overflow-hidden transition-colors">
-      {/* 🎯 ヘッダー全体をクリック＆ホバー可能にして開閉をスムーズ化 */}
+    // 🎯 sticky top-2 z-30 と背景の半透明ブラー(backdrop-blur-md)でスクロール時も常時上部固定
+    <section className="sticky top-2 z-30 bg-[#18181B]/95 backdrop-blur-md border border-zinc-800 rounded-2xl p-3.5 sm:p-4 shadow-2xl space-y-3 w-full overflow-hidden transition-all duration-200">
+      {/* ヘッダー */}
       <div
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-between gap-2 border-b border-zinc-800/80 pb-2.5 cursor-pointer select-none group/header hover:opacity-90 transition-opacity"
+        className="flex items-center justify-between gap-2 border-b border-zinc-800/80 pb-2 cursor-pointer select-none group/header hover:opacity-90 transition-opacity"
         title={isOpen ? "クリックして詳細を折りたたむ" : "クリックして詳細を展開"}
       >
-        <div className="flex items-center gap-2.5 min-w-0">
-          <h2 className="text-[17px] sm:text-[18px] font-bold text-white tracking-tight shrink-0 whitespace-nowrap group-hover/header:text-[#FF5500] transition-colors">
+        <div className="flex items-center gap-2 min-w-0">
+          <h2 className="text-[16px] sm:text-[17px] font-bold text-white tracking-tight shrink-0 whitespace-nowrap group-hover/header:text-[#FF5500] transition-colors">
             サマリー
           </h2>
 
           {screenMode === 'review' && (
-            <span className="px-2 py-0.5 bg-amber-950/70 border border-amber-800/80 text-amber-400 rounded-lg text-[11px] font-bold shrink-0 whitespace-nowrap flex items-center gap-1">
+            <span className="px-2 py-0.5 bg-amber-950/70 border border-amber-800/80 text-amber-400 rounded-lg text-[10px] font-bold shrink-0 whitespace-nowrap flex items-center gap-1">
               <span>⛺</span>
               <span>レビュー中</span>
             </span>
@@ -151,16 +152,16 @@ export default function WeightsSummary({
             e.stopPropagation();
             setIsOpen(!isOpen);
           }}
-          className="h-8 w-8 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-zinc-700 flex items-center justify-center transition-all cursor-pointer shrink-0 active:scale-95 shadow-sm group-hover/header:border-zinc-500"
+          className="h-7 w-7 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-zinc-700 flex items-center justify-center transition-all cursor-pointer shrink-0 active:scale-95 shadow-sm group-hover/header:border-zinc-500"
           aria-label="詳細サマリーを開閉"
           title={isOpen ? "詳細を折りたたむ" : "詳細を展開"}
         >
-          {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          {isOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
         </button>
       </div>
 
-      {/* 【常時表示】目標重量ゲージ＆プログレスバー */}
-      <div className="bg-[#27272A]/70 hover:bg-[#27272A] border border-zinc-700/60 hover:border-zinc-600 rounded-xl p-3 sm:p-3.5 space-y-2 transition-all duration-200">
+      {/* 【常時上部に表示】目標重量ゲージ＆プログレスバー */}
+      <div className="bg-[#27272A]/70 hover:bg-[#27272A] border border-zinc-700/60 hover:border-zinc-600 rounded-xl p-2.5 sm:p-3 space-y-1.5 transition-all duration-200">
         <div className="flex items-center justify-between text-[11px] sm:text-[12px] gap-2">
           <div className="flex items-center gap-1.5 text-zinc-300 min-w-0">
             <span className="font-semibold text-white shrink-0">目標:</span>
@@ -216,9 +217,9 @@ export default function WeightsSummary({
         </div>
 
         {/* プログレスバー */}
-        <div className="w-full bg-zinc-800 rounded-full h-2.5 overflow-hidden border border-zinc-700/80">
+        <div className="w-full bg-zinc-800 rounded-full h-2 overflow-hidden border border-zinc-700/80">
           <div
-            className={`h-2.5 rounded-full transition-all duration-300 ${
+            className={`h-2 rounded-full transition-all duration-300 ${
               isOverTarget ? 'bg-[#EF4444]' : 'bg-[#FF5500]'
             }`}
             style={{ width: `${progressRatio}%` }}
@@ -228,7 +229,7 @@ export default function WeightsSummary({
 
       {/* 【開閉対象】3分割サマリーカード ＆ 積載バランス */}
       {isOpen && (
-        <div className="space-y-3.5 pt-0.5 animate-fade-in">
+        <div className="space-y-3 pt-0.5 animate-fade-in">
           {/* 3分割サマリーカード */}
           <div className="grid grid-cols-3 gap-1.5 sm:gap-2 text-center">
             {screenMode === 'review' ? (
@@ -237,7 +238,7 @@ export default function WeightsSummary({
                   <span className="text-[10px] sm:text-[11px] text-zinc-400 block font-normal truncate">
                     実使用重量
                   </span>
-                  <span className="text-[13px] sm:text-[15px] font-bold text-white font-mono block mt-0.5">
+                  <span className="text-[13px] sm:text-[14px] font-bold text-white font-mono block mt-0.5">
                     {formatWeight(usedTotalWeight)}
                   </span>
                 </div>
@@ -245,7 +246,7 @@ export default function WeightsSummary({
                   <span className="text-[10px] sm:text-[11px] text-amber-400 block font-normal truncate">
                     未使用重量
                   </span>
-                  <span className="text-[13px] sm:text-[15px] font-bold text-amber-400 font-mono block mt-0.5">
+                  <span className="text-[13px] sm:text-[14px] font-bold text-amber-400 font-mono block mt-0.5">
                     {formatWeight(unusedTotalWeight)}
                   </span>
                 </div>
@@ -254,17 +255,17 @@ export default function WeightsSummary({
               <>
                 <div className="bg-[#27272A]/50 hover:bg-[#27272A]/80 border border-zinc-700/60 hover:border-zinc-600 rounded-xl p-2 sm:p-2.5 transition-all duration-200">
                   <span className="text-[10px] sm:text-[11px] text-zinc-400 block font-normal truncate">
-                    行き総重量 (満載)
+                    行き (満載)
                   </span>
-                  <span className="text-[13px] sm:text-[15px] font-bold text-white font-mono block mt-0.5">
+                  <span className="text-[13px] sm:text-[14px] font-bold text-white font-mono block mt-0.5">
                     {formatWeight(outboundTotalWeight)}
                   </span>
                 </div>
                 <div className="bg-[#27272A]/50 hover:bg-[#27272A]/80 border border-zinc-700/60 hover:border-zinc-600 rounded-xl p-2 sm:p-2.5 transition-all duration-200">
                   <span className="text-[10px] sm:text-[11px] text-zinc-400 block font-normal truncate">
-                    帰り総重量 (消費後)
+                    帰り (消費後)
                   </span>
-                  <span className="text-[13px] sm:text-[15px] font-bold text-emerald-400 font-mono block mt-0.5">
+                  <span className="text-[13px] sm:text-[14px] font-bold text-emerald-400 font-mono block mt-0.5">
                     {formatWeight(inboundTotalWeight)}
                   </span>
                 </div>
@@ -275,17 +276,17 @@ export default function WeightsSummary({
               <span className="text-[10px] sm:text-[11px] text-zinc-400 block font-normal truncate">
                 合計金額
               </span>
-              <span className="text-[13px] sm:text-[15px] font-bold text-white font-mono block mt-0.5">
+              <span className="text-[13px] sm:text-[14px] font-bold text-white font-mono block mt-0.5">
                 ¥{totalPrice.toLocaleString()}
               </span>
             </div>
           </div>
 
           {/* 積載バランス */}
-          <div className="space-y-2 pt-1 border-t border-zinc-800/80">
-            <span className="text-[12px] font-bold text-zinc-300 block">積載バランス</span>
+          <div className="space-y-1.5 pt-1 border-t border-zinc-800/80">
+            <span className="text-[11px] font-bold text-zinc-300 block">積載バランス</span>
 
-            <div className="w-full bg-zinc-800 h-2 sm:h-2.5 rounded-full overflow-hidden flex border border-zinc-700">
+            <div className="w-full bg-zinc-800 h-2 rounded-full overflow-hidden flex border border-zinc-700">
               {outboundTotalWeight > 0 ? (
                 CATEGORIES.map((cat) => {
                   const weight = categoryWeights[cat] || 0;
@@ -308,7 +309,6 @@ export default function WeightsSummary({
               )}
             </div>
 
-            {/* 🎯 ホバー時の微小拡大（hover:scale-105）とクリック感（active:scale-95）を追加 */}
             <div className="grid grid-cols-5 gap-1 sm:gap-1.5 pt-0.5">
               {CATEGORIES.map((cat) => {
                 const weight = categoryWeights[cat] || 0;
@@ -320,19 +320,19 @@ export default function WeightsSummary({
                     key={cat}
                     type="button"
                     onClick={() => onCategoryClick?.(cat)}
-                    className="bg-[#27272A]/50 hover:bg-[#27272A] border border-zinc-700/60 hover:border-zinc-500 rounded-lg p-1 sm:p-1.5 flex flex-col items-center justify-center transition-all duration-200 cursor-pointer min-w-0 hover:scale-105 active:scale-95 shadow-sm"
+                    className="bg-[#27272A]/50 hover:bg-[#27272A] border border-zinc-700/60 hover:border-zinc-500 rounded-lg p-1 flex flex-col items-center justify-center transition-all duration-200 cursor-pointer min-w-0 hover:scale-105 active:scale-95 shadow-sm"
                     title={`${cat}カテゴリーへスクロール`}
                   >
                     <div className="flex items-center gap-0.5 max-w-full">
-                      <span className="text-[10px] sm:text-[11px] shrink-0">{icon}</span>
+                      <span className="text-[10px] shrink-0">{icon}</span>
                       <span
                         style={{ color: catColor }}
-                        className="text-[10px] sm:text-[11px] font-bold truncate"
+                        className="text-[10px] font-bold truncate"
                       >
                         {cat}
                       </span>
                     </div>
-                    <span className="text-[10px] sm:text-[11px] font-mono text-zinc-300 font-semibold mt-0.5 truncate">
+                    <span className="text-[10px] font-mono text-zinc-300 font-semibold mt-0.5 truncate">
                       {formatWeight(weight)}
                     </span>
                   </button>
