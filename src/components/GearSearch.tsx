@@ -263,7 +263,8 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
   return (
     <div className="bg-[#18181B] border border-zinc-800 rounded-2xl p-5 shadow-lg space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-white font-bold text-[18px]">ギアを追加</h2>
+        {/* 🎯 見出しを「ギア追加」に統一 */}
+        <h2 className="text-white font-bold text-[18px]">ギア追加</h2>
         <button
           type="button"
           onClick={() => setShowTipsModal(true)}
@@ -282,7 +283,6 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
         className="hidden"
       />
 
-      {/* 🎯 検索フォーム: 検索ボタンをダークグレーのアイコン(🔍)化、カメラボタンをメインのオレンジ(📷)化 */}
       <form onSubmit={handleFormSubmit} className="flex gap-2 items-center">
         <div className="relative flex-1 min-w-0">
           <input
@@ -294,7 +294,6 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
           />
         </div>
 
-        {/* サブアクション: テキスト検索ボタン [🔍] */}
         <button
           type="submit"
           disabled={isScanning || isRefreshing}
@@ -308,7 +307,6 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
           )}
         </button>
 
-        {/* メインアクション: 写真スキャンボタン [📷] */}
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
@@ -482,7 +480,6 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
                         </select>
                       </div>
 
-                      {/* 商品名・ブランド */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <div className="space-y-0.5">
                           <label className="text-[12px] text-zinc-400 font-normal block">商品名・型番</label>
@@ -505,7 +502,6 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
                         </div>
                       </div>
 
-                      {/* 重量・価格 */}
                       <div className="grid grid-cols-2 gap-2">
                         <div className="space-y-0.5">
                           <div className="flex items-center justify-between">
@@ -554,7 +550,6 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
                         </div>
                       </div>
 
-                      {/* 購入時期・燃料タイプ */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <div className="space-y-0.5">
                           <label className="text-[12px] text-zinc-400 font-normal block">購入時期</label>
@@ -582,7 +577,6 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
                         </div>
                       </div>
 
-                      {/* メモ */}
                       <div className="space-y-0.5">
                         <label className="text-[12px] text-zinc-400 font-normal block">メモ</label>
                         <input

@@ -194,12 +194,10 @@ export default function GearList({
       const usedItemsCount = totalItemsCount - totalUnusedGearsCount;
       const actualUsedWeight = Math.max(0, totalWeight - totalUnusedWeight);
 
-      // ① 装備稼働スコア (60点満点)
       const weightUsageRate = totalWeight > 0 ? actualUsedWeight / totalWeight : 1;
       const countUsageRate = totalItemsCount > 0 ? usedItemsCount / totalItemsCount : 1;
       const operationScore = 60 * (weightUsageRate * 0.6 + countUsageRate * 0.4);
 
-      // ② 目標重量達成スコア (40点満点)
       const targetGrams = (targetWeightKg || 15.0) * 1000;
       let targetScore = 40;
       if (totalWeight > targetGrams && targetGrams > 0) {
@@ -209,7 +207,6 @@ export default function GearList({
 
       const finalScore = Math.min(100, Math.max(0, Math.round(operationScore + targetScore)));
 
-      // ③ ランク判定
       let rank: 'S' | 'A' | 'B' | 'C' = 'C';
       let rankTitle = '伸びしろキャンパー';
       let rankIcon = '🥉';
@@ -278,40 +275,40 @@ export default function GearList({
             : `キャンプ振り返り (${selectedGears.length})`}
         </h2>
 
-        {/* 時系列順タブ: ① ✏️ ギア編集 ➔ ② 🎒 パッキング ➔ ③ ⛺ 振り返り */}
+        {/* 🎯 丸数字を外した「アイコン ＋ テキスト」タブ */}
         <div className="grid grid-cols-3 gap-1 bg-[#09090B] p-1 rounded-xl border border-zinc-800 w-full sm:w-auto">
           <button
             onClick={() => handleModeChange('edit')}
-            className={`px-2 py-1.5 rounded-lg text-[12px] font-bold transition cursor-pointer flex items-center justify-center gap-1 whitespace-nowrap text-center ${
+            className={`px-2.5 py-1.5 rounded-lg text-[12px] font-bold transition cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap text-center ${
               screenMode === 'edit'
                 ? 'bg-[#FF5500] text-white shadow-md'
                 : 'text-zinc-400 hover:text-white'
             }`}
           >
             <span>✏️</span>
-            <span>① ギア編集</span>
+            <span>ギア編集</span>
           </button>
           <button
             onClick={() => handleModeChange('packing')}
-            className={`px-2 py-1.5 rounded-lg text-[12px] font-bold transition cursor-pointer flex items-center justify-center gap-1 whitespace-nowrap text-center ${
+            className={`px-2.5 py-1.5 rounded-lg text-[12px] font-bold transition cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap text-center ${
               screenMode === 'packing'
                 ? 'bg-[#FF5500] text-white shadow-md'
                 : 'text-zinc-400 hover:text-white'
             }`}
           >
             <span>🎒</span>
-            <span>② パッキング</span>
+            <span>パッキング</span>
           </button>
           <button
             onClick={() => handleModeChange('review')}
-            className={`px-2 py-1.5 rounded-lg text-[12px] font-bold transition cursor-pointer flex items-center justify-center gap-1 whitespace-nowrap text-center ${
+            className={`px-2.5 py-1.5 rounded-lg text-[12px] font-bold transition cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap text-center ${
               screenMode === 'review'
                 ? 'bg-[#FF5500] text-white shadow-md'
                 : 'text-zinc-400 hover:text-white'
             }`}
           >
             <span>⛺</span>
-            <span>③ 振り返り</span>
+            <span>振り返り</span>
           </button>
         </div>
       </div>
