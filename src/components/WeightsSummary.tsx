@@ -86,9 +86,8 @@ export default function WeightsSummary({
       ? 100
       : 0;
 
-  // レビュー用: 実使用重量・未使用重量・未使用点数
+  // レビュー用: 実使用重量・未使用重量
   const unusedGears = selectedGears.filter((g) => unusedGearIds.has(String(g.id)));
-  const unusedCount = unusedGears.length;
   const unusedTotalWeight = unusedGears.reduce(
     (sum, g) => sum + (Number(g.weight) || 0) * (Number(g.quantity) || 1),
     0
@@ -228,21 +227,17 @@ export default function WeightsSummary({
             </div>
           </>
         ) : screenMode === 'review' ? (
-          /* レビューモード時（文字色を白・グレー基調へ統一） */
+          /* レビューモード時：コロン・分母・点数を削除した左右対比ミニマルレイアウト */
           <>
-            <div className="flex items-center justify-between text-[11px] sm:text-[12px] gap-2 font-mono tabular-nums">
-              <div className="flex items-center gap-1.5 text-zinc-300 min-w-0">
-                <span className="text-white font-sans font-semibold shrink-0">実使用重量:</span>
-                <span className="text-white font-bold font-mono">
-                  {formatWeight(usedTotalWeight)}
-                </span>
-                <span className="text-zinc-400">/ {formatWeight(outboundTotalWeight)}</span>
+            <div className="flex items-center justify-between text-[11px] sm:text-[12px] font-mono tabular-nums">
+              <div className="flex items-center gap-1.5 font-bold text-white min-w-0">
+                <span className="font-sans font-semibold shrink-0">実使用重量</span>
+                <span>{formatWeight(usedTotalWeight)}</span>
               </div>
 
-              <div className="text-right shrink-0">
-                <span className="text-zinc-400">未使用: </span>
-                <span className="text-zinc-300 font-mono">{formatWeight(unusedTotalWeight)}</span>
-                <span className="text-zinc-400 font-normal ml-1 font-mono">({unusedCount}点)</span>
+              <div className="text-right font-bold text-zinc-300 shrink-0">
+                <span className="text-zinc-400 font-sans font-normal mr-1">未使用</span>
+                <span>{formatWeight(unusedTotalWeight)}</span>
               </div>
             </div>
 
