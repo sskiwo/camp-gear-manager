@@ -18,13 +18,16 @@ type Camp = {
   is_public: boolean;
 };
 
+const STORAGE_KEY_SCREEN_MODE = 'camp_active_screen_mode';
+
 export default function Home() {
   const [camps, setCamps] = useState<Camp[]>([]);
   const [selectedCampId, setSelectedCampId] = useState<string>('');
   const [gears, setGears] = useState<GearItem[]>([]);
   const [allGearsInAccount, setAllGearsInAccount] = useState<GearItem[]>([]);
 
-  const [screenMode, setScreenMode] = useState<'packing' | 'edit' | 'review'>('packing');
+  // 🎯 デフォルトを「edit（ギア編集）」にし、localStorageから直前のタブを復元
+  const [screenMode, setScreenMode] = useState<'edit' | 'packing' | 'review'>('edit');
   const [unusedGearIds, setUnusedGearIds] = useState<Set<string>>(new Set());
 
   const [isAddCampOpen, setIsAddCampOpen] = useState(false);
@@ -43,6 +46,28 @@ export default function Home() {
     その他: false,
     消耗品: false,
   });
+
+  // 初回ロード時に最後に開いていたタブをlocalStorageから読み込む
+  useEffect(() => {
+    try {
+      const savedMode = localStorage.getItem(STORAGE_KEY_SCREEN_MODE) as 'edit' | 'packing' | 'review' | null;
+      if (savedMode && (savedMode === 'edit' || savedMode === 'packing' || savedMode === 'review')) {
+        setScreenMode(savedMode);
+      }
+    } catch (err) {
+      console.warn('Failed to load screen mode from localStorage:', err);
+    }
+  }, []);
+
+  // タブ切り替え時にlocalStorageへ自動保存
+  const handleScreenModeChange = (mode: 'edit' | 'packing' | 'review') => {
+    setScreenMode(mode);
+    try {
+      localStorage.setItem(STORAGE_KEY_SCREEN_MODE, mode);
+    } catch (err) {
+      console.warn('Failed to save screen mode to localStorage:', err);
+    }
+  };
 
   const fetchCamps = async () => {
     const { data, error } = await supabase
@@ -416,7 +441,6 @@ export default function Home() {
         <header className="border-b border-zinc-800 pb-3 space-y-3">
           <div className="flex items-center justify-between gap-3">
             
-            {/* 🎯 ヘッダーロゴ＆タイトル（タップでトップページへリンク） */}
             <Link
               href="/"
               className="flex items-center gap-2.5 whitespace-nowrap overflow-hidden truncate hover:opacity-85 transition-opacity cursor-pointer group"
@@ -649,7 +673,7 @@ export default function Home() {
           allCampsCount={camps.length}
           allGearsInUserAccount={allGearsInAccount}
           screenMode={screenMode}
-          onScreenModeChange={setScreenMode}
+          onScreenModeChange={handleScreenModeChange}
           unusedGearIds={unusedGearIds}
           onToggleUnusedGear={handleToggleUnusedGear}
           openCategories={openCategories}

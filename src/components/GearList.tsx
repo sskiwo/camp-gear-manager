@@ -9,9 +9,9 @@ type Props = {
   gears: GearItem[];
   allCampsCount?: number;
   allGearsInUserAccount?: GearItem[];
-  screenMode?: 'packing' | 'edit' | 'review';
+  screenMode?: 'edit' | 'packing' | 'review';
   targetWeightKg?: number;
-  onScreenModeChange?: (mode: 'packing' | 'edit' | 'review') => void;
+  onScreenModeChange?: (mode: 'edit' | 'packing' | 'review') => void;
   unusedGearIds?: Set<string>;
   onToggleUnusedGear?: (id: string) => void;
   openCategories: Record<string, boolean>;
@@ -97,10 +97,10 @@ export default function GearList({
     });
   };
 
-  const [internalScreenMode, setInternalScreenMode] = useState<'packing' | 'edit' | 'review'>('packing');
+  const [internalScreenMode, setInternalScreenMode] = useState<'edit' | 'packing' | 'review'>('edit');
   const screenMode = externalScreenMode !== undefined ? externalScreenMode : internalScreenMode;
 
-  const handleModeChange = (mode: 'packing' | 'edit' | 'review') => {
+  const handleModeChange = (mode: 'edit' | 'packing' | 'review') => {
     if (onScreenModeChange) {
       onScreenModeChange(mode);
     } else {
@@ -257,7 +257,7 @@ export default function GearList({
         await onUpdateGear(gearId, { is_selected: false });
       }
       setReviewResultModal(null);
-      handleModeChange('packing');
+      handleModeChange('edit');
     } catch (err) {
       console.error('次回パッキング反映エラー:', err);
       alert('パッキング設定の反映中にエラーが発生しました');
@@ -271,25 +271,15 @@ export default function GearList({
       {/* リストヘッダー */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-3">
         <h2 className="text-[18px] font-bold text-zinc-100 flex items-center gap-1.5">
-          {screenMode === 'packing'
-            ? 'パッキングリスト'
-            : screenMode === 'edit'
+          {screenMode === 'edit'
             ? `ギア選定 (${totalCount} / ${gears.length})`
+            : screenMode === 'packing'
+            ? `パッキングリスト (${packedCount} / ${totalCount})`
             : `キャンプ振り返り (${selectedGears.length})`}
         </h2>
 
+        {/* 🎯 時系列順タブ: ① ✏️ ギア編集 ➔ ② 🎒 パッキング ➔ ③ ⛺ 振り返り */}
         <div className="grid grid-cols-3 gap-1 bg-[#09090B] p-1 rounded-xl border border-zinc-800 w-full sm:w-auto">
-          <button
-            onClick={() => handleModeChange('packing')}
-            className={`px-2 py-1.5 rounded-lg text-[12px] font-bold transition cursor-pointer flex items-center justify-center gap-1 whitespace-nowrap text-center ${
-              screenMode === 'packing'
-                ? 'bg-[#FF5500] text-white shadow-md'
-                : 'text-zinc-400 hover:text-white'
-            }`}
-          >
-            <span>☑️</span>
-            <span>パッキング</span>
-          </button>
           <button
             onClick={() => handleModeChange('edit')}
             className={`px-2 py-1.5 rounded-lg text-[12px] font-bold transition cursor-pointer flex items-center justify-center gap-1 whitespace-nowrap text-center ${
@@ -299,7 +289,18 @@ export default function GearList({
             }`}
           >
             <span>✏️</span>
-            <span>ギア編集</span>
+            <span>① ギア編集</span>
+          </button>
+          <button
+            onClick={() => handleModeChange('packing')}
+            className={`px-2 py-1.5 rounded-lg text-[12px] font-bold transition cursor-pointer flex items-center justify-center gap-1 whitespace-nowrap text-center ${
+              screenMode === 'packing'
+                ? 'bg-[#FF5500] text-white shadow-md'
+                : 'text-zinc-400 hover:text-white'
+            }`}
+          >
+            <span>🎒</span>
+            <span>② パッキング</span>
           </button>
           <button
             onClick={() => handleModeChange('review')}
@@ -310,10 +311,18 @@ export default function GearList({
             }`}
           >
             <span>⛺</span>
-            <span>振り返り</span>
+            <span>③ 振り返り</span>
           </button>
         </div>
       </div>
+
+      {screenMode === 'edit' && (
+        <div className="bg-[#27272A]/40 border border-zinc-700/60 p-3 rounded-xl">
+          <p className="text-[12px] text-zinc-300 font-normal leading-relaxed">
+            持っていくギアにチェックを入れ、今回持っていかないギアはチェックを外して「お留守番（💤）」に設定できます。
+          </p>
+        </div>
+      )}
 
       {screenMode === 'review' && (
         <div className="bg-amber-950/30 border border-amber-800/60 p-3.5 rounded-2xl space-y-1.5">
@@ -513,7 +522,7 @@ export default function GearList({
                         onToggleSelected={onToggleSelected}
                         onToggleUnusedInReview={handleToggleUnused}
                         onUpdateGear={onUpdateGear}
-                        onDeleteGear={onDeleteGear}
+                        onDeleteGear={deleteGear}
                       />
                     ))
                   )}
