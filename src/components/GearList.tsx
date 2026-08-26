@@ -275,7 +275,7 @@ export default function GearList({
             : `キャンプ振り返り (${selectedGears.length})`}
         </h2>
 
-        {/* 🎯 丸数字を外した「アイコン ＋ テキスト」タブ */}
+        {/* モード切替タブ */}
         <div className="grid grid-cols-3 gap-1 bg-[#09090B] p-1 rounded-xl border border-zinc-800 w-full sm:w-auto">
           <button
             onClick={() => handleModeChange('edit')}
@@ -313,10 +313,19 @@ export default function GearList({
         </div>
       </div>
 
+      {/* モード別説明ガイドカード */}
       {screenMode === 'edit' && (
         <div className="bg-[#27272A]/40 border border-zinc-700/60 p-3 rounded-xl">
           <p className="text-[12px] text-zinc-300 font-normal leading-relaxed">
             持っていくギアにチェックを入れ、今回持っていかないギアはチェックを外して「お留守番（💤）」に設定できます。
+          </p>
+        </div>
+      )}
+
+      {screenMode === 'packing' && (
+        <div className="bg-[#27272A]/40 border border-zinc-700/60 p-3 rounded-xl">
+          <p className="text-[12px] text-zinc-300 font-normal leading-relaxed">
+            💡 ザックに詰めたギアにチェック（✅）を入れてください。「未チェックのみ」ボタンで残りの荷造りアイテムを絞り込めます。
           </p>
         </div>
       )}
@@ -335,6 +344,7 @@ export default function GearList({
         </div>
       )}
 
+      {/* パッキング進捗バー */}
       {screenMode === 'packing' && totalCount > 0 && (
         <div className="bg-[#27272A]/80 p-3.5 rounded-2xl border border-zinc-700/70 space-y-2 shadow-inner">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -458,28 +468,29 @@ export default function GearList({
               className="border rounded-xl overflow-hidden shadow-md scroll-mt-6"
               style={{ borderColor: `${catColor}50` }}
             >
+              {/* カテゴリー見出しバー（文字欠け防止＆余白最適化） */}
               <div
                 style={{ backgroundColor: '#18181B', borderColor: `${catColor}40` }}
                 className="sticky top-0 z-10 w-full flex items-center justify-between px-3 sm:px-4 py-2 border-b backdrop-blur-md gap-2"
               >
                 <button
                   onClick={() => onToggleCategoryOpen(catName)}
-                  className="flex items-center gap-1.5 sm:gap-2 text-left cursor-pointer flex-1 min-w-0"
+                  className="flex items-center gap-1.5 sm:gap-2 text-left cursor-pointer flex-1 min-w-0 overflow-hidden"
                 >
                   <span className="text-[12px] shrink-0">{catIcon}</span>
-                  <span style={{ color: catColor }} className="font-semibold text-[14px] tracking-wide truncate">
+                  <span style={{ color: catColor }} className="font-semibold text-[14px] tracking-wide shrink-0 whitespace-nowrap">
                     {catName}
                   </span>
-                  <span className="text-[12px] text-zinc-300 font-normal shrink-0 font-mono tabular-nums text-right">
+                  <span className="text-[12px] text-zinc-300 font-normal shrink-0 whitespace-nowrap font-mono tabular-nums text-right">
                     ({countText})
                   </span>
                 </button>
 
-                <div className="flex items-center gap-1.5 shrink-0">
+                <div className="flex items-center gap-1 shrink-0">
                   <select
                     value={sortOrder}
                     onChange={(e) => handleSortChange(catName, e.target.value)}
-                    className="bg-[#27272A] text-zinc-200 text-[12px] font-normal px-1.5 sm:px-2 py-1 rounded-lg border border-zinc-700 focus:outline-none focus:border-[#FF5500] cursor-pointer"
+                    className="bg-[#27272A] text-zinc-200 text-[11px] font-normal px-1.5 py-1 rounded-lg border border-zinc-700 focus:outline-none focus:border-[#FF5500] cursor-pointer"
                   >
                     <option value="default">更新順</option>
                     <option value="usage_desc">使用率順</option>
@@ -492,7 +503,7 @@ export default function GearList({
                     <button
                       onClick={() => onToggleCategoryOpen(catName)}
                       style={{ color: catColor }}
-                      className="text-[12px] font-normal cursor-pointer pl-0.5"
+                      className="text-[12px] font-normal cursor-pointer px-1"
                     >
                       {isOpen ? '▲' : '▼'}
                     </button>
