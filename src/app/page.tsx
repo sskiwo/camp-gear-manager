@@ -8,6 +8,7 @@ import WeightsSummary from '@/components/WeightsSummary';
 import GearSearch from '@/components/GearSearch';
 import GearList from '@/components/GearList';
 import CsvManager from '@/components/CsvManager';
+import HelpGuideModal, { STORAGE_KEY_GUIDE_SEEN } from '@/components/HelpGuideModal';
 import { GearItem } from '@/components/GearItemCard';
 
 type Camp = {
@@ -26,7 +27,6 @@ export default function Home() {
   const [gears, setGears] = useState<GearItem[]>([]);
   const [allGearsInAccount, setAllGearsInAccount] = useState<GearItem[]>([]);
 
-  // 🎯 デフォルトを「edit（ギア編集）」にし、localStorageから直前のタブを復元
   const [screenMode, setScreenMode] = useState<'edit' | 'packing' | 'review'>('edit');
   const [unusedGearIds, setUnusedGearIds] = useState<Set<string>>(new Set());
 
@@ -39,6 +39,9 @@ export default function Home() {
   const [isEditCampOpen, setIsEditCampOpen] = useState(false);
   const [editCampTitle, setEditCampTitle] = useState('');
 
+  // 🎯 使い方ガイドモーダルの表示状態
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
+
   const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({
     ベース: false,
     調理: false,
@@ -47,19 +50,23 @@ export default function Home() {
     消耗品: false,
   });
 
-  // 初回ロード時に最後に開いていたタブをlocalStorageから読み込む
+  // 初回ロード時: タブ状態の復元 & 使い方ガイドの初回自動オープンチェック
   useEffect(() => {
     try {
       const savedMode = localStorage.getItem(STORAGE_KEY_SCREEN_MODE) as 'edit' | 'packing' | 'review' | null;
       if (savedMode && (savedMode === 'edit' || savedMode === 'packing' || savedMode === 'review')) {
         setScreenMode(savedMode);
       }
+
+      const hasSeenGuide = localStorage.getItem(STORAGE_KEY_GUIDE_SEEN);
+      if (!hasSeenGuide) {
+        setIsHelpOpen(true);
+      }
     } catch (err) {
-      console.warn('Failed to load screen mode from localStorage:', err);
+      console.warn('LocalStorage error:', err);
     }
   }, []);
 
-  // タブ切り替え時にlocalStorageへ自動保存
   const handleScreenModeChange = (mode: 'edit' | 'packing' | 'review') => {
     setScreenMode(mode);
     try {
@@ -441,6 +448,7 @@ export default function Home() {
         <header className="border-b border-zinc-800 pb-3 space-y-3">
           <div className="flex items-center justify-between gap-3">
             
+            {/* ヘッダーロゴ＆タイトル */}
             <Link
               href="/"
               className="flex items-center gap-2.5 whitespace-nowrap overflow-hidden truncate hover:opacity-85 transition-opacity cursor-pointer group"
@@ -461,16 +469,32 @@ export default function Home() {
               </h1>
             </Link>
 
-            <button
-              onClick={handleTogglePublic}
-              className={`px-3 py-1.5 rounded-xl text-[12px] font-bold transition border cursor-pointer shrink-0 shadow-sm flex items-center gap-1.5 ${
-                currentSelectedCamp?.is_public
-                  ? 'bg-[#10B981] text-white border-transparent hover:bg-emerald-600'
-                  : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white'
-              }`}
-            >
-              <span>{currentSelectedCamp?.is_public ? '🌐 公開中' : '🔒 非公開'}</span>
-            </button>
+            {/* ヘッダー右側アクションボタン群 */}
+            <div className="flex items-center gap-2 shrink-0">
+              {/* 🎯 使い方ボタン */}
+              <button
+                type="button"
+                onClick={() => setIsHelpOpen(true)}
+                className="px-2.5 sm:px-3 py-1.5 rounded-xl text-[12px] font-bold transition border border-zinc-700 bg-zinc-800 text-zinc-200 hover:text-white hover:bg-zinc-700 cursor-pointer shadow-sm flex items-center gap-1"
+                title="アプリの使い方ガイドを表示"
+              >
+                <span>❓</span>
+                <span>使い方</span>
+              </button>
+
+              {/* 公開 / 非公開ボタン */}
+              <button
+                type="button"
+                onClick={handleTogglePublic}
+                className={`px-3 py-1.5 rounded-xl text-[12px] font-bold transition border cursor-pointer shadow-sm flex items-center gap-1.5 ${
+                  currentSelectedCamp?.is_public
+                    ? 'bg-[#10B981] text-white border-transparent hover:bg-emerald-600'
+                    : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white'
+                }`}
+              >
+                <span>{currentSelectedCamp?.is_public ? '🌐 公開中' : '🔒 非公開'}</span>
+              </button>
+            </div>
           </div>
 
           <div className="flex items-center justify-between gap-2 bg-[#18181B] px-3.5 py-2.5 rounded-xl border border-zinc-800 shadow-sm">
@@ -689,6 +713,12 @@ export default function Home() {
         />
 
         <CsvManager gears={gears} selectedCampId={selectedCampId} onGearsUpdated={fetchGears} />
+
+        {/* 使い方ガイドモーダル */}
+        <HelpGuideModal
+          isOpen={isHelpOpen}
+          onClose={() => setIsHelpOpen(false)}
+        />
 
         <footer className="pt-6 pb-8 text-center border-t border-zinc-800">
           <p className="text-[12px] text-zinc-500 font-normal">🏕️ Camp Gear Manager & Packing Tool</p>
