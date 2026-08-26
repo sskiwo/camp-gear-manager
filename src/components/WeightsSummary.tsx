@@ -125,11 +125,15 @@ export default function WeightsSummary({
   };
 
   return (
-    <section className="bg-[#18181B] border border-zinc-800 rounded-2xl p-4 sm:p-5 shadow-xl space-y-3.5 w-full overflow-hidden">
-      {/* ヘッダー */}
-      <div className="flex items-center justify-between gap-2 border-b border-zinc-800/80 pb-2.5">
+    <section className="bg-[#18181B] border border-zinc-800 rounded-2xl p-4 sm:p-5 shadow-xl space-y-3.5 w-full overflow-hidden transition-colors">
+      {/* 🎯 ヘッダー全体をクリック＆ホバー可能にして開閉をスムーズ化 */}
+      <div
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center justify-between gap-2 border-b border-zinc-800/80 pb-2.5 cursor-pointer select-none group/header hover:opacity-90 transition-opacity"
+        title={isOpen ? "クリックして詳細を折りたたむ" : "クリックして詳細を展開"}
+      >
         <div className="flex items-center gap-2.5 min-w-0">
-          <h2 className="text-[17px] sm:text-[18px] font-bold text-white tracking-tight shrink-0 whitespace-nowrap">
+          <h2 className="text-[17px] sm:text-[18px] font-bold text-white tracking-tight shrink-0 whitespace-nowrap group-hover/header:text-[#FF5500] transition-colors">
             サマリー
           </h2>
 
@@ -143,8 +147,11 @@ export default function WeightsSummary({
 
         <button
           type="button"
-          onClick={() => setIsOpen(!isOpen)}
-          className="h-8 w-8 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-zinc-700 flex items-center justify-center transition cursor-pointer shrink-0 active:scale-95"
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsOpen(!isOpen);
+          }}
+          className="h-8 w-8 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-zinc-700 flex items-center justify-center transition-all cursor-pointer shrink-0 active:scale-95 shadow-sm group-hover/header:border-zinc-500"
           aria-label="詳細サマリーを開閉"
           title={isOpen ? "詳細を折りたたむ" : "詳細を展開"}
         >
@@ -152,8 +159,8 @@ export default function WeightsSummary({
         </button>
       </div>
 
-      {/* 🎯 【常時表示】目標重量ゲージ＆プログレスバー */}
-      <div className="bg-[#27272A]/70 border border-zinc-700/60 rounded-xl p-3 sm:p-3.5 space-y-2">
+      {/* 【常時表示】目標重量ゲージ＆プログレスバー */}
+      <div className="bg-[#27272A]/70 hover:bg-[#27272A] border border-zinc-700/60 hover:border-zinc-600 rounded-xl p-3 sm:p-3.5 space-y-2 transition-all duration-200">
         <div className="flex items-center justify-between text-[11px] sm:text-[12px] gap-2">
           <div className="flex items-center gap-1.5 text-zinc-300 min-w-0">
             <span className="font-semibold text-white shrink-0">目標:</span>
@@ -173,7 +180,7 @@ export default function WeightsSummary({
                 <button
                   type="button"
                   onClick={() => setIsEditingTarget(false)}
-                  className="px-2 py-0.5 bg-[#FF5500] text-white rounded text-[10px] font-bold cursor-pointer"
+                  className="px-2 py-0.5 bg-[#FF5500] hover:bg-[#e04c00] text-white rounded text-[10px] font-bold cursor-pointer transition active:scale-95"
                 >
                   完了
                 </button>
@@ -182,11 +189,11 @@ export default function WeightsSummary({
               <button
                 type="button"
                 onClick={() => setIsEditingTarget(true)}
-                className="flex items-center gap-1 hover:text-white font-mono font-bold text-white transition cursor-pointer"
+                className="flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-zinc-700/70 font-mono font-bold text-white transition cursor-pointer group/edit"
                 title="目標重量を変更"
               >
-                <span>{targetKg.toFixed(2)} kg</span>
-                <span className="text-[10px] text-zinc-400 hover:text-[#FF5500]">✏️</span>
+                <span className="group-hover/edit:text-[#FF5500] transition-colors">{targetKg.toFixed(2)} kg</span>
+                <span className="text-[10px] text-zinc-400 group-hover/edit:text-[#FF5500] transition-colors">✏️</span>
               </button>
             )}
           </div>
@@ -219,14 +226,14 @@ export default function WeightsSummary({
         </div>
       </div>
 
-      {/* 🎯 【開閉対象】3分割サマリーカード ＆ 積載バランス */}
+      {/* 【開閉対象】3分割サマリーカード ＆ 積載バランス */}
       {isOpen && (
-        <div className="space-y-3.5 pt-0.5">
+        <div className="space-y-3.5 pt-0.5 animate-fade-in">
           {/* 3分割サマリーカード */}
           <div className="grid grid-cols-3 gap-1.5 sm:gap-2 text-center">
             {screenMode === 'review' ? (
               <>
-                <div className="bg-[#27272A]/50 border border-zinc-700/60 rounded-xl p-2 sm:p-2.5">
+                <div className="bg-[#27272A]/50 hover:bg-[#27272A]/80 border border-zinc-700/60 hover:border-zinc-600 rounded-xl p-2 sm:p-2.5 transition-all duration-200">
                   <span className="text-[10px] sm:text-[11px] text-zinc-400 block font-normal truncate">
                     実使用重量
                   </span>
@@ -234,7 +241,7 @@ export default function WeightsSummary({
                     {formatWeight(usedTotalWeight)}
                   </span>
                 </div>
-                <div className="bg-[#27272A]/50 border border-zinc-700/60 rounded-xl p-2 sm:p-2.5">
+                <div className="bg-[#27272A]/50 hover:bg-[#27272A]/80 border border-zinc-700/60 hover:border-zinc-600 rounded-xl p-2 sm:p-2.5 transition-all duration-200">
                   <span className="text-[10px] sm:text-[11px] text-amber-400 block font-normal truncate">
                     未使用重量
                   </span>
@@ -245,7 +252,7 @@ export default function WeightsSummary({
               </>
             ) : (
               <>
-                <div className="bg-[#27272A]/50 border border-zinc-700/60 rounded-xl p-2 sm:p-2.5">
+                <div className="bg-[#27272A]/50 hover:bg-[#27272A]/80 border border-zinc-700/60 hover:border-zinc-600 rounded-xl p-2 sm:p-2.5 transition-all duration-200">
                   <span className="text-[10px] sm:text-[11px] text-zinc-400 block font-normal truncate">
                     行き総重量 (満載)
                   </span>
@@ -253,7 +260,7 @@ export default function WeightsSummary({
                     {formatWeight(outboundTotalWeight)}
                   </span>
                 </div>
-                <div className="bg-[#27272A]/50 border border-zinc-700/60 rounded-xl p-2 sm:p-2.5">
+                <div className="bg-[#27272A]/50 hover:bg-[#27272A]/80 border border-zinc-700/60 hover:border-zinc-600 rounded-xl p-2 sm:p-2.5 transition-all duration-200">
                   <span className="text-[10px] sm:text-[11px] text-zinc-400 block font-normal truncate">
                     帰り総重量 (消費後)
                   </span>
@@ -264,7 +271,7 @@ export default function WeightsSummary({
               </>
             )}
 
-            <div className="bg-[#27272A]/50 border border-zinc-700/60 rounded-xl p-2 sm:p-2.5">
+            <div className="bg-[#27272A]/50 hover:bg-[#27272A]/80 border border-zinc-700/60 hover:border-zinc-600 rounded-xl p-2 sm:p-2.5 transition-all duration-200">
               <span className="text-[10px] sm:text-[11px] text-zinc-400 block font-normal truncate">
                 合計金額
               </span>
@@ -301,6 +308,7 @@ export default function WeightsSummary({
               )}
             </div>
 
+            {/* 🎯 ホバー時の微小拡大（hover:scale-105）とクリック感（active:scale-95）を追加 */}
             <div className="grid grid-cols-5 gap-1 sm:gap-1.5 pt-0.5">
               {CATEGORIES.map((cat) => {
                 const weight = categoryWeights[cat] || 0;
@@ -312,7 +320,7 @@ export default function WeightsSummary({
                     key={cat}
                     type="button"
                     onClick={() => onCategoryClick?.(cat)}
-                    className="bg-[#27272A]/50 hover:bg-[#27272A] border border-zinc-700/60 hover:border-zinc-500 rounded-lg p-1 sm:p-1.5 flex flex-col items-center justify-center transition cursor-pointer min-w-0"
+                    className="bg-[#27272A]/50 hover:bg-[#27272A] border border-zinc-700/60 hover:border-zinc-500 rounded-lg p-1 sm:p-1.5 flex flex-col items-center justify-center transition-all duration-200 cursor-pointer min-w-0 hover:scale-105 active:scale-95 shadow-sm"
                     title={`${cat}カテゴリーへスクロール`}
                   >
                     <div className="flex items-center gap-0.5 max-w-full">
