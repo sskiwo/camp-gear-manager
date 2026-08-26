@@ -138,7 +138,7 @@ export default function WeightsSummary({
     return `${Math.round(grams)}g`;
   };
 
-  // 🎯 パッキング完了重量比率フォーマット (例: "5.79 / 8.91kg")
+  // パッキング完了重量比率フォーマット (例: "5.79 / 8.91kg")
   const formatPackedWeightRatio = (packedGrams: number, totalGrams: number) => {
     if (totalGrams >= 1000) {
       const packedVal = (packedGrams / 1000).toFixed(2);
@@ -203,7 +203,7 @@ export default function WeightsSummary({
       {/* 【常時表示】モードに応じたプログレスバー */}
       <div className="bg-[#27272A]/70 hover:bg-[#27272A] border border-zinc-700/60 hover:border-zinc-600 rounded-xl p-2.5 sm:p-3 space-y-1.5 transition-all duration-200">
         {screenMode === 'packing' ? (
-          /* 🎯 パッキングモード時：「:」なし ＆ 左側「kg」なし */
+          /* パッキングモード時 */
           <>
             <div className="flex items-center justify-between text-[11px] sm:text-[12px] gap-2 font-mono tabular-nums">
               <div className="flex items-center gap-1.5 text-zinc-300 font-bold min-w-0">
@@ -228,21 +228,21 @@ export default function WeightsSummary({
             </div>
           </>
         ) : screenMode === 'review' ? (
-          /* レビューモード時：実使用（緑）の削り出し方式 */
+          /* レビューモード時（文字色を白・グレー基調へ統一） */
           <>
             <div className="flex items-center justify-between text-[11px] sm:text-[12px] gap-2 font-mono tabular-nums">
-              <div className="flex items-center gap-1.5 text-zinc-300 font-bold min-w-0">
+              <div className="flex items-center gap-1.5 text-zinc-300 min-w-0">
                 <span className="text-white font-sans font-semibold shrink-0">実使用重量:</span>
-                <span className="text-[#10B981]">
+                <span className="text-white font-bold font-mono">
                   {formatWeight(usedTotalWeight)}
                 </span>
                 <span className="text-zinc-400">/ {formatWeight(outboundTotalWeight)}</span>
               </div>
 
-              <div className="text-right shrink-0 font-bold">
+              <div className="text-right shrink-0">
                 <span className="text-zinc-400">未使用: </span>
-                <span className="text-amber-400">{formatWeight(unusedTotalWeight)}</span>
-                <span className="text-zinc-400 font-normal ml-1">({unusedCount}点)</span>
+                <span className="text-zinc-300 font-mono">{formatWeight(unusedTotalWeight)}</span>
+                <span className="text-zinc-400 font-normal ml-1 font-mono">({unusedCount}点)</span>
               </div>
             </div>
 
@@ -255,7 +255,7 @@ export default function WeightsSummary({
             </div>
           </>
         ) : (
-          /* エディット時：目標重量ゲージ */
+          /* エディット時 */
           <>
             <div className="flex items-center justify-between text-[11px] sm:text-[12px] gap-2">
               <div className="flex items-center gap-1.5 text-zinc-300 min-w-0">
@@ -341,10 +341,10 @@ export default function WeightsSummary({
                   </span>
                 </div>
                 <div className="bg-[#27272A]/50 hover:bg-[#27272A]/80 border border-zinc-700/60 hover:border-zinc-600 rounded-xl p-2 sm:p-2.5 transition-all duration-200">
-                  <span className="text-[10px] sm:text-[11px] text-amber-400 block font-normal truncate">
+                  <span className="text-[10px] sm:text-[11px] text-zinc-400 block font-normal truncate">
                     未使用重量
                   </span>
-                  <span className="text-[13px] sm:text-[14px] font-bold text-amber-400 font-mono block mt-0.5">
+                  <span className="text-[13px] sm:text-[14px] font-bold text-white font-mono block mt-0.5">
                     {formatWeight(unusedTotalWeight)}
                   </span>
                 </div>
