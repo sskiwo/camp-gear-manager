@@ -92,8 +92,9 @@ export default function HelpGuideModal({ isOpen, onClose }: HelpGuideModalProps)
                 <span className="font-bold text-white whitespace-nowrap">🎒 パッキング（当日）:</span>
                 <span className="text-zinc-300 font-normal">ザックに詰めたアイテムをワンタップでチェック（未チェック絞り込み対応）。</span>
               </div>
+              {/* 🎯 「振り返り」を「レビュー」に統一 */}
               <div className="flex items-start gap-2">
-                <span className="font-bold text-white whitespace-nowrap">⛺ 振り返り（帰宅後）:</span>
+                <span className="font-bold text-white whitespace-nowrap">⛺ レビュー（帰宅後）:</span>
                 <span className="text-zinc-300 font-normal">使わなかったギア（⚠️）を記録し、稼働率実績を更新して次回の軽量化に活用。</span>
               </div>
             </div>

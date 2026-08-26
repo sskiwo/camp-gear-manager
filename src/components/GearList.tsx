@@ -239,7 +239,7 @@ export default function GearList({
         targetWeightKg: targetWeightKg || 15.0,
       });
     } catch (err) {
-      console.error('振り返り更新エラー:', err);
+      console.error('レビュー更新エラー:', err);
     } finally {
       setIsSubmittingReview(false);
     }
@@ -267,15 +267,16 @@ export default function GearList({
     <section className="bg-[#18181B] p-4 md:p-6 rounded-2xl border border-zinc-800 space-y-4 shadow-xl">
       {/* リストヘッダー */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-3">
+        {/* 🎯 セクション見出しを「レビュー」に更新 */}
         <h2 className="text-[18px] font-bold text-zinc-100 flex items-center gap-1.5">
           {screenMode === 'edit'
             ? `ギア選定 (${totalCount} / ${gears.length})`
             : screenMode === 'packing'
             ? `パッキングリスト (${packedCount} / ${totalCount})`
-            : `キャンプ振り返り (${selectedGears.length})`}
+            : `レビュー (${selectedGears.length})`}
         </h2>
 
-        {/* モード切替タブ */}
+        {/* 🎯 モード切替タブ：第3タブを「⛺ レビュー」に更新 */}
         <div className="grid grid-cols-3 gap-1 bg-[#09090B] p-1 rounded-xl border border-zinc-800 w-full sm:w-auto">
           <button
             onClick={() => handleModeChange('edit')}
@@ -308,7 +309,7 @@ export default function GearList({
             }`}
           >
             <span>⛺</span>
-            <span>振り返り</span>
+            <span>レビュー</span>
           </button>
         </div>
       </div>
@@ -335,7 +336,7 @@ export default function GearList({
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
             <span className="text-[12px] font-bold text-amber-300">
-              キャンプお疲れ様でした！持参ギアを振り返りましょう
+              キャンプお疲れ様でした！持参ギアのレビューを行いましょう
             </span>
           </div>
           <p className="text-[12px] text-zinc-300 leading-relaxed font-normal">
@@ -468,7 +469,7 @@ export default function GearList({
               className="border rounded-xl overflow-hidden shadow-md scroll-mt-6"
               style={{ borderColor: `${catColor}50` }}
             >
-              {/* カテゴリー見出しバー（文字欠け防止＆余白最適化） */}
+              {/* カテゴリー見出しバー */}
               <div
                 style={{ backgroundColor: '#18181B', borderColor: `${catColor}40` }}
                 className="sticky top-0 z-10 w-full flex items-center justify-between px-3 sm:px-4 py-2 border-b backdrop-blur-md gap-2"
@@ -541,7 +542,7 @@ export default function GearList({
         })
       )}
 
-      {/* 振り返り完了ボタン */}
+      {/* レビュー完了ボタン */}
       {screenMode === 'review' && selectedGears.length > 0 && (
         <div className="pt-2">
           <button
@@ -557,7 +558,7 @@ export default function GearList({
             ) : (
               <>
                 <CheckCircle2 className="w-5 h-5" />
-                <span>振り返りを完了してスコアを見る</span>
+                <span>レビューを完了してスコアを見る</span>
               </>
             )}
           </button>
