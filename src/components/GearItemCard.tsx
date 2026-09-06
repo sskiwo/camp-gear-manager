@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Trash2 } from 'lucide-react';
+import { Trash2, ShoppingCart } from 'lucide-react';
+import { buildAmazonUrl, attachAmazonTag } from '@/utils/affiliate';
 
 export type GearItem = {
   id: string;
@@ -125,12 +126,12 @@ export default function GearItemCard({
   const [editWeight, setEditWeight] = useState(item.weight || 0);
   const [editPrice, setEditPrice] = useState(item.price || 0);
   const [editQuantity, setEditQuantity] = useState(item.quantity || 1);
+  const [editProductUrl, setEditProductUrl] = useState(item.product_url || '');
   const [editPurchaseDate, setEditPurchaseDate] = useState(item.purchase_date || '');
   const [editFuelType, setEditFuelType] = useState(item.fuel_type || '不要/なし');
   const [editMemo, setEditMemo] = useState(item.memo || '');
   const [editIsWeightEstimated, setEditIsWeightEstimated] = useState(item.is_weight_estimated ?? false);
 
-  // スワイプ削除用State & Ref
   const [translateX, setTranslateX] = useState(0);
   const [isSwiping, setIsSwiping] = useState(false);
   const touchStartXRef = useRef<number>(0);
@@ -144,6 +145,7 @@ export default function GearItemCard({
     setEditWeight(item.weight || 0);
     setEditPrice(item.price || 0);
     setEditQuantity(item.quantity || 1);
+    setEditProductUrl(item.product_url || '');
     setEditPurchaseDate(item.purchase_date || '');
     setEditFuelType(item.fuel_type || '不要/なし');
     setEditMemo(item.memo || '');
@@ -183,6 +185,11 @@ export default function GearItemCard({
   const usedCount = item.total_used_count || 0;
   const usageRate = broughtCount > 0 ? (usedCount / broughtCount) * 100 : 0;
 
+  // 🎯 AmazonアソシエイトURLの生成（直接URLがあれば優先、なければ検索URL）
+  const amazonUrl = item.product_url && item.product_url.trim()
+    ? attachAmazonTag(item.product_url)
+    : buildAmazonUrl(item.product_name || item.name, item.brand, item.model_number);
+
   const handleDelete = () => {
     if (onDeleteGear) {
       const confirmed = window.confirm(`「${item.name}」を削除してもよろしいですか？`);
@@ -194,7 +201,6 @@ export default function GearItemCard({
     }
   };
 
-  // タッチスワイプ操作ハンドラー
   const handleTouchStart = (e: React.TouchEvent) => {
     if (mode !== 'edit' || isEditing) return;
     touchStartXRef.current = e.touches[0].clientX;
@@ -311,6 +317,7 @@ export default function GearItemCard({
       weight: Math.max(0, Number(editWeight) || 0),
       price: Math.max(0, Number(editPrice) || 0),
       quantity: Math.max(1, Number(editQuantity) || 1),
+      product_url: editProductUrl.trim(),
       purchase_date: editPurchaseDate,
       fuel_type: editFuelType === '不要/なし' ? '' : editFuelType,
       memo: editMemo.trim(),
@@ -397,6 +404,18 @@ export default function GearItemCard({
             <span className="text-[12px] font-mono tabular-nums font-normal text-zinc-300 shrink-0 min-w-[50px] text-right">
               {formatWeight(totalWeight)}
             </span>
+
+            {/* 🛒 Amazonリンクボタン */}
+            <a
+              href={amazonUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#27272A] hover:bg-[#FF5500]/20 text-zinc-300 hover:text-[#FF5500] border border-zinc-700 transition active:scale-95 shadow-sm"
+              title="Amazonで商品を確認"
+            >
+              <ShoppingCart className="w-3.5 h-3.5" />
+            </a>
           </div>
         </div>
 
@@ -435,7 +454,7 @@ export default function GearItemCard({
               <span
                 className={`text-[12px] truncate block ${
                   isUnusedInReview
-                    ? 'text-zinc-500 line-through font-normal'
+                    ? 'text-zinc-500 font-normal'
                     : 'text-white font-bold'
                 }`}
               >
@@ -456,6 +475,18 @@ export default function GearItemCard({
             }`}>
               {formatWeight(totalWeight)}
             </span>
+
+            {/* 🛒 Amazonリンクボタン */}
+            <a
+              href={amazonUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#27272A] hover:bg-[#FF5500]/20 text-zinc-300 hover:text-[#FF5500] border border-zinc-700 transition active:scale-95 shadow-sm"
+              title="Amazonで商品を確認"
+            >
+              <ShoppingCart className="w-3.5 h-3.5" />
+            </a>
           </div>
         </div>
 
@@ -467,7 +498,6 @@ export default function GearItemCard({
   // ✏️ ギア編集モード UI
   return (
     <div className="relative overflow-hidden border-b border-zinc-800 bg-[#121214]">
-      {/* スワイプ操作時のみ表示される削除ボタンエリア */}
       {translateX < 0 && (
         <div className="absolute inset-y-0 right-0 w-[72px] bg-red-600 flex items-center justify-center z-0">
           <button
@@ -482,7 +512,6 @@ export default function GearItemCard({
         </div>
       )}
 
-      {/* メインカードコンテナ */}
       <div
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
@@ -522,7 +551,6 @@ export default function GearItemCard({
                   {item.brand}
                 </span>
               )}
-              {/* 🎯 line-through（取り消し横線）を削除 */}
               <span
                 className={`truncate group-hover:text-[#FF5500] transition-colors ${
                   !isSelected ? 'text-zinc-400 font-normal' : 'text-white font-normal'
@@ -554,6 +582,18 @@ export default function GearItemCard({
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
+            {/* 🎯 【重要】Amazonリンクボタン（鉛筆ボタンの左隣） */}
+            <a
+              href={amazonUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="w-7 h-7 flex items-center justify-center rounded-lg bg-zinc-800 hover:bg-[#FF5500]/20 text-zinc-300 hover:text-[#FF5500] border border-zinc-700 transition active:scale-95 shadow-sm"
+              title="Amazonで商品を確認"
+            >
+              <ShoppingCart className="w-3.5 h-3.5" />
+            </a>
+
             <button
               onClick={handleToggleEdit}
               className={`w-7 h-7 flex items-center justify-center rounded-lg text-[12px] transition border cursor-pointer ${
@@ -691,6 +731,23 @@ export default function GearItemCard({
               ))}
             </select>
           </div>
+        </div>
+
+        {/* 🎯 Amazon特定商品URL入力欄＆注記テキスト */}
+        <div>
+          <label className="text-[12px] font-normal text-zinc-400 block mb-0.5">
+            Amazon特定商品URL
+          </label>
+          <input
+            type="url"
+            placeholder="https://www.amazon.co.jp/dp/..."
+            value={editProductUrl}
+            onChange={(e) => setEditProductUrl(e.target.value)}
+            className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2.5 py-1.5 text-[12px] text-white focus:border-[#FF5500] focus:outline-none font-normal"
+          />
+          <p className="text-[11px] text-zinc-500 mt-1 font-normal">
+            ※登録すると🛒アイコンタップ時に直接その商品へ移動します（自動でアソシエイトタグが付与されます）。
+          </p>
         </div>
 
         <div>
