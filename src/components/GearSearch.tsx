@@ -2,7 +2,8 @@
 
 import React, { useState, useRef } from 'react';
 import Link from 'next/link';
-import { Camera, Search, X, Loader2, Lightbulb, RefreshCw, RotateCcw, CheckSquare, Square, Check } from 'lucide-react';
+import { Camera, Search, X, Loader2, Lightbulb, RefreshCw, RotateCcw, CheckSquare, Square, Check, ShoppingCart } from 'lucide-react';
+import { buildAmazonUrl } from '@/utils/affiliate';
 
 export interface ScannedItem {
   product_name: string;
@@ -14,6 +15,7 @@ export interface ScannedItem {
   purchase_date?: string;
   fuel_type?: string;
   memo?: string;
+  product_url?: string;
 }
 
 interface GearSearchProps {
@@ -263,7 +265,6 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
   return (
     <div className="bg-[#18181B] border border-zinc-800 rounded-2xl p-5 shadow-lg space-y-4">
       <div className="flex items-center justify-between">
-        {/* 🎯 見出しを「ギア追加」に統一 */}
         <h2 className="text-white font-bold text-[18px]">ギア追加</h2>
         <button
           type="button"
@@ -446,6 +447,8 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
               ) : (
                 scannedResults.map((item, index) => {
                   const isChecked = selectedIndices.has(index);
+                  // 🎯 各ギア候補のAmazonリンクURLを生成
+                  const amazonUrl = buildAmazonUrl(item.product_name, item.brand);
 
                   return (
                     <div
@@ -469,15 +472,29 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
                           </span>
                         </label>
 
-                        <select
-                          value={item.category || 'ベース'}
-                          onChange={(e) => handleResultChange(index, { category: e.target.value })}
-                          className="bg-[#18181B] text-[#FF5500] border border-zinc-700 rounded-lg px-2 py-1 text-[12px] font-semibold focus:outline-none focus:border-[#FF5500] cursor-pointer"
-                        >
-                          {CATEGORIES.map((cat) => (
-                            <option key={cat} value={cat}>{cat}</option>
-                          ))}
-                        </select>
+                        <div className="flex items-center gap-2">
+                          {/* 🎯 Amazon商品確認リンクボタン */}
+                          <a
+                            href={amazonUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="h-7 px-2 bg-zinc-800 hover:bg-[#FF5500]/20 text-zinc-300 hover:text-[#FF5500] border border-zinc-700 rounded-lg text-[11px] font-bold transition flex items-center gap-1 cursor-pointer active:scale-95 shadow-sm"
+                            title="Amazonで商品を確認"
+                          >
+                            <ShoppingCart className="w-3.5 h-3.5" />
+                            <span>Amazon</span>
+                          </a>
+
+                          <select
+                            value={item.category || 'ベース'}
+                            onChange={(e) => handleResultChange(index, { category: e.target.value })}
+                            className="bg-[#18181B] text-[#FF5500] border border-zinc-700 rounded-lg px-2 py-1 text-[12px] font-semibold focus:outline-none focus:border-[#FF5500] cursor-pointer"
+                          >
+                            {CATEGORIES.map((cat) => (
+                              <option key={cat} value={cat}>{cat}</option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
