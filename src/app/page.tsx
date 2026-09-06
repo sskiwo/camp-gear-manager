@@ -11,6 +11,7 @@ import GearList from '@/components/GearList';
 import CsvManager from '@/components/CsvManager';
 import ShareAppCard from '@/components/ShareAppCard';
 import HelpGuideModal, { STORAGE_KEY_GUIDE_SEEN } from '@/components/HelpGuideModal';
+import Footer from '@/components/Footer';
 import { GearItem } from '@/components/GearItemCard';
 
 type Camp = {
@@ -680,6 +681,7 @@ export default function Home() {
           </div>
         )}
 
+        {/* パッキングの引き継ぎ */}
         {isAddCampOpen && (
           <div className="bg-[#18181B] border border-[#FF5500]/50 p-5 rounded-2xl space-y-4 shadow-2xl animate-fade-in w-full">
             <h3 className="text-[14px] font-semibold text-white">新しいキャンプを追加</h3>
@@ -829,12 +831,8 @@ export default function Home() {
           onClose={() => setIsHelpOpen(false)}
         />
 
-        {/* 🎯 「🏕️ Camp Gear Manager & Packing Tool」を削除し、免責文言のみを配置 */}
-        <footer className="pt-6 pb-8 text-center border-t border-zinc-800">
-          <p className="text-[10px] text-zinc-600 font-normal max-w-xl mx-auto leading-relaxed px-4">
-            ※ 当サイトはAmazon.co.jpアソシエイト・プログラムに参加しており、適格販売により収入を得ています。
-          </p>
-        </footer>
+        {/* 🎯 規約・ポリシー・お問い合わせリンク＆Amazon免責文言を含む共通フッター */}
+        <Footer />
       </div>
     </main>
   );
