@@ -818,7 +818,7 @@ export default function Home() {
         {/* CSV管理 */}
         <CsvManager gears={gears} selectedCampId={selectedCampId} onGearsUpdated={fetchGears} />
 
-        {/* 🎯 【場所1】フッター直上の友だち紹介バナー */}
+        {/* フッター直上の友だち紹介バナー */}
         <ShareAppCard />
 
         <HelpGuideModal
@@ -826,8 +826,12 @@ export default function Home() {
           onClose={() => setIsHelpOpen(false)}
         />
 
-        <footer className="pt-6 pb-8 text-center border-t border-zinc-800">
+        {/* 🎯 Amazonアソシエイト参加表明の免責表記を含むフッター */}
+        <footer className="pt-6 pb-8 text-center border-t border-zinc-800 space-y-2">
           <p className="text-[12px] text-zinc-500 font-normal">🏕️ Camp Gear Manager & Packing Tool</p>
+          <p className="text-[10px] text-zinc-600 font-normal max-w-xl mx-auto leading-relaxed px-4">
+            ※ 当サイトはAmazon.co.jpアソシエイト・プログラムに参加しており、適格販売により収入を得ています。
+          </p>
         </footer>
       </div>
     </main>
