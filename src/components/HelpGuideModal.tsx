@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Image from 'next/image';
-import { X, Search, Camera, Scale, Layers, Sparkles, Share2, Users, ArrowRight } from 'lucide-react';
+import { X, Search, Camera, Scale, Layers, Sparkles, Share2, Users } from 'lucide-react';
 import { shareApp } from '@/utils/share';
 
 interface HelpGuideModalProps {
@@ -104,7 +104,7 @@ export default function HelpGuideModal({ isOpen, onClose }: HelpGuideModalProps)
             <div className="space-y-2 pl-0.5">
               <div className="bg-[#18181B]/60 p-2.5 rounded-lg border border-zinc-800 space-y-0.5">
                 <div className="flex items-center gap-1.5 font-bold text-white">
-                  <span>✏️ ギア編集（準備）</span>
+                  <span>✏️ ギア選定（準備）</span>
                 </div>
                 <p className="text-zinc-400 font-normal leading-relaxed">
                   今回持参するギア（🎒）とお留守番（💤）を選定。<strong className="text-zinc-200">行をタップして詳細編集</strong>、<strong className="text-amber-400">左スワイプで即座に削除</strong>できます。
@@ -142,7 +142,7 @@ export default function HelpGuideModal({ isOpen, onClose }: HelpGuideModalProps)
                 </span>
               </h3>
               <p className="text-zinc-300 font-normal leading-relaxed">
-                「みんなのギアから追加」ボタンから、他のキャンパーが公開している実際のパッキングリストや厳選ギアを閲覧・参考にできます。
+                「みんなのギアから追加」ボタンから、他のキャンパーが公開している実際のパッキングや厳選ギアを閲覧・参考にできます。
               </p>
               <p className="text-zinc-400 font-normal leading-relaxed">
                 気になるギアはワンタップで自分のリストに取り込み可能。自分のリストも右上の「公開」ボタンで仲間と手軽にシェアできます。

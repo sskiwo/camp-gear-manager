@@ -62,7 +62,6 @@ export default function ReviewResultModal({
   const usageRate =
     result.totalCount > 0 ? Math.round((result.usedCount / result.totalCount) * 100) : 100;
 
-  // 🎯 スコア結果の動的シェア実行
   const handleShareResult = async () => {
     const text =
       `🏕️【キャンプ パッキング結果】\n` +
@@ -194,7 +193,7 @@ export default function ReviewResultModal({
             </p>
           </div>
 
-          {/* 🎯 【指示書要件】アドバイスカード下・フッター直前のシェアボタン */}
+          {/* SNS・友だちへのスコアシェアボタン */}
           <button
             type="button"
             onClick={handleShareResult}
@@ -241,13 +240,14 @@ export default function ReviewResultModal({
             </button>
           )}
 
+          {/* 🎯 「ギア選定に戻る」に統一 */}
           <button
             type="button"
             onClick={onClose}
             disabled={isApplyingNext}
             className="w-full py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-normal rounded-xl text-[12px] transition cursor-pointer text-center"
           >
-            ギア一覧（編集モード）に戻る
+            ギア選定に戻る
           </button>
         </div>
       </div>
