@@ -409,6 +409,7 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
         </div>
       )}
 
+      {/* 🎯 AI検出・検索候補モーダル */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="bg-[#18181B] border border-zinc-800 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
@@ -480,15 +481,16 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
                         </label>
 
                         <div className="flex items-center gap-2">
+                          {/* 🎯 【要件対応】「🛒 Amazonで確認」ボタン */}
                           <a
                             href={amazonUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="h-7 px-2 bg-zinc-800 hover:bg-[#FF5500]/20 text-zinc-300 hover:text-[#FF5500] border border-zinc-700 rounded-lg text-[11px] font-bold transition flex items-center gap-1 cursor-pointer active:scale-95 shadow-sm"
-                            title="Amazonで商品を確認"
+                            className="h-7 px-2.5 bg-zinc-800 hover:bg-[#FF5500]/20 text-zinc-200 hover:text-[#FF5500] border border-zinc-700 rounded-lg text-[11px] font-bold transition flex items-center gap-1.5 cursor-pointer active:scale-95 shadow-sm"
+                            title="Amazonで商品スペック・価格を確認"
                           >
-                            <ShoppingCart className="w-3.5 h-3.5" />
-                            <span>Amazon</span>
+                            <ShoppingCart className="w-3.5 h-3.5 text-[#FF5500]" />
+                            <span>Amazonで確認</span>
                           </a>
 
                           <select
