@@ -74,12 +74,10 @@ function CampHomeContent() {
 
   const isReadOnly = Boolean(selectedCampId && !ownedCampIds.has(selectedCampId));
 
-  // この端末に表示を許可するキャンプ（自分が所有するキャンプ ＋ 現在URLで指定して開いている閲覧対象キャンプ）
   const visibleCamps = camps.filter(
     (c) => ownedCampIds.has(c.id) || c.id === selectedCampId
   );
 
-  // 新規作成モーダルの引き継ぎ元として選べるキャンプ（自分が作成・所有するものだけに限定）
   const myOwnedCamps = camps.filter((c) => ownedCampIds.has(c.id));
 
   const registerCampOwnership = (campId: string) => {
@@ -157,7 +155,6 @@ function CampHomeContent() {
       const allCamps = data || [];
       setCamps(allCamps);
 
-      // 1. URLパラメータで特定のキャンプが指定されている場合
       if (urlCampId) {
         const matched = allCamps.find((c) => c.id === urlCampId);
         if (matched) {
@@ -168,7 +165,6 @@ function CampHomeContent() {
         }
       }
 
-      // 2. この端末で過去に作成したキャンプがある場合
       const myCamps = allCamps.filter((c) => savedOwnedIds.includes(c.id));
       if (myCamps.length > 0) {
         setSelectedCampId(myCamps[0].id);
@@ -177,7 +173,6 @@ function CampHomeContent() {
         return;
       }
 
-      // 3. 初見アクセス：初期キャンプを新規作成
       const { data: newCamp, error: createErr } = await supabase
         .from('camps')
         .insert([{ title: 'マイ・ファーストキャンプ', is_public: false }])
@@ -709,7 +704,7 @@ function CampHomeContent() {
           </div>
         )}
         
-        {/* ヘッダーエリア（上部の共有ボタンを削除してスッキリ配置） */}
+        {/* ヘッダーエリア */}
         <header className="border-b border-zinc-800 pb-3 space-y-3 w-full">
           <div className="flex items-center justify-between gap-2 w-full">
             <Link
@@ -1015,12 +1010,12 @@ function CampHomeContent() {
           isReadOnly={isReadOnly}
         />
 
+        {/* 🎯 このキャンプの共有カード（CSV管理の上に配置） */}
+        <ShareAppCard campId={selectedCampId} isReadOnly={isReadOnly} />
+
         {!isReadOnly && (
           <CsvManager gears={gears} selectedCampId={selectedCampId} onGearsUpdated={fetchGears} />
         )}
-
-        {/* 下部の共有カード（現在のキャンプIDを渡し、内部で共有URLコピーができる） */}
-        <ShareAppCard campId={selectedCampId} isReadOnly={isReadOnly} />
 
         <HelpGuideModal
           isOpen={isHelpOpen}
