@@ -530,8 +530,6 @@ export default function Home() {
         {/* ヘッダーエリア */}
         <header className="border-b border-zinc-800 pb-3 space-y-3 w-full">
           <div className="flex items-center justify-between gap-2 w-full">
-            
-            {/* 🎯 最新公式ロゴ表示 */}
             <Link
               href="/"
               className="flex items-center gap-2.5 whitespace-nowrap shrink-0 hover:opacity-90 transition-opacity cursor-pointer group min-w-0"
@@ -682,7 +680,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* 🎯 「パッキングの引き継ぎ」に統一 */}
         {isAddCampOpen && (
           <div className="bg-[#18181B] border border-[#FF5500]/50 p-5 rounded-2xl space-y-4 shadow-2xl animate-fade-in w-full">
             <h3 className="text-[14px] font-semibold text-white">新しいキャンプを追加</h3>
@@ -824,6 +821,7 @@ export default function Home() {
 
         <CsvManager gears={gears} selectedCampId={selectedCampId} onGearsUpdated={fetchGears} />
 
+        {/* 控えめな友だち紹介カード */}
         <ShareAppCard />
 
         <HelpGuideModal
@@ -831,8 +829,8 @@ export default function Home() {
           onClose={() => setIsHelpOpen(false)}
         />
 
-        <footer className="pt-6 pb-8 text-center border-t border-zinc-800 space-y-2">
-          <p className="text-[12px] text-zinc-500 font-normal">🏕️ Camp Gear Manager & Packing Tool</p>
+        {/* 🎯 「🏕️ Camp Gear Manager & Packing Tool」を削除し、免責文言のみを配置 */}
+        <footer className="pt-6 pb-8 text-center border-t border-zinc-800">
           <p className="text-[10px] text-zinc-600 font-normal max-w-xl mx-auto leading-relaxed px-4">
             ※ 当サイトはAmazon.co.jpアソシエイト・プログラムに参加しており、適格販売により収入を得ています。
           </p>
