@@ -27,7 +27,6 @@ const STORAGE_KEY_SCREEN_MODE = 'camp_active_screen_mode';
 const STORAGE_KEY_TARGET_WEIGHT = 'camp_target_weight_kg';
 const STORAGE_KEY_OWNED_CAMPS = 'camp_owned_tokens_map';
 
-// ランダムな推測困難トークン生成関数
 function generateRandomToken() {
   const chars = 'abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
   let token = '';
@@ -46,7 +45,6 @@ function CampHomeContent() {
   const [gears, setGears] = useState<GearItem[]>([]);
   const [allGearsInAccount, setAllGearsInAccount] = useState<GearItem[]>([]);
 
-  // 端末内に保存された「自分がオーナーであるキャンプID」の一覧
   const [ownedCampIds, setOwnedCampIds] = useState<Set<string>>(new Set());
 
   const [screenMode, setScreenMode] = useState<'edit' | 'packing' | 'review'>('edit');
@@ -58,7 +56,7 @@ function CampHomeContent() {
 
   const [isAddCampOpen, setIsAddCampOpen] = useState(false);
   const [newCampTitle, setNewCampTitle] = useState('');
-  const [copyOption, setCopyOption] = useState<'latest' | 'select' | 'none'>('latest');
+  const [copyOption, setCopyOption] = useState<'latest' | 'select' | 'none'>('none');
   const [selectedSourceCampId, setSelectedSourceCampId] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -75,38 +73,8 @@ function CampHomeContent() {
     消耗品: false,
   });
 
-  // オーナー判定: 選択中のキャンプIDが端末の所有リストに含まれていれば編集可能、なければ閲覧専用
   const isReadOnly = Boolean(selectedCampId && !ownedCampIds.has(selectedCampId));
 
-  // ローカルストレージからオーナー情報を読み込み
-  useEffect(() => {
-    try {
-      const savedOwned = localStorage.getItem(STORAGE_KEY_OWNED_CAMPS);
-      if (savedOwned) {
-        const parsed = JSON.parse(savedOwned);
-        setOwnedCampIds(new Set(Object.keys(parsed)));
-      }
-
-      const savedMode = localStorage.getItem(STORAGE_KEY_SCREEN_MODE) as 'edit' | 'packing' | 'review' | null;
-      if (savedMode && (savedMode === 'edit' || savedMode === 'packing' || savedMode === 'review')) {
-        setScreenMode(savedMode);
-      }
-
-      const savedWeight = localStorage.getItem(STORAGE_KEY_TARGET_WEIGHT);
-      if (savedWeight && !isNaN(Number(savedWeight))) {
-        setTargetWeightKg(Number(savedWeight));
-      }
-
-      const hasSeenGuide = localStorage.getItem(STORAGE_KEY_GUIDE_SEEN);
-      if (!hasSeenGuide) {
-        setIsHelpOpen(true);
-      }
-    } catch (err) {
-      console.warn('LocalStorage load error:', err);
-    }
-  }, []);
-
-  // キャンプの所有権をローカルストレージに記憶
   const registerCampOwnership = (campId: string) => {
     try {
       const current = localStorage.getItem(STORAGE_KEY_OWNED_CAMPS);
@@ -157,6 +125,18 @@ function CampHomeContent() {
     setConnectionError(null);
 
     try {
+      // 端末に記録された自分がオーナーのキャンプID一覧を取得
+      let savedOwnedIds: string[] = [];
+      try {
+        const savedOwned = localStorage.getItem(STORAGE_KEY_OWNED_CAMPS);
+        if (savedOwned) {
+          savedOwnedIds = Object.keys(JSON.parse(savedOwned));
+        }
+      } catch (e) {
+        console.warn('LocalStorage error:', e);
+      }
+
+      // 全キャンプを取得
       const { data, error } = await supabase
         .from('camps')
         .select('*')
@@ -164,41 +144,54 @@ function CampHomeContent() {
 
       if (error) {
         console.error('Fetch Camps Error:', error);
-        setConnectionError(`Supabaseエラー: ${error.message} (${error.code || 'CODEなし'})`);
+        setConnectionError(`Supabaseエラー: ${error.message}`);
         setIsLoading(false);
         return;
       }
 
-      if (data && data.length > 0) {
-        setCamps(data);
-        const matched = urlCampId ? data.find((c) => c.id === urlCampId) : null;
-        const initialId = matched ? matched.id : data[0].id;
-        setSelectedCampId(initialId);
-        updateUrlWithCamp(initialId);
-      } else {
-        const { data: newCamp, error: createErr } = await supabase
-          .from('camps')
-          .insert([{ title: 'マイ・ファーストキャンプ', is_public: false }])
-          .select()
-          .single();
+      const allCamps = data || [];
+      setCamps(allCamps);
 
-        if (createErr) {
-          console.error('Create Initial Camp Error:', createErr);
-          setConnectionError(`初期キャンプ作成エラー: ${createErr.message}`);
+      // 1. URLパラメータで特定のキャンプが指定されている場合（共有リンクなど）
+      if (urlCampId) {
+        const matched = allCamps.find((c) => c.id === urlCampId);
+        if (matched) {
+          setSelectedCampId(matched.id);
+          updateUrlWithCamp(matched.id);
           setIsLoading(false);
           return;
         }
-
-        if (newCamp) {
-          registerCampOwnership(newCamp.id);
-          setCamps([newCamp]);
-          setSelectedCampId(newCamp.id);
-          updateUrlWithCamp(newCamp.id);
-        }
       }
+
+      // 2. 過去にこの端末で作ったキャンプがある場合、その最新を開く
+      const myCamps = allCamps.filter((c) => savedOwnedIds.includes(c.id));
+      if (myCamps.length > 0) {
+        setSelectedCampId(myCamps[0].id);
+        updateUrlWithCamp(myCamps[0].id);
+        setIsLoading(false);
+        return;
+      }
+
+      // 3. 初めて訪れた人（所有キャンプがなく、URL指定もない）：新しく自分専用の空キャンプを作成
+      const { data: newCamp, error: createErr } = await supabase
+        .from('camps')
+        .insert([{ title: 'マイ・ファーストキャンプ', is_public: false }])
+        .select()
+        .single();
+
+      if (createErr || !newCamp) {
+        setConnectionError(`初期キャンプ作成エラー: ${createErr?.message}`);
+        setIsLoading(false);
+        return;
+      }
+
+      registerCampOwnership(newCamp.id);
+      setCamps((prev) => [newCamp, ...prev]);
+      setSelectedCampId(newCamp.id);
+      updateUrlWithCamp(newCamp.id);
     } catch (err: any) {
       console.error('Network / Unexpected Error:', err);
-      setConnectionError(`ネットワーク接続エラー: ${err?.message || 'Supabaseサーバーと通信できませんでした'}`);
+      setConnectionError(`ネットワーク接続エラー: ${err?.message || '通信に失敗しました'}`);
     } finally {
       setIsLoading(false);
     }
@@ -229,6 +222,31 @@ function CampHomeContent() {
   };
 
   useEffect(() => {
+    try {
+      const savedOwned = localStorage.getItem(STORAGE_KEY_OWNED_CAMPS);
+      if (savedOwned) {
+        const parsed = JSON.parse(savedOwned);
+        setOwnedCampIds(new Set(Object.keys(parsed)));
+      }
+
+      const savedMode = localStorage.getItem(STORAGE_KEY_SCREEN_MODE) as 'edit' | 'packing' | 'review' | null;
+      if (savedMode && (savedMode === 'edit' || savedMode === 'packing' || savedMode === 'review')) {
+        setScreenMode(savedMode);
+      }
+
+      const savedWeight = localStorage.getItem(STORAGE_KEY_TARGET_WEIGHT);
+      if (savedWeight && !isNaN(Number(savedWeight))) {
+        setTargetWeightKg(Number(savedWeight));
+      }
+
+      const hasSeenGuide = localStorage.getItem(STORAGE_KEY_GUIDE_SEEN);
+      if (!hasSeenGuide) {
+        setIsHelpOpen(true);
+      }
+    } catch (err) {
+      console.warn('LocalStorage load error:', err);
+    }
+
     fetchCamps();
   }, []);
 
@@ -241,7 +259,7 @@ function CampHomeContent() {
 
   const handleOpenAddCampModal = () => {
     setNewCampTitle('');
-    setCopyOption(camps.length > 0 ? 'latest' : 'none');
+    setCopyOption('none');
     if (camps.length > 0) {
       setSelectedSourceCampId(camps[0].id);
     }
@@ -326,7 +344,6 @@ function CampHomeContent() {
     fetchGears();
   };
 
-  // 閲覧者が現在のパッキングをそのまま自分用に複製する
   const handleCloneCurrentCamp = async () => {
     if (!currentSelectedCamp) return;
     setIsSubmitting(true);
@@ -493,7 +510,7 @@ function CampHomeContent() {
 
     const fullName = item.name?.trim() 
       ? item.name.trim() 
-      : `${rawBrand} ${rawName} ${rawModel}`.trim();
+      : `${rawBrand} ${rawName}${rawModel}`.trim();
 
     let cat = item.category || 'ベース';
     if (cat === 'ベースギア') cat = 'ベース';
@@ -620,7 +637,6 @@ function CampHomeContent() {
     setGears(reorderedGears);
   };
 
-  // 仲間に送る共有リンクのコピー（余計なクエリパラメータが付かない綺麗なURL）
   const copyShareLink = async () => {
     if (!selectedCampId) return;
     const origin = window.location.origin;
@@ -640,7 +656,7 @@ function CampHomeContent() {
     <main className="min-h-screen bg-[#09090B] text-zinc-100 p-3 sm:p-4 md:p-8 font-sans">
       <div className="max-w-5xl mx-auto space-y-4 w-full">
 
-        {/* 閲覧専用モード案内バナー（第三者がアクセスした場合） */}
+        {/* 閲覧専用モード案内バナー（他人のキャンプを共有URLで開いた場合） */}
         {isReadOnly && (
           <div className="bg-amber-950/70 border border-amber-500/50 p-3.5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
             <div className="flex items-center gap-2.5 min-w-0">
@@ -725,7 +741,6 @@ function CampHomeContent() {
             </Link>
 
             <div className="flex items-center gap-1.5 shrink-0">
-              {/* 共有リンクコピーボタン */}
               <button
                 type="button"
                 onClick={copyShareLink}
