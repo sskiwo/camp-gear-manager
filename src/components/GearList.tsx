@@ -268,16 +268,18 @@ export default function GearList({
     <section className="bg-[#18181B] p-4 md:p-6 rounded-2xl border border-zinc-800 space-y-4 shadow-xl">
       {/* リストヘッダー */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-3">
+        {/* 🎯 見出しを「ギア選定」「パッキング」に統一 */}
         <h2 className="text-[18px] font-bold text-zinc-100 flex items-center gap-1.5">
           {screenMode === 'edit'
             ? `ギア選定 (${totalCount} / ${gears.length})`
             : screenMode === 'packing'
-            ? `パッキングリスト (${packedCount} / ${totalCount})`
+            ? `パッキング (${packedCount} / ${totalCount})`
             : `レビュー (${selectedGears.length})`}
         </h2>
 
         {/* モード切替タブ */}
         <div className="grid grid-cols-3 gap-1 bg-[#09090B] p-1 rounded-xl border border-zinc-800 w-full sm:w-auto">
+          {/* 🎯 「✏️ ギア選定」に統一 */}
           <button
             onClick={() => handleModeChange('edit')}
             className={`px-2.5 py-1.5 rounded-lg text-[12px] font-bold transition cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap text-center ${
@@ -287,7 +289,7 @@ export default function GearList({
             }`}
           >
             <span>✏️</span>
-            <span>ギア編集</span>
+            <span>ギア選定</span>
           </button>
           <button
             onClick={() => handleModeChange('packing')}
@@ -314,7 +316,7 @@ export default function GearList({
         </div>
       </div>
 
-      {/* ギア編集モード ガイドカード */}
+      {/* ギア選定モード ガイドカード */}
       {screenMode === 'edit' && (
         <div className="bg-[#27272A]/40 border border-zinc-700/60 p-3 rounded-xl">
           <p className="text-[12px] text-zinc-300 font-normal leading-relaxed">
@@ -323,7 +325,7 @@ export default function GearList({
         </div>
       )}
 
-      {/* 🎯 パッキングモード：スリムな操作バー（ガイド ＋ フィルター＆リセットボタン） */}
+      {/* パッキングモード：スリムな操作バー */}
       {screenMode === 'packing' && (
         <div className="bg-[#27272A]/40 border border-zinc-700/60 p-2.5 sm:p-3 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
           <p className="text-[12px] text-zinc-300 font-normal leading-relaxed">

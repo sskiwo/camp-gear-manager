@@ -34,7 +34,6 @@ export default function Home() {
   const [unusedGearIds, setUnusedGearIds] = useState<Set<string>>(new Set());
   const [targetWeightKg, setTargetWeightKg] = useState<number>(15.0);
 
-  // 接続エラー診断用ステート
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
@@ -95,7 +94,6 @@ export default function Home() {
     }
   };
 
-  // キャンプ一覧取得
   const fetchCamps = async () => {
     setIsLoading(true);
     setConnectionError(null);
@@ -145,7 +143,6 @@ export default function Home() {
     }
   };
 
-  // ギア一覧取得
   const fetchGears = async () => {
     if (!selectedCampId) return;
 
@@ -248,8 +245,8 @@ export default function Home() {
           memo: g.memo || '',
           total_brought_count: g.total_brought_count || 0,
           total_used_count: g.total_used_count || 0,
-          is_emergency_gear: g.is_emergency_gear || false,
-          is_weight_estimated: g.is_weight_estimated || false,
+          is_emergency_gear: Boolean(g.is_emergency_gear),
+          is_weight_estimated: Boolean(g.is_weight_estimated),
         }));
 
         await supabase.from('gears').insert(clonedGears);
@@ -366,7 +363,6 @@ export default function Home() {
     }, 50);
   };
 
-  // 🎯 【重要】ギア追加関数（Amazonリンク用プロパティを正確に補完・即時反映）
   const handleAddGear = async (item: any) => {
     if (!selectedCampId) {
       alert('保存先のキャンプが読み込まれていません。上部の「再読み込み」ボタンを押してください。');
@@ -387,7 +383,6 @@ export default function Home() {
     if (cat === 'その他・日用品') cat = 'その他';
     if (cat === '食料・消耗品') cat = '消耗品';
 
-    // URLのキー揺れ（product_url / productUrl）を統一取得
     const finalProductUrl = (item.product_url || item.productUrl || '').trim();
 
     const newGearData = {
@@ -536,22 +531,23 @@ export default function Home() {
         <header className="border-b border-zinc-800 pb-3 space-y-3 w-full">
           <div className="flex items-center justify-between gap-2 w-full">
             
+            {/* 🎯 最新公式ロゴ表示 */}
             <Link
               href="/"
-              className="flex items-center gap-2 whitespace-nowrap shrink-0 hover:opacity-85 transition-opacity cursor-pointer group min-w-0"
+              className="flex items-center gap-2.5 whitespace-nowrap shrink-0 hover:opacity-90 transition-opacity cursor-pointer group min-w-0"
               title="トップページを表示"
             >
-              <div className="relative w-8 h-8 sm:w-10 sm:h-10 shrink-0 drop-shadow-md transition-transform group-hover:scale-105">
+              <div className="relative w-8 h-8 sm:w-9 sm:h-9 shrink-0 drop-shadow-md transition-transform group-hover:scale-105">
                 <Image
                   src="/logo.svg"
                   alt="Camp Gear Manager Logo"
                   fill
-                  sizes="40px"
+                  sizes="36px"
                   className="object-contain"
                   priority
                 />
               </div>
-              <h1 className="text-[17px] sm:text-[22px] font-black text-white tracking-tight shrink-0 whitespace-nowrap">
+              <h1 className="text-[17px] sm:text-[20px] font-black text-white tracking-tight shrink-0 whitespace-nowrap">
                 <span className="text-[#FF5500]">Camp Gear</span> Manager
               </h1>
             </Link>
@@ -686,6 +682,7 @@ export default function Home() {
           </div>
         )}
 
+        {/* 🎯 「パッキングの引き継ぎ」に統一 */}
         {isAddCampOpen && (
           <div className="bg-[#18181B] border border-[#FF5500]/50 p-5 rounded-2xl space-y-4 shadow-2xl animate-fade-in w-full">
             <h3 className="text-[14px] font-semibold text-white">新しいキャンプを追加</h3>
@@ -702,7 +699,7 @@ export default function Home() {
             </div>
 
             <div className="space-y-2.5 pt-1 border-t border-zinc-800">
-              <label className="text-[12px] font-normal text-zinc-400 block">ギアリストの引き継ぎ</label>
+              <label className="text-[12px] font-normal text-zinc-400 block">パッキングの引き継ぎ</label>
 
               <div className="space-y-2 text-[12px]">
                 <label className={`flex items-start gap-2.5 p-2.5 rounded-xl border cursor-pointer transition ${
@@ -742,7 +739,7 @@ export default function Home() {
                     className="mt-0.5 accent-[#FF5500]"
                   />
                   <div className="flex-1 min-w-0 space-y-2">
-                    <span className="font-semibold block">過去のリストから選択</span>
+                    <span className="font-semibold block">過去のパッキングから選択</span>
                     {copyOption === 'select' && (
                       <select
                         value={selectedSourceCampId}
@@ -770,7 +767,7 @@ export default function Home() {
                     onChange={() => setCopyOption('none')}
                     className="accent-[#FF5500]"
                   />
-                  <span className="font-semibold">空のリストで作成する (ギア0件)</span>
+                  <span className="font-semibold">空の状態で作成する (ギア0件)</span>
                 </label>
               </div>
             </div>
