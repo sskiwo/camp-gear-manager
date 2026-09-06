@@ -75,6 +75,14 @@ function CampHomeContent() {
 
   const isReadOnly = Boolean(selectedCampId && !ownedCampIds.has(selectedCampId));
 
+  // 🎯 この端末に表示を許可するキャンプ（自分が所有するキャンプ ＋ 現在URLで指定して開いている閲覧対象キャンプ）
+  const visibleCamps = camps.filter(
+    (c) => ownedCampIds.has(c.id) || c.id === selectedCampId
+  );
+
+  // 🎯 新規作成モーダルの引き継ぎ元として選べるキャンプ（自分が作成・所有するものだけに限定）
+  const myOwnedCamps = camps.filter((c) => ownedCampIds.has(c.id));
+
   const registerCampOwnership = (campId: string) => {
     try {
       const current = localStorage.getItem(STORAGE_KEY_OWNED_CAMPS);
@@ -125,7 +133,6 @@ function CampHomeContent() {
     setConnectionError(null);
 
     try {
-      // 端末に記録された自分がオーナーのキャンプID一覧を取得
       let savedOwnedIds: string[] = [];
       try {
         const savedOwned = localStorage.getItem(STORAGE_KEY_OWNED_CAMPS);
@@ -136,7 +143,7 @@ function CampHomeContent() {
         console.warn('LocalStorage error:', e);
       }
 
-      // 全キャンプを取得
+      // 全キャンプを取得（安全にフィルタリングして利用）
       const { data, error } = await supabase
         .from('camps')
         .select('*')
@@ -152,7 +159,7 @@ function CampHomeContent() {
       const allCamps = data || [];
       setCamps(allCamps);
 
-      // 1. URLパラメータで特定のキャンプが指定されている場合（共有リンクなど）
+      // 1. URLパラメータで特定のキャンプが指定されている場合（共有URLアクセス）
       if (urlCampId) {
         const matched = allCamps.find((c) => c.id === urlCampId);
         if (matched) {
@@ -163,7 +170,7 @@ function CampHomeContent() {
         }
       }
 
-      // 2. 過去にこの端末で作ったキャンプがある場合、その最新を開く
+      // 2. この端末で過去に作成したキャンプがある場合、その最新を開く
       const myCamps = allCamps.filter((c) => savedOwnedIds.includes(c.id));
       if (myCamps.length > 0) {
         setSelectedCampId(myCamps[0].id);
@@ -172,7 +179,7 @@ function CampHomeContent() {
         return;
       }
 
-      // 3. 初めて訪れた人（所有キャンプがなく、URL指定もない）：新しく自分専用の空キャンプを作成
+      // 3. 初見アクセス（所有キャンプなし・URL指定なし）：この端末専用の初期キャンプを新規作成
       const { data: newCamp, error: createErr } = await supabase
         .from('camps')
         .insert([{ title: 'マイ・ファーストキャンプ', is_public: false }])
@@ -259,9 +266,9 @@ function CampHomeContent() {
 
   const handleOpenAddCampModal = () => {
     setNewCampTitle('');
-    setCopyOption('none');
-    if (camps.length > 0) {
-      setSelectedSourceCampId(camps[0].id);
+    setCopyOption(myOwnedCamps.length > 0 ? 'latest' : 'none');
+    if (myOwnedCamps.length > 0) {
+      setSelectedSourceCampId(myOwnedCamps[0].id);
     }
     setIsEditCampOpen(false);
     setIsAddCampOpen(true);
@@ -294,8 +301,8 @@ function CampHomeContent() {
     registerCampOwnership(newCamp.id);
 
     let targetSourceId = '';
-    if (copyOption === 'latest' && camps.length > 0) {
-      targetSourceId = camps[0].id;
+    if (copyOption === 'latest' && myOwnedCamps.length > 0) {
+      targetSourceId = myOwnedCamps[0].id;
     } else if (copyOption === 'select' && selectedSourceCampId) {
       targetSourceId = selectedSourceCampId;
     }
@@ -450,7 +457,7 @@ function CampHomeContent() {
 
   const handleDeleteCamp = async () => {
     if (!selectedCampId || isReadOnly) return;
-    if (camps.length <= 1) {
+    if (myOwnedCamps.length <= 1) {
       alert('最後の1つのキャンプは削除できません。');
       return;
     }
@@ -465,8 +472,8 @@ function CampHomeContent() {
       return;
     }
 
-    const remaining = camps.filter((c) => c.id !== selectedCampId);
-    setCamps(remaining);
+    const remaining = myOwnedCamps.filter((c) => c.id !== selectedCampId);
+    setCamps((prev) => prev.filter((c) => c.id !== selectedCampId));
     setSelectedCampId(remaining[0].id);
     updateUrlWithCamp(remaining[0].id);
     setIsEditCampOpen(false);
@@ -510,7 +517,7 @@ function CampHomeContent() {
 
     const fullName = item.name?.trim() 
       ? item.name.trim() 
-      : `${rawBrand} ${rawName}${rawModel}`.trim();
+      : `${rawBrand} ${rawName} ${rawModel}`.trim();
 
     let cat = item.category || 'ベース';
     if (cat === 'ベースギア') cat = 'ベース';
@@ -796,20 +803,20 @@ function CampHomeContent() {
             </div>
           </div>
 
-          {/* キャンプ選択セレクター */}
+          {/* キャンプ選択セレクター：自分が所有するキャンプ＋閲覧中キャンプのみに限定 */}
           <div className="flex items-center justify-between gap-2 bg-[#18181B] px-3.5 py-2.5 rounded-xl border border-zinc-800 shadow-sm w-full">
             <div className="flex-1 min-w-0">
               {isLoading ? (
                 <span className="text-[14px] text-zinc-400 font-bold block animate-pulse">
                   キャンプデータを読み込み中...
                 </span>
-              ) : camps.length > 0 ? (
+              ) : visibleCamps.length > 0 ? (
                 <select
                   value={selectedCampId}
                   onChange={(e) => handleSelectCamp(e.target.value)}
                   className="w-full bg-transparent text-white text-[16px] sm:text-[18px] font-bold focus:outline-none truncate cursor-pointer"
                 >
-                  {camps.map((camp) => (
+                  {visibleCamps.map((camp) => (
                     <option key={camp.id} value={camp.id} className="bg-[#18181B] text-white text-[16px] sm:text-[18px] font-bold">
                       {camp.title} {!ownedCampIds.has(camp.id) && '（閲覧専用）'}
                     </option>
@@ -891,9 +898,9 @@ function CampHomeContent() {
 
               <button
                 onClick={handleDeleteCamp}
-                disabled={camps.length <= 1}
+                disabled={myOwnedCamps.length <= 1}
                 className="px-3 py-1.5 bg-red-950/30 hover:bg-red-900/60 text-[#EF4444] hover:text-white border border-[#EF4444]/40 rounded-xl text-[12px] font-bold transition cursor-pointer flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
-                title={camps.length <= 1 ? '最後の1つは削除できません' : '現在のキャンプを削除'}
+                title={myOwnedCamps.length <= 1 ? '最後の1つは削除できません' : '現在のキャンプを削除'}
               >
                 <span>🗑️</span>
                 <span>このキャンプを削除</span>
@@ -930,17 +937,17 @@ function CampHomeContent() {
                     value="latest"
                     checked={copyOption === 'latest'}
                     onChange={() => setCopyOption('latest')}
-                    disabled={camps.length === 0}
+                    disabled={myOwnedCamps.length === 0}
                     className="mt-0.5 accent-[#FF5500]"
                   />
                   <div className="flex-1 min-w-0">
                     <span className="font-semibold block">直近のキャンプから引き継ぐ</span>
-                    {camps.length > 0 ? (
+                    {myOwnedCamps.length > 0 ? (
                       <span className="text-[12px] text-zinc-400 block truncate font-mono mt-0.5">
-                        直近: {camps[0].title} ({getCampGearCount(camps[0].id)}点)
+                        直近: {myOwnedCamps[0].title} ({getCampGearCount(myOwnedCamps[0].id)}点)
                       </span>
                     ) : (
-                      <span className="text-[12px] text-zinc-500 block mt-0.5">※過去のキャンプが存在しません</span>
+                      <span className="text-[12px] text-zinc-500 block mt-0.5">※過去に作成したキャンプがありません</span>
                     )}
                   </div>
                 </label>
@@ -954,7 +961,7 @@ function CampHomeContent() {
                     value="select"
                     checked={copyOption === 'select'}
                     onChange={() => setCopyOption('select')}
-                    disabled={camps.length === 0}
+                    disabled={myOwnedCamps.length === 0}
                     className="mt-0.5 accent-[#FF5500]"
                   />
                   <div className="flex-1 min-w-0 space-y-2">
@@ -965,7 +972,7 @@ function CampHomeContent() {
                         onChange={(e) => setSelectedSourceCampId(e.target.value)}
                         className="w-full bg-[#18181B] border border-zinc-700 text-white text-[12px] px-2.5 py-1.5 rounded-lg focus:outline-none focus:border-[#FF5500]"
                       >
-                        {camps.map((camp) => (
+                        {myOwnedCamps.map((camp) => (
                           <option key={camp.id} value={camp.id}>
                             {camp.title} ({getCampGearCount(camp.id)}点)
                           </option>
@@ -1022,7 +1029,7 @@ function CampHomeContent() {
 
         <GearList
           gears={gears}
-          allCampsCount={camps.length}
+          allCampsCount={myOwnedCamps.length}
           allGearsInUserAccount={allGearsInAccount}
           screenMode={screenMode}
           onScreenModeChange={handleScreenModeChange}
