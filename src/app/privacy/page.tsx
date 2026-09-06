@@ -194,8 +194,9 @@ export default function PrivacyPage() {
               <li>運営者名：Camp Gear Manager 運営事務局</li>
               <li>
                 お問い合わせ先：
+                {/* 🎯 「（/contact）」を削除し「お問い合わせフォーム」にすっきり統一 */}
                 <Link href="/contact" className="text-[#FF5500] hover:underline ml-1">
-                  お問い合わせフォーム（/contact）
+                  お問い合わせフォーム
                 </Link>
               </li>
             </ul>
