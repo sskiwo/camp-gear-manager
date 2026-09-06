@@ -1,17 +1,18 @@
 import Link from 'next/link';
 import { ArrowLeft, ExternalLink, Mail } from 'lucide-react';
+import Footer from '@/components/Footer';
 
 export const metadata = {
   title: 'お問い合わせ | Camp Gear Manager',
 };
 
-// 🎯 ご自身のGoogleフォームURLまたは連絡先メールアドレスに置き換えてください
-const GOOGLE_FORM_URL = 'https://docs.google.com/forms/';
+// 🎯 ご提供いただいた実際のGoogleフォームURLを設定
+const GOOGLE_FORM_URL = 'https://forms.gle/e5Lf5GT4MFiHSUwy7';
 
 export default function ContactPage() {
   return (
-    <main className="min-h-screen bg-[#09090B] text-zinc-100 p-4 sm:p-8 font-sans">
-      <div className="max-w-2xl mx-auto space-y-6">
+    <main className="min-h-screen bg-[#09090B] text-zinc-100 p-4 sm:p-8 font-sans flex flex-col justify-between">
+      <div className="max-w-3xl mx-auto space-y-6 w-full flex-1">
         <Link
           href="/"
           className="inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition"
@@ -37,7 +38,7 @@ export default function ContactPage() {
           <div className="space-y-1">
             <h2 className="text-sm font-bold text-white">フィードバックフォーム</h2>
             <p className="text-xs text-zinc-400 max-w-md mx-auto leading-relaxed">
-              外部の問い合わせ受付フォーム（Googleフォーム）が開きます。
+              Googleフォームによるお問い合わせ受付ページが開きます。
             </p>
           </div>
 
@@ -53,6 +54,11 @@ export default function ContactPage() {
             </a>
           </div>
         </div>
+      </div>
+
+      {/* 共通フッター */}
+      <div className="max-w-3xl mx-auto w-full pt-12">
+        <Footer />
       </div>
     </main>
   );
