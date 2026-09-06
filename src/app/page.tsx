@@ -3,8 +3,8 @@
 import { useEffect, useState, useCallback, Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useSearchParams, useRouter } from 'next/navigation';
-import { HelpCircle, Lock, Globe, AlertTriangle, RefreshCw, Eye, Copy, Check } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
+import { HelpCircle, Lock, Globe, AlertTriangle, RefreshCw, Eye, Copy, Check, Plus, CopyPlus } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import WeightsSummary from '@/components/WeightsSummary';
 import GearSearch from '@/components/GearSearch';
@@ -25,18 +25,29 @@ type Camp = {
 
 const STORAGE_KEY_SCREEN_MODE = 'camp_active_screen_mode';
 const STORAGE_KEY_TARGET_WEIGHT = 'camp_target_weight_kg';
+const STORAGE_KEY_OWNED_CAMPS = 'camp_owned_tokens_map';
+
+// ランダムな推測困難トークン生成関数
+function generateRandomToken() {
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  let token = '';
+  for (let i = 0; i < 32; i++) {
+    token += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return token;
+}
 
 function CampHomeContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
-
   const urlCampId = searchParams.get('camp');
-  const isReadOnly = searchParams.get('view') === 'readonly';
 
   const [camps, setCamps] = useState<Camp[]>([]);
   const [selectedCampId, setSelectedCampId] = useState<string>('');
   const [gears, setGears] = useState<GearItem[]>([]);
   const [allGearsInAccount, setAllGearsInAccount] = useState<GearItem[]>([]);
+
+  // 端末内に保存された「自分がオーナーであるキャンプID」の一覧
+  const [ownedCampIds, setOwnedCampIds] = useState<Set<string>>(new Set());
 
   const [screenMode, setScreenMode] = useState<'edit' | 'packing' | 'review'>('edit');
   const [unusedGearIds, setUnusedGearIds] = useState<Set<string>>(new Set());
@@ -54,7 +65,7 @@ function CampHomeContent() {
   const [isEditCampOpen, setIsEditCampOpen] = useState(false);
   const [editCampTitle, setEditCampTitle] = useState('');
   const [isHelpOpen, setIsHelpOpen] = useState(false);
-  const [copiedReadOnlyUrl, setCopiedReadOnlyUrl] = useState(false);
+  const [copiedShareUrl, setCopiedShareUrl] = useState(false);
 
   const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({
     ベース: false,
@@ -64,8 +75,18 @@ function CampHomeContent() {
     消耗品: false,
   });
 
+  // オーナー判定: 選択中のキャンプIDが端末の所有リストに含まれていれば編集可能、なければ閲覧専用
+  const isReadOnly = Boolean(selectedCampId && !ownedCampIds.has(selectedCampId));
+
+  // ローカルストレージからオーナー情報を読み込み
   useEffect(() => {
     try {
+      const savedOwned = localStorage.getItem(STORAGE_KEY_OWNED_CAMPS);
+      if (savedOwned) {
+        const parsed = JSON.parse(savedOwned);
+        setOwnedCampIds(new Set(Object.keys(parsed)));
+      }
+
       const savedMode = localStorage.getItem(STORAGE_KEY_SCREEN_MODE) as 'edit' | 'packing' | 'review' | null;
       if (savedMode && (savedMode === 'edit' || savedMode === 'packing' || savedMode === 'review')) {
         setScreenMode(savedMode);
@@ -84,6 +105,19 @@ function CampHomeContent() {
       console.warn('LocalStorage load error:', err);
     }
   }, []);
+
+  // キャンプの所有権をローカルストレージに記憶
+  const registerCampOwnership = (campId: string) => {
+    try {
+      const current = localStorage.getItem(STORAGE_KEY_OWNED_CAMPS);
+      const parsed = current ? JSON.parse(current) : {};
+      parsed[campId] = generateRandomToken();
+      localStorage.setItem(STORAGE_KEY_OWNED_CAMPS, JSON.stringify(parsed));
+      setOwnedCampIds((prev) => new Set([...prev, campId]));
+    } catch (err) {
+      console.warn('Failed to save ownership token:', err);
+    }
+  };
 
   const updateUrlWithCamp = useCallback((campId: string) => {
     if (!campId) return;
@@ -156,6 +190,7 @@ function CampHomeContent() {
         }
 
         if (newCamp) {
+          registerCampOwnership(newCamp.id);
           setCamps([newCamp]);
           setSelectedCampId(newCamp.id);
           updateUrlWithCamp(newCamp.id);
@@ -238,6 +273,8 @@ function CampHomeContent() {
       return;
     }
 
+    registerCampOwnership(newCamp.id);
+
     let targetSourceId = '';
     if (copyOption === 'latest' && camps.length > 0) {
       targetSourceId = camps[0].id;
@@ -289,8 +326,63 @@ function CampHomeContent() {
     fetchGears();
   };
 
+  // 閲覧者が現在のパッキングをそのまま自分用に複製する
+  const handleCloneCurrentCamp = async () => {
+    if (!currentSelectedCamp) return;
+    setIsSubmitting(true);
+
+    const title = `${currentSelectedCamp.title}（マイコピー）`;
+    const { data: newCamp, error: createErr } = await supabase
+      .from('camps')
+      .insert([{ title, is_public: false }])
+      .select()
+      .single();
+
+    if (createErr || !newCamp) {
+      alert(`複製に失敗しました: ${createErr?.message}`);
+      setIsSubmitting(false);
+      return;
+    }
+
+    registerCampOwnership(newCamp.id);
+
+    if (gears.length > 0) {
+      const clonedGears = gears.map((g) => ({
+        camp_id: newCamp.id,
+        name: g.name,
+        brand: g.brand || '',
+        model_number: g.model_number || '',
+        product_name: g.product_name || g.name,
+        category: g.category || 'ベース',
+        weight: Number(g.weight) || 0,
+        price: Number(g.price) || 0,
+        quantity: Number(g.quantity) || 1,
+        is_packed: false,
+        is_selected: g.is_selected !== false,
+        is_consumable: g.is_consumable || false,
+        product_url: g.product_url || '',
+        purchase_date: g.purchase_date || '',
+        fuel_type: g.fuel_type || '',
+        memo: g.memo || '',
+        total_brought_count: 0,
+        total_used_count: 0,
+        is_emergency_gear: Boolean(g.is_emergency_gear),
+        is_weight_estimated: Boolean(g.is_weight_estimated),
+      }));
+
+      await supabase.from('gears').insert(clonedGears);
+    }
+
+    setIsSubmitting(false);
+    setCamps((prev) => [newCamp, ...prev]);
+    setSelectedCampId(newCamp.id);
+    updateUrlWithCamp(newCamp.id);
+    alert('🎉 このパッキングをあなたの端末専用に複製しました！編集を開始できます。');
+    fetchGears();
+  };
+
   const handleUpdateCampTitle = async () => {
-    if (!editCampTitle.trim() || !selectedCampId) return;
+    if (!editCampTitle.trim() || !selectedCampId || isReadOnly) return;
 
     const { error } = await supabase
       .from('camps')
@@ -393,11 +485,7 @@ function CampHomeContent() {
   };
 
   const handleAddGear = async (item: any) => {
-    if (isReadOnly) return;
-    if (!selectedCampId) {
-      alert('保存先のキャンプが読み込まれていません。上部の「再読み込み」ボタンを押してください。');
-      return;
-    }
+    if (isReadOnly || !selectedCampId) return;
 
     const rawName = (item.name || item.product_name || '').trim();
     const rawBrand = (item.brand || '').trim();
@@ -532,16 +620,17 @@ function CampHomeContent() {
     setGears(reorderedGears);
   };
 
-  const copyReadOnlyLink = async () => {
+  // 仲間に送る共有リンクのコピー（余計なクエリパラメータが付かない綺麗なURL）
+  const copyShareLink = async () => {
     if (!selectedCampId) return;
     const origin = window.location.origin;
-    const readOnlyUrl = `${origin}/?camp=${selectedCampId}&view=readonly`;
+    const shareUrl = `${origin}/?camp=${selectedCampId}`;
     try {
-      await navigator.clipboard.writeText(readOnlyUrl);
-      setCopiedReadOnlyUrl(true);
-      setTimeout(() => setCopiedReadOnlyUrl(false), 2500);
+      await navigator.clipboard.writeText(shareUrl);
+      setCopiedShareUrl(true);
+      setTimeout(() => setCopiedShareUrl(false), 2500);
     } catch (err) {
-      prompt('以下の閲覧専用URLをコピーしてください:', readOnlyUrl);
+      prompt('以下の共有URLをコピーしてください:', shareUrl);
     }
   };
 
@@ -551,26 +640,39 @@ function CampHomeContent() {
     <main className="min-h-screen bg-[#09090B] text-zinc-100 p-3 sm:p-4 md:p-8 font-sans">
       <div className="max-w-5xl mx-auto space-y-4 w-full">
 
-        {/* 閲覧専用モード表示バナー */}
+        {/* 閲覧専用モード案内バナー（第三者がアクセスした場合） */}
         {isReadOnly && (
-          <div className="bg-amber-950/80 border border-amber-500/70 p-3.5 rounded-2xl flex items-center justify-between gap-3 shadow-lg">
-            <div className="flex items-center gap-2 min-w-0">
+          <div className="bg-amber-950/70 border border-amber-500/50 p-3.5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
+            <div className="flex items-center gap-2.5 min-w-0">
               <Eye className="w-4 h-4 text-amber-400 shrink-0" />
               <div className="min-w-0">
-                <p className="text-[12px] font-bold text-white truncate">
+                <p className="text-[12px] font-bold text-white">
                   👀 閲覧専用モードで表示中
                 </p>
-                <p className="text-[11px] text-amber-200/90 truncate">
-                  この画面では誤操作を防ぐため、チェックや編集・削除はロックされています。
+                <p className="text-[11px] text-amber-200/80">
+                  作成者のパッキングリストを表示しています。チェックや編集はロックされています。
                 </p>
               </div>
             </div>
-            <Link
-              href="/"
-              className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white rounded-lg text-[11px] font-bold border border-zinc-700 shrink-0 transition"
-            >
-              自分のキャンプへ戻る
-            </Link>
+            <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+              <button
+                type="button"
+                onClick={handleCloneCurrentCamp}
+                disabled={isSubmitting}
+                className="px-3 py-1.5 bg-[#FF5500] hover:bg-[#e04c00] text-white rounded-lg text-[11px] font-bold shadow-md transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                <CopyPlus className="w-3.5 h-3.5" />
+                <span>この装備を複製して使う</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleOpenAddCampModal}
+                className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white rounded-lg text-[11px] font-bold border border-zinc-700 transition flex items-center gap-1.5 cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>新規作成</span>
+              </button>
+            </div>
           </div>
         )}
 
@@ -623,27 +725,25 @@ function CampHomeContent() {
             </Link>
 
             <div className="flex items-center gap-1.5 shrink-0">
-              {/* 閲覧専用リンクコピーボタン */}
-              {!isReadOnly && (
-                <button
-                  type="button"
-                  onClick={copyReadOnlyLink}
-                  className="h-8 px-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white border border-zinc-700 flex items-center gap-1.5 text-[11px] font-bold transition cursor-pointer shadow-sm active:scale-95 shrink-0"
-                  title="仲間に送るための閲覧専用リンクをコピー"
-                >
-                  {copiedReadOnlyUrl ? (
-                    <>
-                      <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[2.5]" />
-                      <span className="text-emerald-400">閲覧リンク複製済</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-3.5 h-3.5 text-[#FF5500]" />
-                      <span>閲覧リンクをコピー</span>
-                    </>
-                  )}
-                </button>
-              )}
+              {/* 共有リンクコピーボタン */}
+              <button
+                type="button"
+                onClick={copyShareLink}
+                className="h-8 px-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white border border-zinc-700 flex items-center gap-1.5 text-[11px] font-bold transition cursor-pointer shadow-sm active:scale-95 shrink-0"
+                title="このキャンプのURLをコピー（相手には安全な閲覧専用で共有されます）"
+              >
+                {copiedShareUrl ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[2.5]" />
+                    <span className="text-emerald-400">共有URLコピー完了</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5 text-[#FF5500]" />
+                    <span>共有URLをコピー</span>
+                  </>
+                )}
+              </button>
 
               <button
                 type="button"
@@ -692,14 +792,11 @@ function CampHomeContent() {
                 <select
                   value={selectedCampId}
                   onChange={(e) => handleSelectCamp(e.target.value)}
-                  disabled={isReadOnly}
-                  className={`w-full bg-transparent text-white text-[16px] sm:text-[18px] font-bold focus:outline-none truncate ${
-                    isReadOnly ? 'cursor-default' : 'cursor-pointer'
-                  }`}
+                  className="w-full bg-transparent text-white text-[16px] sm:text-[18px] font-bold focus:outline-none truncate cursor-pointer"
                 >
                   {camps.map((camp) => (
                     <option key={camp.id} value={camp.id} className="bg-[#18181B] text-white text-[16px] sm:text-[18px] font-bold">
-                      {camp.title}
+                      {camp.title} {!ownedCampIds.has(camp.id) && '（閲覧専用）'}
                     </option>
                   ))}
                 </select>
@@ -715,8 +812,8 @@ function CampHomeContent() {
               )}
             </div>
 
-            {!isReadOnly && (
-              <div className="flex items-center shrink-0">
+            <div className="flex items-center gap-1.5 shrink-0">
+              {!isReadOnly ? (
                 <button
                   onClick={startEditCampTitle}
                   className="w-8 h-8 flex items-center justify-center bg-[#27272A] hover:bg-zinc-700 text-zinc-200 hover:text-white rounded-lg text-sm transition border border-zinc-700 cursor-pointer shadow-sm active:scale-95"
@@ -724,8 +821,17 @@ function CampHomeContent() {
                 >
                   ✏️
                 </button>
-              </div>
-            )}
+              ) : (
+                <button
+                  onClick={handleOpenAddCampModal}
+                  className="px-2.5 py-1.5 bg-[#FF5500] hover:bg-[#e04c00] text-white rounded-lg text-xs font-bold transition flex items-center gap-1 shadow-sm active:scale-95 cursor-pointer"
+                  title="新しい自分専用のキャンプを作成"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>新規作成</span>
+                </button>
+              )}
+            </div>
           </div>
         </header>
 
@@ -781,7 +887,7 @@ function CampHomeContent() {
           </div>
         )}
 
-        {isAddCampOpen && !isReadOnly && (
+        {isAddCampOpen && (
           <div className="bg-[#18181B] border border-[#FF5500]/50 p-5 rounded-2xl space-y-4 shadow-2xl animate-fade-in w-full">
             <h3 className="text-[14px] font-semibold text-white">新しいキャンプを追加</h3>
 
