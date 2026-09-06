@@ -366,40 +366,51 @@ export default function Home() {
     }, 50);
   };
 
+  // 🎯 【重要】ギア追加関数（Amazonリンク用プロパティを正確に補完・即時反映）
   const handleAddGear = async (item: any) => {
     if (!selectedCampId) {
       alert('保存先のキャンプが読み込まれていません。上部の「再読み込み」ボタンを押してください。');
       return;
     }
 
-    const fullName = `${item.brand || ''} ${item.product_name || ''} ${item.model_number || ''}`.trim();
+    const rawName = (item.name || item.product_name || '').trim();
+    const rawBrand = (item.brand || '').trim();
+    const rawModel = (item.model_number || '').trim();
+
+    const fullName = item.name?.trim() 
+      ? item.name.trim() 
+      : `${rawBrand} ${rawName} ${rawModel}`.trim();
+
     let cat = item.category || 'ベース';
     if (cat === 'ベースギア') cat = 'ベース';
     if (cat === '調理ギア') cat = '調理';
     if (cat === 'その他・日用品') cat = 'その他';
     if (cat === '食料・消耗品') cat = '消耗品';
 
+    // URLのキー揺れ（product_url / productUrl）を統一取得
+    const finalProductUrl = (item.product_url || item.productUrl || '').trim();
+
     const newGearData = {
       camp_id: selectedCampId,
-      name: fullName || item.name,
-      brand: item.brand || '',
-      model_number: item.model_number || '',
-      product_name: item.product_name || item.name,
+      name: fullName || rawName || '新しいギア',
+      brand: rawBrand,
+      model_number: rawModel,
+      product_name: item.product_name || rawName || fullName,
       category: cat,
       weight: Number(item.weight) || 0,
       price: Number(item.price) || 0,
-      quantity: 1,
+      quantity: Math.max(1, Number(item.quantity) || 1),
       is_packed: false,
       is_selected: true,
       is_consumable: cat === '消耗品',
-      product_url: item.productUrl || '',
+      product_url: finalProductUrl,
       purchase_date: item.purchase_date || '',
       fuel_type: item.fuel_type === '不要/なし' ? '' : (item.fuel_type || ''),
       memo: (item.memo || '').trim(),
       total_brought_count: 0,
       total_used_count: 0,
-      is_emergency_gear: false,
-      is_weight_estimated: item.is_weight_estimated ?? false,
+      is_emergency_gear: Boolean(item.is_emergency_gear),
+      is_weight_estimated: Boolean(item.is_weight_estimated),
     };
 
     const { data, error } = await supabase.from('gears').insert([newGearData]).select().single();
@@ -782,7 +793,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* サマリーコンポーネント */}
         <WeightsSummary
           gears={gears}
           screenMode={screenMode}
@@ -815,10 +825,8 @@ export default function Home() {
           onReorderGears={handleReorderGears}
         />
 
-        {/* CSV管理 */}
         <CsvManager gears={gears} selectedCampId={selectedCampId} onGearsUpdated={fetchGears} />
 
-        {/* フッター直上の友だち紹介バナー */}
         <ShareAppCard />
 
         <HelpGuideModal
@@ -826,7 +834,6 @@ export default function Home() {
           onClose={() => setIsHelpOpen(false)}
         />
 
-        {/* 🎯 Amazonアソシエイト参加表明の免責表記を含むフッター */}
         <footer className="pt-6 pb-8 text-center border-t border-zinc-800 space-y-2">
           <p className="text-[12px] text-zinc-500 font-normal">🏕️ Camp Gear Manager & Packing Tool</p>
           <p className="text-[10px] text-zinc-600 font-normal max-w-xl mx-auto leading-relaxed px-4">
