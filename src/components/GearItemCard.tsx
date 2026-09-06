@@ -677,9 +677,9 @@ export default function GearItemCard({
           </div>
         </div>
 
-        {/* 🎯 価格・購入時期・燃料（box-border & w-full で横幅を均等に整合） */}
+        {/* 🎯 価格・購入時期・燃料：横幅と高さを完全に揃える */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-          <div className="min-w-0 w-full">
+          <div className="w-full min-w-0">
             <label className="text-[12px] font-normal text-zinc-400 block mb-0.5">価格(円)</label>
             <input
               type="number"
@@ -687,24 +687,26 @@ export default function GearItemCard({
               value={editPrice === 0 ? '' : editPrice}
               placeholder="0"
               onChange={(e) => setEditPrice(e.target.value === '' ? 0 : Number(e.target.value))}
-              className="w-full box-border bg-[#27272A] border border-zinc-700 rounded-lg px-2.5 py-1.5 text-[12px] text-white font-mono tabular-nums text-right focus:border-[#FF5500] focus:outline-none font-normal"
+              className="w-full min-w-0 box-border bg-[#27272A] border border-zinc-700 rounded-lg px-2.5 py-1.5 text-[12px] text-white font-mono tabular-nums text-right focus:border-[#FF5500] focus:outline-none font-normal"
             />
           </div>
-          <div className="min-w-0 w-full">
+          
+          <div className="w-full min-w-0">
             <label className="text-[12px] font-normal text-zinc-400 block mb-0.5">購入時期</label>
             <input
               type="month"
               value={editPurchaseDate}
               onChange={(e) => setEditPurchaseDate(e.target.value)}
-              className="w-full box-border bg-[#27272A] border border-zinc-700 rounded-lg px-2.5 py-1.5 text-[12px] text-white focus:outline-none font-normal block"
+              className="w-full min-w-0 max-w-full box-border bg-[#27272A] border border-zinc-700 rounded-lg px-2.5 py-1.5 text-[12px] text-white focus:border-[#FF5500] focus:outline-none font-normal block appearance-none"
             />
           </div>
-          <div className="min-w-0 w-full">
+          
+          <div className="w-full min-w-0">
             <label className="text-[12px] font-normal text-zinc-400 block mb-0.5">燃料・電源タイプ</label>
             <select
               value={editFuelType}
               onChange={(e) => setEditFuelType(e.target.value)}
-              className="w-full box-border bg-[#27272A] border border-zinc-700 rounded-lg px-2.5 py-1.5 text-[12px] text-white focus:outline-none font-normal cursor-pointer"
+              className="w-full min-w-0 box-border bg-[#27272A] border border-zinc-700 rounded-lg px-2.5 py-1.5 text-[12px] text-white focus:border-[#FF5500] focus:outline-none font-normal cursor-pointer"
             >
               {FUEL_OPTIONS.map((opt) => (
                 <option key={opt} value={opt}>
