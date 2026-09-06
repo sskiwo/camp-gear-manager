@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { HelpCircle, Lock, Globe, AlertTriangle, RefreshCw } from 'lucide-react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { HelpCircle, Lock, Globe, AlertTriangle, RefreshCw, Eye, Copy, Check } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import WeightsSummary from '@/components/WeightsSummary';
 import GearSearch from '@/components/GearSearch';
@@ -25,7 +26,13 @@ type Camp = {
 const STORAGE_KEY_SCREEN_MODE = 'camp_active_screen_mode';
 const STORAGE_KEY_TARGET_WEIGHT = 'camp_target_weight_kg';
 
-export default function Home() {
+function CampHomeContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const urlCampId = searchParams.get('camp');
+  const isReadOnly = searchParams.get('view') === 'readonly';
+
   const [camps, setCamps] = useState<Camp[]>([]);
   const [selectedCampId, setSelectedCampId] = useState<string>('');
   const [gears, setGears] = useState<GearItem[]>([]);
@@ -47,6 +54,7 @@ export default function Home() {
   const [isEditCampOpen, setIsEditCampOpen] = useState(false);
   const [editCampTitle, setEditCampTitle] = useState('');
   const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [copiedReadOnlyUrl, setCopiedReadOnlyUrl] = useState(false);
 
   const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({
     ベース: false,
@@ -77,7 +85,21 @@ export default function Home() {
     }
   }, []);
 
+  const updateUrlWithCamp = useCallback((campId: string) => {
+    if (!campId) return;
+    const params = new URLSearchParams(window.location.search);
+    params.set('camp', campId);
+    const newUrl = `${window.location.pathname}?${params.toString()}`;
+    window.history.replaceState(null, '', newUrl);
+  }, []);
+
+  const handleSelectCamp = (campId: string) => {
+    setSelectedCampId(campId);
+    updateUrlWithCamp(campId);
+  };
+
   const handleScreenModeChange = (mode: 'edit' | 'packing' | 'review') => {
+    if (isReadOnly) return;
     setScreenMode(mode);
     try {
       localStorage.setItem(STORAGE_KEY_SCREEN_MODE, mode);
@@ -87,6 +109,7 @@ export default function Home() {
   };
 
   const handleTargetWeightChange = (newTargetKg: number) => {
+    if (isReadOnly) return;
     setTargetWeightKg(newTargetKg);
     try {
       localStorage.setItem(STORAGE_KEY_TARGET_WEIGHT, String(newTargetKg));
@@ -114,9 +137,10 @@ export default function Home() {
 
       if (data && data.length > 0) {
         setCamps(data);
-        if (!selectedCampId || !data.some((c) => c.id === selectedCampId)) {
-          setSelectedCampId(data[0].id);
-        }
+        const matched = urlCampId ? data.find((c) => c.id === urlCampId) : null;
+        const initialId = matched ? matched.id : data[0].id;
+        setSelectedCampId(initialId);
+        updateUrlWithCamp(initialId);
       } else {
         const { data: newCamp, error: createErr } = await supabase
           .from('camps')
@@ -134,6 +158,7 @@ export default function Home() {
         if (newCamp) {
           setCamps([newCamp]);
           setSelectedCampId(newCamp.id);
+          updateUrlWithCamp(newCamp.id);
         }
       }
     } catch (err: any) {
@@ -244,8 +269,8 @@ export default function Home() {
           purchase_date: g.purchase_date || '',
           fuel_type: g.fuel_type || '',
           memo: g.memo || '',
-          total_brought_count: g.total_brought_count || 0,
-          total_used_count: g.total_used_count || 0,
+          total_brought_count: 0,
+          total_used_count: 0,
           is_emergency_gear: Boolean(g.is_emergency_gear),
           is_weight_estimated: Boolean(g.is_weight_estimated),
         }));
@@ -257,6 +282,7 @@ export default function Home() {
     setIsSubmitting(false);
     setCamps((prev) => [newCamp, ...prev]);
     setSelectedCampId(newCamp.id);
+    updateUrlWithCamp(newCamp.id);
     setNewCampTitle('');
     setIsAddCampOpen(false);
     setConnectionError(null);
@@ -291,6 +317,7 @@ export default function Home() {
   };
 
   const handleTogglePublic = async () => {
+    if (isReadOnly) return;
     const currentCamp = camps.find((c) => c.id === selectedCampId);
     if (!currentCamp) return;
 
@@ -313,7 +340,7 @@ export default function Home() {
   };
 
   const handleDeleteCamp = async () => {
-    if (!selectedCampId) return;
+    if (!selectedCampId || isReadOnly) return;
     if (camps.length <= 1) {
       alert('最後の1つのキャンプは削除できません。');
       return;
@@ -332,11 +359,12 @@ export default function Home() {
     const remaining = camps.filter((c) => c.id !== selectedCampId);
     setCamps(remaining);
     setSelectedCampId(remaining[0].id);
+    updateUrlWithCamp(remaining[0].id);
     setIsEditCampOpen(false);
   };
 
   const handleDeleteAllGears = async () => {
-    if (!selectedCampId) return;
+    if (!selectedCampId || isReadOnly) return;
     const confirmed = window.confirm('このキャンプのギアをすべて削除してもよろしいですか？');
     if (!confirmed) return;
 
@@ -345,7 +373,7 @@ export default function Home() {
   };
 
   const handleResetAllPacked = async () => {
-    if (!selectedCampId) return;
+    if (!selectedCampId || isReadOnly) return;
     const confirmed = window.confirm('当日のパッキング完了チェックをリセットして0%にしますか？');
     if (!confirmed) return;
 
@@ -365,6 +393,7 @@ export default function Home() {
   };
 
   const handleAddGear = async (item: any) => {
+    if (isReadOnly) return;
     if (!selectedCampId) {
       alert('保存先のキャンプが読み込まれていません。上部の「再読み込み」ボタンを押してください。');
       return;
@@ -422,6 +451,7 @@ export default function Home() {
   };
 
   const togglePacked = async (id: string, currentStatus: boolean) => {
+    if (isReadOnly) return;
     const nextStatus = !currentStatus;
     setGears((prev) =>
       prev.map((g) => (String(g.id) === String(id) ? { ...g, is_packed: nextStatus } : g))
@@ -435,6 +465,7 @@ export default function Home() {
   };
 
   const toggleSelected = async (id: string, currentStatus: boolean) => {
+    if (isReadOnly) return;
     const nextStatus = !currentStatus;
     setGears((prev) =>
       prev.map((g) => (String(g.id) === String(id) ? { ...g, is_selected: nextStatus } : g))
@@ -451,6 +482,7 @@ export default function Home() {
   };
 
   const handleToggleUnusedGear = (gearId: string) => {
+    if (isReadOnly) return;
     const cleanId = String(gearId);
     setUnusedGearIds((prev) => {
       const next = new Set(prev);
@@ -464,6 +496,7 @@ export default function Home() {
   };
 
   const updateQuantity = async (id: string, currentQty: number, delta: number) => {
+    if (isReadOnly) return;
     const newQty = Math.max(1, currentQty + delta);
     setGears((prev) =>
       prev.map((g) => (String(g.id) === String(id) ? { ...g, quantity: newQty } : g))
@@ -473,6 +506,7 @@ export default function Home() {
   };
 
   const updateGear = async (id: string, updateData: any) => {
+    if (isReadOnly) return;
     setGears((prev) =>
       prev.map((g) => (String(g.id) === String(id) ? { ...g, ...updateData } : g))
     );
@@ -488,6 +522,7 @@ export default function Home() {
   };
 
   const deleteGear = async (id: string) => {
+    if (isReadOnly) return;
     setGears((prev) => prev.filter((g) => String(g.id) !== String(id)));
     await supabase.from('gears').delete().eq('id', id);
     fetchGears();
@@ -497,11 +532,47 @@ export default function Home() {
     setGears(reorderedGears);
   };
 
+  const copyReadOnlyLink = async () => {
+    if (!selectedCampId) return;
+    const origin = window.location.origin;
+    const readOnlyUrl = `${origin}/?camp=${selectedCampId}&view=readonly`;
+    try {
+      await navigator.clipboard.writeText(readOnlyUrl);
+      setCopiedReadOnlyUrl(true);
+      setTimeout(() => setCopiedReadOnlyUrl(false), 2500);
+    } catch (err) {
+      prompt('以下の閲覧専用URLをコピーしてください:', readOnlyUrl);
+    }
+  };
+
   const currentSelectedCamp = camps.find((c) => c.id === selectedCampId);
 
   return (
     <main className="min-h-screen bg-[#09090B] text-zinc-100 p-3 sm:p-4 md:p-8 font-sans">
       <div className="max-w-5xl mx-auto space-y-4 w-full">
+
+        {/* 閲覧専用モード表示バナー */}
+        {isReadOnly && (
+          <div className="bg-amber-950/80 border border-amber-500/70 p-3.5 rounded-2xl flex items-center justify-between gap-3 shadow-lg">
+            <div className="flex items-center gap-2 min-w-0">
+              <Eye className="w-4 h-4 text-amber-400 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-[12px] font-bold text-white truncate">
+                  👀 閲覧専用モードで表示中
+                </p>
+                <p className="text-[11px] text-amber-200/90 truncate">
+                  この画面では誤操作を防ぐため、チェックや編集・削除はロックされています。
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/"
+              className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white rounded-lg text-[11px] font-bold border border-zinc-700 shrink-0 transition"
+            >
+              自分のキャンプへ戻る
+            </Link>
+          </div>
+        )}
 
         {/* 通信エラー診断バナー */}
         {connectionError && (
@@ -552,6 +623,28 @@ export default function Home() {
             </Link>
 
             <div className="flex items-center gap-1.5 shrink-0">
+              {/* 閲覧専用リンクコピーボタン */}
+              {!isReadOnly && (
+                <button
+                  type="button"
+                  onClick={copyReadOnlyLink}
+                  className="h-8 px-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white border border-zinc-700 flex items-center gap-1.5 text-[11px] font-bold transition cursor-pointer shadow-sm active:scale-95 shrink-0"
+                  title="仲間に送るための閲覧専用リンクをコピー"
+                >
+                  {copiedReadOnlyUrl ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[2.5]" />
+                      <span className="text-emerald-400">閲覧リンク複製済</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5 text-[#FF5500]" />
+                      <span>閲覧リンクをコピー</span>
+                    </>
+                  )}
+                </button>
+              )}
+
               <button
                 type="button"
                 onClick={() => setIsHelpOpen(true)}
@@ -562,27 +655,29 @@ export default function Home() {
                 <HelpCircle className="w-4 h-4" />
               </button>
 
-              <button
-                type="button"
-                onClick={handleTogglePublic}
-                className={`h-8 px-2.5 sm:px-3 rounded-xl text-[12px] font-bold transition border flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer shrink-0 ${
-                  currentSelectedCamp?.is_public
-                    ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/30'
-                    : 'bg-zinc-800 text-zinc-300 border-zinc-700 hover:bg-zinc-700 hover:text-white'
-                }`}
-              >
-                {currentSelectedCamp?.is_public ? (
-                  <>
-                    <Globe className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>公開中</span>
-                  </>
-                ) : (
-                  <>
-                    <Lock className="w-3.5 h-3.5 text-zinc-400" />
-                    <span>非公開</span>
-                  </>
-                )}
-              </button>
+              {!isReadOnly && (
+                <button
+                  type="button"
+                  onClick={handleTogglePublic}
+                  className={`h-8 px-2.5 sm:px-3 rounded-xl text-[12px] font-bold transition border flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer shrink-0 ${
+                    currentSelectedCamp?.is_public
+                      ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/30'
+                      : 'bg-zinc-800 text-zinc-300 border-zinc-700 hover:bg-zinc-700 hover:text-white'
+                  }`}
+                >
+                  {currentSelectedCamp?.is_public ? (
+                    <>
+                      <Globe className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>公開中</span>
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="w-3.5 h-3.5 text-zinc-400" />
+                      <span>非公開</span>
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           </div>
 
@@ -596,8 +691,11 @@ export default function Home() {
               ) : camps.length > 0 ? (
                 <select
                   value={selectedCampId}
-                  onChange={(e) => setSelectedCampId(e.target.value)}
-                  className="w-full bg-transparent text-white text-[16px] sm:text-[18px] font-bold focus:outline-none cursor-pointer truncate"
+                  onChange={(e) => handleSelectCamp(e.target.value)}
+                  disabled={isReadOnly}
+                  className={`w-full bg-transparent text-white text-[16px] sm:text-[18px] font-bold focus:outline-none truncate ${
+                    isReadOnly ? 'cursor-default' : 'cursor-pointer'
+                  }`}
                 >
                   {camps.map((camp) => (
                     <option key={camp.id} value={camp.id} className="bg-[#18181B] text-white text-[16px] sm:text-[18px] font-bold">
@@ -617,19 +715,21 @@ export default function Home() {
               )}
             </div>
 
-            <div className="flex items-center shrink-0">
-              <button
-                onClick={startEditCampTitle}
-                className="w-8 h-8 flex items-center justify-center bg-[#27272A] hover:bg-zinc-700 text-zinc-200 hover:text-white rounded-lg text-sm transition border border-zinc-700 cursor-pointer shadow-sm active:scale-95"
-                title="キャンプ設定"
-              >
-                ✏️
-              </button>
-            </div>
+            {!isReadOnly && (
+              <div className="flex items-center shrink-0">
+                <button
+                  onClick={startEditCampTitle}
+                  className="w-8 h-8 flex items-center justify-center bg-[#27272A] hover:bg-zinc-700 text-zinc-200 hover:text-white rounded-lg text-sm transition border border-zinc-700 cursor-pointer shadow-sm active:scale-95"
+                  title="キャンプ設定"
+                >
+                  ✏️
+                </button>
+              </div>
+            )}
           </div>
         </header>
 
-        {isEditCampOpen && (
+        {isEditCampOpen && !isReadOnly && (
           <div className="bg-[#18181B] border border-[#FF5500]/50 p-4 rounded-2xl space-y-4 shadow-2xl animate-fade-in w-full">
             <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
               <h3 className="text-[14px] font-semibold text-white">キャンプ設定・管理</h3>
@@ -681,8 +781,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* パッキングの引き継ぎ */}
-        {isAddCampOpen && (
+        {isAddCampOpen && !isReadOnly && (
           <div className="bg-[#18181B] border border-[#FF5500]/50 p-5 rounded-2xl space-y-4 shadow-2xl animate-fade-in w-full">
             <h3 className="text-[14px] font-semibold text-white">新しいキャンプを追加</h3>
 
@@ -798,7 +897,7 @@ export default function Home() {
           onTargetWeightChange={handleTargetWeightChange}
         />
         
-        <GearSearch onAddGear={handleAddGear} />
+        {!isReadOnly && <GearSearch onAddGear={handleAddGear} />}
 
         <GearList
           gears={gears}
@@ -819,21 +918,30 @@ export default function Home() {
           onDeleteAllGears={handleDeleteAllGears}
           onResetAllPacked={handleResetAllPacked}
           onReorderGears={handleReorderGears}
+          isReadOnly={isReadOnly}
         />
 
-        <CsvManager gears={gears} selectedCampId={selectedCampId} onGearsUpdated={fetchGears} />
+        {!isReadOnly && (
+          <CsvManager gears={gears} selectedCampId={selectedCampId} onGearsUpdated={fetchGears} />
+        )}
 
-        {/* 控えめな友だち紹介カード */}
-        <ShareAppCard />
+        {!isReadOnly && <ShareAppCard />}
 
         <HelpGuideModal
           isOpen={isHelpOpen}
           onClose={() => setIsHelpOpen(false)}
         />
 
-        {/* 🎯 規約・ポリシー・お問い合わせリンク＆Amazon免責文言を含む共通フッター */}
         <Footer />
       </div>
     </main>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#09090B] text-zinc-400 p-8 text-center text-sm">読み込み中...</div>}>
+      <CampHomeContent />
+    </Suspense>
   );
 }

@@ -24,6 +24,7 @@ type Props = {
   onDeleteAllGears?: () => void;
   onResetAllPacked?: () => void;
   onReorderGears?: (reorderedGears: GearItem[]) => void;
+  isReadOnly?: boolean;
 };
 
 const CATEGORIES = ['ベース', '調理', '衣類', 'その他', '消耗品'];
@@ -70,6 +71,7 @@ export default function GearList({
   onUpdateGear,
   onDeleteGear,
   onResetAllPacked,
+  isReadOnly = false,
 }: Props) {
   const [sortOrders, setSortOrders] = useState<Record<string, string>>({});
   const [filterMode, setFilterMode] = useState<'all' | 'unpacked'>('all');
@@ -115,7 +117,6 @@ export default function GearList({
   const [isApplyingNext, setIsApplyingNext] = useState(false);
   const [reviewResultModal, setReviewResultModal] = useState<ReviewResultData | null>(null);
 
-  // 持参対象ギア
   const selectedGears = gears.filter((g) => g.is_selected !== false);
   const packedCount = selectedGears.filter((g) => g.is_packed).length;
   const totalCount = selectedGears.length;
@@ -148,6 +149,7 @@ export default function GearList({
   };
 
   const handleToggleUnused = (gearId: string) => {
+    if (isReadOnly) return;
     if (onToggleUnusedGear) {
       onToggleUnusedGear(gearId);
     } else {
@@ -164,7 +166,7 @@ export default function GearList({
   };
 
   const handleCompleteReview = async () => {
-    if (selectedGears.length === 0 || isSubmittingReview) return;
+    if (isReadOnly || selectedGears.length === 0 || isSubmittingReview) return;
     setIsSubmittingReview(true);
 
     try {
@@ -247,7 +249,7 @@ export default function GearList({
   };
 
   const handleApplyToNextPacking = async () => {
-    if (!reviewResultModal || isApplyingNext) return;
+    if (isReadOnly || !reviewResultModal || isApplyingNext) return;
     setIsApplyingNext(true);
 
     try {
@@ -268,7 +270,6 @@ export default function GearList({
     <section className="bg-[#18181B] p-4 md:p-6 rounded-2xl border border-zinc-800 space-y-4 shadow-xl">
       {/* リストヘッダー */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-3">
-        {/* 🎯 見出しを「ギア選定」「パッキング」に統一 */}
         <h2 className="text-[18px] font-bold text-zinc-100 flex items-center gap-1.5">
           {screenMode === 'edit'
             ? `ギア選定 (${totalCount} / ${gears.length})`
@@ -279,7 +280,6 @@ export default function GearList({
 
         {/* モード切替タブ */}
         <div className="grid grid-cols-3 gap-1 bg-[#09090B] p-1 rounded-xl border border-zinc-800 w-full sm:w-auto">
-          {/* 🎯 「✏️ ギア選定」に統一 */}
           <button
             onClick={() => handleModeChange('edit')}
             className={`px-2.5 py-1.5 rounded-lg text-[12px] font-bold transition cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap text-center ${
@@ -320,7 +320,9 @@ export default function GearList({
       {screenMode === 'edit' && (
         <div className="bg-[#27272A]/40 border border-zinc-700/60 p-3 rounded-xl">
           <p className="text-[12px] text-zinc-300 font-normal leading-relaxed">
-            持っていくギアにチェックを入れ、今回持っていかないギアはチェックを外して「お留守番（💤）」に設定できます。
+            {isReadOnly
+              ? '持参するギア（🎒）とお留守番（💤）の選定状況です。（閲覧専用）'
+              : '持っていくギアにチェックを入れ、今回持っていかないギアはチェックを外して「お留守番（💤）」に設定できます。'}
           </p>
         </div>
       )}
@@ -344,7 +346,7 @@ export default function GearList({
               {filterMode === 'unpacked' ? '全て表示' : '未チェックのみ'}
             </button>
 
-            {onResetAllPacked && (
+            {!isReadOnly && onResetAllPacked && (
               <button
                 onClick={onResetAllPacked}
                 className="text-[11px] sm:text-[12px] font-normal px-2.5 py-1 rounded-lg bg-zinc-800 border border-[#EF4444]/60 text-zinc-200 hover:text-white hover:bg-[#EF4444]/20 transition cursor-pointer flex items-center gap-1"
@@ -451,7 +453,6 @@ export default function GearList({
               className="border rounded-xl overflow-hidden shadow-md scroll-mt-6"
               style={{ borderColor: `${catColor}50` }}
             >
-              {/* カテゴリー見出しバー */}
               <div
                 style={{ backgroundColor: '#18181B', borderColor: `${catColor}40` }}
                 className="sticky top-0 z-10 w-full flex items-center justify-between px-3 sm:px-4 py-2 border-b backdrop-blur-md gap-2"
@@ -512,11 +513,11 @@ export default function GearList({
                         adoptionRate={getAdoptionRate(item.name)}
                         mode={screenMode}
                         isUnusedInReview={unusedGearIds.has(item.id)}
-                        onTogglePacked={onTogglePacked}
-                        onToggleSelected={onToggleSelected}
-                        onToggleUnusedInReview={handleToggleUnused}
+                        onTogglePacked={isReadOnly ? undefined : onTogglePacked}
+                        onToggleSelected={isReadOnly ? undefined : onToggleSelected}
+                        onToggleUnusedInReview={isReadOnly ? undefined : handleToggleUnused}
                         onUpdateGear={onUpdateGear}
-                        onDeleteGear={onDeleteGear}
+                        onDeleteGear={isReadOnly ? undefined : onDeleteGear}
                       />
                     ))
                   )}
@@ -528,7 +529,7 @@ export default function GearList({
       )}
 
       {/* レビュー完了ボタン */}
-      {screenMode === 'review' && selectedGears.length > 0 && (
+      {!isReadOnly && screenMode === 'review' && selectedGears.length > 0 && (
         <div className="pt-2">
           <button
             onClick={handleCompleteReview}
@@ -551,15 +552,17 @@ export default function GearList({
       )}
 
       {/* リザルトモーダル */}
-      <ReviewResultModal
-        result={reviewResultModal}
-        isApplyingNext={isApplyingNext}
-        onClose={() => {
-          setReviewResultModal(null);
-          handleModeChange('edit');
-        }}
-        onApplyNextPacking={handleApplyToNextPacking}
-      />
+      {!isReadOnly && (
+        <ReviewResultModal
+          result={reviewResultModal}
+          isApplyingNext={isApplyingNext}
+          onClose={() => {
+            setReviewResultModal(null);
+            handleModeChange('edit');
+          }}
+          onApplyNextPacking={handleApplyToNextPacking}
+        />
+      )}
     </section>
   );
 }
