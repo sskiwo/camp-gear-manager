@@ -467,7 +467,7 @@ export default function GearItemCard({
   // ✏️ ギア編集モード UI
   return (
     <div className="relative overflow-hidden border-b border-zinc-800 bg-[#121214]">
-      {/* 🎯 スワイプ中または開いている時だけ表示（非操作時の透け込みを完全防止） */}
+      {/* スワイプ操作時のみ表示される削除ボタンエリア */}
       {translateX < 0 && (
         <div className="absolute inset-y-0 right-0 w-[72px] bg-red-600 flex items-center justify-center z-0">
           <button
@@ -482,7 +482,7 @@ export default function GearItemCard({
         </div>
       )}
 
-      {/* 🎯 完全不透明なソリッド背景色（bg-[#18181B] / bg-[#121214]） */}
+      {/* メインカードコンテナ */}
       <div
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
@@ -522,9 +522,10 @@ export default function GearItemCard({
                   {item.brand}
                 </span>
               )}
+              {/* 🎯 line-through（取り消し横線）を削除 */}
               <span
                 className={`truncate group-hover:text-[#FF5500] transition-colors ${
-                  !isSelected ? 'text-zinc-400 font-normal line-through' : 'text-white font-normal'
+                  !isSelected ? 'text-zinc-400 font-normal' : 'text-white font-normal'
                 }`}
               >
                 {cleanName}
