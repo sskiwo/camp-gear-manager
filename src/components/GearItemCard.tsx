@@ -130,7 +130,7 @@ export default function GearItemCard({
   const [editMemo, setEditMemo] = useState(item.memo || '');
   const [editIsWeightEstimated, setEditIsWeightEstimated] = useState(item.is_weight_estimated ?? false);
 
-  // 🎯 スワイプ削除用State & Ref
+  // スワイプ削除用State & Ref
   const [translateX, setTranslateX] = useState(0);
   const [isSwiping, setIsSwiping] = useState(false);
   const touchStartXRef = useRef<number>(0);
@@ -163,7 +163,7 @@ export default function GearItemCard({
     } else {
       resetEditForm();
       setIsEditing(true);
-      setTranslateX(0); // 編集フォーム展開時はスワイプ位置を戻す
+      setTranslateX(0);
     }
   };
 
@@ -189,12 +189,12 @@ export default function GearItemCard({
       if (confirmed) {
         onDeleteGear(item.id);
       } else {
-        setTranslateX(0); // キャンセル時はスワイプを戻す
+        setTranslateX(0);
       }
     }
   };
 
-  // 🎯 タッチスワイプ操作ハンドラー（edit モード時のみ有効）
+  // タッチスワイプ操作ハンドラー
   const handleTouchStart = (e: React.TouchEvent) => {
     if (mode !== 'edit' || isEditing) return;
     touchStartXRef.current = e.touches[0].clientX;
@@ -211,21 +211,18 @@ export default function GearItemCard({
     const diffX = currentX - touchStartXRef.current;
     const diffY = currentY - touchStartYRef.current;
 
-    // 初動判定（縦スクロールか横スワイプか）
     if (isHorizontalSwipeRef.current === null) {
       if (Math.abs(diffX) > 8 || Math.abs(diffY) > 8) {
         isHorizontalSwipeRef.current = Math.abs(diffX) > Math.abs(diffY);
       }
     }
 
-    if (isHorizontalSwipeRef.current === false) return; // 縦スクロール時は無視
+    if (isHorizontalSwipeRef.current === false) return;
 
     if (diffX < 0) {
-      // 左スワイプ（最大-80px）
       const distance = Math.max(-80, diffX);
       setTranslateX(distance);
     } else if (translateX < 0) {
-      // 開いた状態から右へ戻す
       const distance = Math.min(0, -72 + diffX);
       setTranslateX(distance);
     }
@@ -235,7 +232,6 @@ export default function GearItemCard({
     if (mode !== 'edit' || isEditing) return;
     setIsSwiping(false);
 
-    // 50px以上左にスワイプされたら削除ボタン位置（-72px）で固定
     if (translateX < -50) {
       setTranslateX(-72);
     } else {
@@ -323,7 +319,7 @@ export default function GearItemCard({
     setIsEditing(false);
   };
 
-  // 🎒 【1】 パッキングモード UI
+  // 🎒 パッキングモード UI
   if (mode === 'packing') {
     return (
       <div className="space-y-1">
@@ -409,7 +405,7 @@ export default function GearItemCard({
     );
   }
 
-  // ⛺ 【2】 振り返りモード UI
+  // ⛺ 振り返りモード UI
   if (mode === 'review') {
     return (
       <div className="space-y-1">
@@ -468,23 +464,25 @@ export default function GearItemCard({
     );
   }
 
-  // ✏️ 【3】 ギア編集モード UI（左スワイプ削除対応）
+  // ✏️ ギア編集モード UI
   return (
-    <div className="relative overflow-hidden border-b border-zinc-800/80">
-      {/* 🎯 スワイプ時に下から現れる赤い削除背景エリア */}
-      <div className="absolute inset-y-0 right-0 w-[72px] bg-red-600 flex items-center justify-center z-0">
-        <button
-          type="button"
-          onClick={handleDelete}
-          className="w-full h-full flex flex-col items-center justify-center text-white cursor-pointer active:bg-red-700 transition"
-          title="ギアを削除"
-        >
-          <Trash2 className="w-5 h-5 mb-0.5" />
-          <span className="text-[10px] font-bold">削除</span>
-        </button>
-      </div>
+    <div className="relative overflow-hidden border-b border-zinc-800 bg-[#121214]">
+      {/* 🎯 スワイプ中または開いている時だけ表示（非操作時の透け込みを完全防止） */}
+      {translateX < 0 && (
+        <div className="absolute inset-y-0 right-0 w-[72px] bg-red-600 flex items-center justify-center z-0">
+          <button
+            type="button"
+            onClick={handleDelete}
+            className="w-full h-full flex flex-col items-center justify-center text-white cursor-pointer active:bg-red-700 transition"
+            title="ギアを削除"
+          >
+            <Trash2 className="w-4 h-4 mb-0.5" />
+            <span className="text-[10px] font-bold">削除</span>
+          </button>
+        </div>
+      )}
 
-      {/* 🎯 メインコンテンツ（スワイプ量に応じて横スライド） */}
+      {/* 🎯 完全不透明なソリッド背景色（bg-[#18181B] / bg-[#121214]） */}
       <div
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
@@ -493,19 +491,19 @@ export default function GearItemCard({
           transform: `translateX(${translateX}px)`,
           transition: isSwiping ? 'none' : 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
         }}
-        className={`relative z-10 py-2 px-2.5 transition-colors select-text hover:bg-[#1F1F23] space-y-1.5 ${
-          !isSelected ? 'bg-[#141416]/95' : 'bg-[#121215]'
+        className={`relative z-10 py-2.5 px-3 transition-colors select-text hover:bg-[#202024] space-y-1.5 ${
+          !isSelected ? 'bg-[#121214]' : 'bg-[#18181B]'
         }`}
       >
         <div className="flex items-center justify-between gap-2 min-w-0">
-          <div className="flex items-center gap-1.5 min-w-0 flex-1">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
             {onToggleSelected && (
               <button
                 onClick={() => onToggleSelected(item.id, isSelected)}
                 className={`w-7 h-7 rounded-lg text-[12px] transition flex items-center justify-center border shrink-0 cursor-pointer active:scale-95 ${
                   isSelected
                     ? 'bg-[#FF5500]/20 border-[#FF5500]/60 text-[#FF5500]'
-                    : 'bg-zinc-800/90 border-zinc-700 text-zinc-300 hover:text-white hover:border-zinc-500'
+                    : 'bg-zinc-800 border-zinc-700 text-zinc-300 hover:text-white hover:border-zinc-500'
                 }`}
                 title={isSelected ? '持参（タップでお休みに変更）' : 'お休み（タップで持参に変更）'}
               >
@@ -526,7 +524,7 @@ export default function GearItemCard({
               )}
               <span
                 className={`truncate group-hover:text-[#FF5500] transition-colors ${
-                  !isSelected ? 'text-zinc-300 font-normal' : 'text-white font-normal'
+                  !isSelected ? 'text-zinc-400 font-normal line-through' : 'text-white font-normal'
                 }`}
               >
                 {cleanName}
@@ -535,7 +533,7 @@ export default function GearItemCard({
           </div>
 
           {badge && (
-            <span className={`text-[12px] px-1.5 py-0.5 rounded ${badge.className} shrink-0 font-normal`}>
+            <span className={`text-[11px] px-1.5 py-0.5 rounded ${badge.className} shrink-0 font-normal`}>
               {badge.label}
             </span>
           )}
@@ -710,7 +708,12 @@ export default function GearItemCard({
             {onDeleteGear && (
               <button
                 type="button"
-                onClick={handleDelete}
+                onClick={() => {
+                  const confirmed = window.confirm(`「${item.name}」を削除してもよろしいですか？`);
+                  if (confirmed) {
+                    onDeleteGear(item.id);
+                  }
+                }}
                 className="text-[#EF4444] hover:text-white hover:bg-[#EF4444]/20 border border-[#EF4444]/40 px-3 py-1.5 rounded-xl text-[12px] font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
                 title="このギアを削除"
               >
