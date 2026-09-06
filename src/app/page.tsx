@@ -645,8 +645,8 @@ function CampHomeContent() {
 
         {/* 閲覧専用モード案内バナー */}
         {isReadOnly && (
-          <div className="bg-amber-950/70 border border-amber-500/50 p-3.5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
-            <div className="flex items-center gap-2.5 min-w-0">
+          <div className="bg-amber-950/70 border border-amber-500/50 p-3 sm:p-3.5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 shadow-lg">
+            <div className="flex items-center gap-2 min-w-0">
               <Eye className="w-4 h-4 text-amber-400 shrink-0" />
               <div className="min-w-0">
                 <p className="text-[12px] font-bold text-white">
@@ -662,7 +662,7 @@ function CampHomeContent() {
                 type="button"
                 onClick={handleCloneCurrentCamp}
                 disabled={isSubmitting}
-                className="px-3 py-1.5 bg-[#FF5500] hover:bg-[#e04c00] text-white rounded-lg text-[11px] font-bold shadow-md transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                className="px-2.5 sm:px-3 py-1.5 bg-[#FF5500] hover:bg-[#e04c00] text-white rounded-lg text-[11px] font-bold shadow-md transition flex items-center gap-1 cursor-pointer disabled:opacity-50 whitespace-nowrap"
               >
                 <CopyPlus className="w-3.5 h-3.5" />
                 <span>この装備を複製して使う</span>
@@ -670,7 +670,7 @@ function CampHomeContent() {
               <button
                 type="button"
                 onClick={handleOpenAddCampModal}
-                className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white rounded-lg text-[11px] font-bold border border-zinc-700 transition flex items-center gap-1.5 cursor-pointer"
+                className="px-2.5 sm:px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white rounded-lg text-[11px] font-bold border border-zinc-700 transition flex items-center gap-1 cursor-pointer whitespace-nowrap"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>新規作成</span>
@@ -704,15 +704,15 @@ function CampHomeContent() {
           </div>
         )}
         
-        {/* ヘッダーエリア */}
+        {/* 🎯 ヘッダーエリア（極小画面でもはみ出さないようレスポンシブ最適化） */}
         <header className="border-b border-zinc-800 pb-3 space-y-3 w-full">
-          <div className="flex items-center justify-between gap-2 w-full">
+          <div className="flex items-center justify-between gap-1.5 sm:gap-2 w-full">
             <Link
               href="/"
-              className="flex items-center gap-2.5 whitespace-nowrap shrink-0 hover:opacity-90 transition-opacity cursor-pointer group min-w-0"
+              className="flex items-center gap-1.5 sm:gap-2.5 hover:opacity-90 transition-opacity cursor-pointer group min-w-0"
               title="トップページを表示"
             >
-              <div className="relative w-8 h-8 sm:w-9 sm:h-9 shrink-0 drop-shadow-md transition-transform group-hover:scale-105">
+              <div className="relative w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 shrink-0 drop-shadow-md transition-transform group-hover:scale-105">
                 <Image
                   src="/logo.svg"
                   alt="Camp Gear Manager Logo"
@@ -722,11 +722,12 @@ function CampHomeContent() {
                   priority
                 />
               </div>
-              <h1 className="text-[17px] sm:text-[20px] font-black text-white tracking-tight shrink-0 whitespace-nowrap">
+              <h1 className="text-[15px] sm:text-[18px] md:text-[20px] font-black text-white tracking-tight truncate">
                 <span className="text-[#FF5500]">Camp Gear</span> Manager
               </h1>
             </Link>
 
+            {/* 右側アクションボタングループ */}
             <div className="flex items-center gap-1.5 shrink-0">
               <button
                 type="button"
@@ -742,7 +743,7 @@ function CampHomeContent() {
                 <button
                   type="button"
                   onClick={handleTogglePublic}
-                  className={`h-8 px-2.5 sm:px-3 rounded-xl text-[12px] font-bold transition border flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer shrink-0 ${
+                  className={`h-8 px-2 sm:px-2.5 md:px-3 rounded-xl text-[11px] sm:text-[12px] font-bold transition border flex items-center gap-1 shadow-sm active:scale-95 cursor-pointer shrink-0 whitespace-nowrap ${
                     currentSelectedCamp?.is_public
                       ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/30'
                       : 'bg-zinc-800 text-zinc-300 border-zinc-700 hover:bg-zinc-700 hover:text-white'
@@ -750,12 +751,12 @@ function CampHomeContent() {
                 >
                   {currentSelectedCamp?.is_public ? (
                     <>
-                      <Globe className="w-3.5 h-3.5 text-emerald-400" />
+                      <Globe className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                       <span>公開中</span>
                     </>
                   ) : (
                     <>
-                      <Lock className="w-3.5 h-3.5 text-zinc-400" />
+                      <Lock className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
                       <span>非公開</span>
                     </>
                   )}
@@ -765,20 +766,20 @@ function CampHomeContent() {
           </div>
 
           {/* キャンプ選択セレクター */}
-          <div className="flex items-center justify-between gap-2 bg-[#18181B] px-3.5 py-2.5 rounded-xl border border-zinc-800 shadow-sm w-full">
+          <div className="flex items-center justify-between gap-2 bg-[#18181B] px-3 sm:px-3.5 py-2.5 rounded-xl border border-zinc-800 shadow-sm w-full">
             <div className="flex-1 min-w-0">
               {isLoading ? (
-                <span className="text-[14px] text-zinc-400 font-bold block animate-pulse">
+                <span className="text-[13px] sm:text-[14px] text-zinc-400 font-bold block animate-pulse truncate">
                   キャンプデータを読み込み中...
                 </span>
               ) : visibleCamps.length > 0 ? (
                 <select
                   value={selectedCampId}
                   onChange={(e) => handleSelectCamp(e.target.value)}
-                  className="w-full bg-transparent text-white text-[16px] sm:text-[18px] font-bold focus:outline-none truncate cursor-pointer"
+                  className="w-full bg-transparent text-white text-[15px] sm:text-[17px] md:text-[18px] font-bold focus:outline-none truncate cursor-pointer"
                 >
                   {visibleCamps.map((camp) => (
-                    <option key={camp.id} value={camp.id} className="bg-[#18181B] text-white text-[16px] sm:text-[18px] font-bold">
+                    <option key={camp.id} value={camp.id} className="bg-[#18181B] text-white text-[15px] sm:text-[17px]">
                       {camp.title} {!ownedCampIds.has(camp.id) && '（閲覧専用）'}
                     </option>
                   ))}
@@ -787,10 +788,10 @@ function CampHomeContent() {
                 <button
                   type="button"
                   onClick={fetchCamps}
-                  className="text-[13px] text-amber-400 hover:underline flex items-center gap-1.5 font-bold cursor-pointer"
+                  className="text-[12px] sm:text-[13px] text-amber-400 hover:underline flex items-center gap-1.5 font-bold cursor-pointer"
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
-                  <span>未接続: タップしてキャンプを再取得</span>
+                  <span>未接続: タップして再取得</span>
                 </button>
               )}
             </div>
@@ -807,7 +808,7 @@ function CampHomeContent() {
               ) : (
                 <button
                   onClick={handleOpenAddCampModal}
-                  className="px-2.5 py-1.5 bg-[#FF5500] hover:bg-[#e04c00] text-white rounded-lg text-xs font-bold transition flex items-center gap-1 shadow-sm active:scale-95 cursor-pointer"
+                  className="px-2.5 py-1.5 bg-[#FF5500] hover:bg-[#e04c00] text-white rounded-lg text-xs font-bold transition flex items-center gap-1 shadow-sm active:scale-95 cursor-pointer whitespace-nowrap"
                   title="新しい自分専用のキャンプを作成"
                 >
                   <Plus className="w-3.5 h-3.5" />
@@ -1010,7 +1011,7 @@ function CampHomeContent() {
           isReadOnly={isReadOnly}
         />
 
-        {/* 🎯 このキャンプの共有カード（CSV管理の上に配置） */}
+        {/* このキャンプの共有カード */}
         <ShareAppCard campId={selectedCampId} isReadOnly={isReadOnly} />
 
         {!isReadOnly && (

@@ -28,17 +28,17 @@ export default function ShareAppCard({ campId, isReadOnly = false }: Props) {
   if (isReadOnly || !campId) return null;
 
   return (
-    <div className="bg-[#18181B] border border-zinc-800 rounded-2xl p-3 sm:p-4 flex items-center justify-between gap-3 shadow-md">
-      <div className="min-w-0">
-        <p className="text-xs font-bold text-zinc-200 truncate">
-          ⛺ このキャンプを仲間に共有（閲覧専用）
+    <div className="bg-[#18181B] border border-zinc-800 rounded-2xl p-3 sm:p-4 flex items-center justify-between gap-2.5 shadow-md">
+      <div className="min-w-0 flex-1">
+        <p className="text-[12px] sm:text-[13px] font-bold text-zinc-200 truncate">
+          このキャンプを仲間に共有
         </p>
       </div>
 
       <button
         type="button"
         onClick={handleCopyCampUrl}
-        className="shrink-0 h-8 px-3 rounded-xl border border-[#FF5500] text-[#FF5500] hover:bg-[#FF5500]/10 text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
+        className="shrink-0 h-8 px-2.5 sm:px-3 rounded-xl border border-[#FF5500] text-[#FF5500] hover:bg-[#FF5500]/10 text-[11px] sm:text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm active:scale-95 cursor-pointer whitespace-nowrap"
       >
         {copiedCamp ? (
           <>
@@ -48,7 +48,7 @@ export default function ShareAppCard({ campId, isReadOnly = false }: Props) {
         ) : (
           <>
             <Copy className="w-3.5 h-3.5" />
-            <span>共有URLをコピー</span>
+            <span>閲覧専用URL</span>
           </>
         )}
       </button>
