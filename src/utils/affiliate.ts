@@ -1,4 +1,3 @@
-New-Item -ItemType Directory -Path src\utils -Force; Set-Content -Path src\utils\affiliate.ts -Encoding UTF8 -Value @'
 const DEFAULT_TRACKING_ID = process.env.NEXT_PUBLIC_AMAZON_TRACKING_ID || 'campgear0e-22';
 
 /**
@@ -11,7 +10,7 @@ export function buildAmazonUrl(
 ): string {
   const queryParts = [brand, productName, modelNumber]
     .filter((part): part is string => Boolean(part && part.trim()))
-    .map((part) => part.trim());
+    .map((part) => (part as string).trim());
 
   const query = queryParts.join(' ');
   const encodedQuery = encodeURIComponent(query);
@@ -40,4 +39,3 @@ export function attachAmazonTag(rawUrl: string): string {
     return rawUrl;
   }
 }
-'@
