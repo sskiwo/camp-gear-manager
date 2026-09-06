@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Trash2 } from 'lucide-react';
 
 export type GearItem = {
   id: string;
@@ -129,6 +130,13 @@ export default function GearItemCard({
   const [editMemo, setEditMemo] = useState(item.memo || '');
   const [editIsWeightEstimated, setEditIsWeightEstimated] = useState(item.is_weight_estimated ?? false);
 
+  // 🎯 スワイプ削除用State & Ref
+  const [translateX, setTranslateX] = useState(0);
+  const [isSwiping, setIsSwiping] = useState(false);
+  const touchStartXRef = useRef<number>(0);
+  const touchStartYRef = useRef<number>(0);
+  const isHorizontalSwipeRef = useRef<boolean | null>(null);
+
   const resetEditForm = useCallback(() => {
     setEditBrand(item.brand || '');
     setEditName(item.name || '');
@@ -155,6 +163,7 @@ export default function GearItemCard({
     } else {
       resetEditForm();
       setIsEditing(true);
+      setTranslateX(0); // 編集フォーム展開時はスワイプ位置を戻す
     }
   };
 
@@ -173,6 +182,66 @@ export default function GearItemCard({
   const broughtCount = item.total_brought_count || 0;
   const usedCount = item.total_used_count || 0;
   const usageRate = broughtCount > 0 ? (usedCount / broughtCount) * 100 : 0;
+
+  const handleDelete = () => {
+    if (onDeleteGear) {
+      const confirmed = window.confirm(`「${item.name}」を削除してもよろしいですか？`);
+      if (confirmed) {
+        onDeleteGear(item.id);
+      } else {
+        setTranslateX(0); // キャンセル時はスワイプを戻す
+      }
+    }
+  };
+
+  // 🎯 タッチスワイプ操作ハンドラー（edit モード時のみ有効）
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (mode !== 'edit' || isEditing) return;
+    touchStartXRef.current = e.touches[0].clientX;
+    touchStartYRef.current = e.touches[0].clientY;
+    isHorizontalSwipeRef.current = null;
+    setIsSwiping(true);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (mode !== 'edit' || isEditing || !isSwiping) return;
+
+    const currentX = e.touches[0].clientX;
+    const currentY = e.touches[0].clientY;
+    const diffX = currentX - touchStartXRef.current;
+    const diffY = currentY - touchStartYRef.current;
+
+    // 初動判定（縦スクロールか横スワイプか）
+    if (isHorizontalSwipeRef.current === null) {
+      if (Math.abs(diffX) > 8 || Math.abs(diffY) > 8) {
+        isHorizontalSwipeRef.current = Math.abs(diffX) > Math.abs(diffY);
+      }
+    }
+
+    if (isHorizontalSwipeRef.current === false) return; // 縦スクロール時は無視
+
+    if (diffX < 0) {
+      // 左スワイプ（最大-80px）
+      const distance = Math.max(-80, diffX);
+      setTranslateX(distance);
+    } else if (translateX < 0) {
+      // 開いた状態から右へ戻す
+      const distance = Math.min(0, -72 + diffX);
+      setTranslateX(distance);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (mode !== 'edit' || isEditing) return;
+    setIsSwiping(false);
+
+    // 50px以上左にスワイプされたら削除ボタン位置（-72px）で固定
+    if (translateX < -50) {
+      setTranslateX(-72);
+    } else {
+      setTranslateX(0);
+    }
+  };
 
   const renderWeightEstimatedBadge = () => {
     if (!item.is_weight_estimated) return null;
@@ -340,7 +409,7 @@ export default function GearItemCard({
     );
   }
 
-  // ⛺ 【2】 振り返りモード UI（使用率は非表示、チェック外し方式に統一）
+  // ⛺ 【2】 振り返りモード UI
   if (mode === 'review') {
     return (
       <div className="space-y-1">
@@ -352,7 +421,6 @@ export default function GearItemCard({
           }`}
         >
           <div className="flex items-center gap-1.5 min-w-0 flex-1">
-            {/* 🎯 使った(✅) / 未使用(⬜)の切り替えボタン */}
             {onToggleUnusedInReview && (
               <button
                 onClick={() => onToggleUnusedInReview(item.id)}
@@ -381,14 +449,11 @@ export default function GearItemCard({
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
-            {/* 🎯 数量バッジ（2個以上のみ表示） */}
             {qty > 1 && (
               <span className="text-[12px] font-mono font-bold text-[#FFB800] bg-[#FFB800]/15 border border-[#FFB800]/40 px-1.5 py-0.5 rounded shrink-0">
                 ×{qty}
               </span>
             )}
-            
-            {/* 💡 振り返り画面では使用率バッジは非表示 */}
 
             <span className={`text-[12px] font-mono tabular-nums min-w-[50px] text-right ${
               isUnusedInReview ? 'text-zinc-500 font-normal' : 'text-zinc-300 font-bold'
@@ -403,86 +468,109 @@ export default function GearItemCard({
     );
   }
 
-  // ✏️ 【3】 ギア編集モード UI
+  // ✏️ 【3】 ギア編集モード UI（左スワイプ削除対応）
   return (
-    <div
-      className={`py-2 px-2.5 border-b border-zinc-800/80 transition-colors select-text hover:bg-[#1F1F23] space-y-1.5 ${
-        !isSelected ? 'bg-[#141416]/90' : 'bg-transparent'
-      }`}
-    >
-      <div className="flex items-center justify-between gap-2 min-w-0">
-        <div className="flex items-center gap-1.5 min-w-0 flex-1">
-          {onToggleSelected && (
-            <button
-              onClick={() => onToggleSelected(item.id, isSelected)}
-              className={`w-7 h-7 rounded-lg text-[12px] transition flex items-center justify-center border shrink-0 cursor-pointer active:scale-95 ${
-                isSelected
-                  ? 'bg-[#FF5500]/20 border-[#FF5500]/60 text-[#FF5500]'
-                  : 'bg-zinc-800/90 border-zinc-700 text-zinc-300 hover:text-white hover:border-zinc-500'
-              }`}
-              title={isSelected ? '持参（タップでお休みに変更）' : 'お休み（タップで持参に変更）'}
-            >
-              {isSelected ? '🎒' : '💤'}
-            </button>
-          )}
+    <div className="relative overflow-hidden border-b border-zinc-800/80">
+      {/* 🎯 スワイプ時に下から現れる赤い削除背景エリア */}
+      <div className="absolute inset-y-0 right-0 w-[72px] bg-red-600 flex items-center justify-center z-0">
+        <button
+          type="button"
+          onClick={handleDelete}
+          className="w-full h-full flex flex-col items-center justify-center text-white cursor-pointer active:bg-red-700 transition"
+          title="ギアを削除"
+        >
+          <Trash2 className="w-5 h-5 mb-0.5" />
+          <span className="text-[10px] font-bold">削除</span>
+        </button>
+      </div>
 
-          <button
-            type="button"
-            onClick={handleToggleEdit}
-            className="min-w-0 flex-1 text-left flex items-center gap-1.5 text-[12px] font-normal truncate cursor-pointer group focus:outline-none"
-            title="タップしてギア情報を編集"
-          >
-            {item.brand && (
-              <span className="text-zinc-400 font-normal shrink-0">
-                {item.brand}
+      {/* 🎯 メインコンテンツ（スワイプ量に応じて横スライド） */}
+      <div
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        style={{
+          transform: `translateX(${translateX}px)`,
+          transition: isSwiping ? 'none' : 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+        }}
+        className={`relative z-10 py-2 px-2.5 transition-colors select-text hover:bg-[#1F1F23] space-y-1.5 ${
+          !isSelected ? 'bg-[#141416]/95' : 'bg-[#121215]'
+        }`}
+      >
+        <div className="flex items-center justify-between gap-2 min-w-0">
+          <div className="flex items-center gap-1.5 min-w-0 flex-1">
+            {onToggleSelected && (
+              <button
+                onClick={() => onToggleSelected(item.id, isSelected)}
+                className={`w-7 h-7 rounded-lg text-[12px] transition flex items-center justify-center border shrink-0 cursor-pointer active:scale-95 ${
+                  isSelected
+                    ? 'bg-[#FF5500]/20 border-[#FF5500]/60 text-[#FF5500]'
+                    : 'bg-zinc-800/90 border-zinc-700 text-zinc-300 hover:text-white hover:border-zinc-500'
+                }`}
+                title={isSelected ? '持参（タップでお休みに変更）' : 'お休み（タップで持参に変更）'}
+              >
+                {isSelected ? '🎒' : '💤'}
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={handleToggleEdit}
+              className="min-w-0 flex-1 text-left flex items-center gap-1.5 text-[12px] font-normal truncate cursor-pointer group focus:outline-none"
+              title="タップしてギア情報を編集"
+            >
+              {item.brand && (
+                <span className="text-zinc-400 font-normal shrink-0">
+                  {item.brand}
+                </span>
+              )}
+              <span
+                className={`truncate group-hover:text-[#FF5500] transition-colors ${
+                  !isSelected ? 'text-zinc-300 font-normal' : 'text-white font-normal'
+                }`}
+              >
+                {cleanName}
+              </span>
+            </button>
+          </div>
+
+          {badge && (
+            <span className={`text-[12px] px-1.5 py-0.5 rounded ${badge.className} shrink-0 font-normal`}>
+              {badge.label}
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center justify-between gap-2 pt-0.5">
+          <div className="text-[11px] font-mono tabular-nums text-zinc-300 flex items-center gap-1.5 shrink-0 pl-1 font-normal">
+            <span className="text-zinc-200">{formatWeight(totalWeight)}</span>
+            {renderWeightEstimatedBadge()}
+            {qty > 1 && (
+              <span className="text-[11px] font-mono font-bold text-[#FFB800] bg-[#FFB800]/15 border border-[#FFB800]/40 px-1 py-0.2 rounded shrink-0">
+                ×{qty}
               </span>
             )}
-            <span
-              className={`truncate group-hover:text-[#FF5500] transition-colors ${
-                !isSelected ? 'text-zinc-300 font-normal' : 'text-white font-normal'
+            <span className="text-zinc-500 font-sans">/</span>
+            {renderUsageBadge()}
+          </div>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              onClick={handleToggleEdit}
+              className={`w-7 h-7 flex items-center justify-center rounded-lg text-[12px] transition border cursor-pointer ${
+                isEditing
+                  ? 'bg-[#FF5500]/20 border-[#FF5500] text-white'
+                  : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white border-zinc-700'
               }`}
+              title="ギア詳細を編集"
             >
-              {cleanName}
-            </span>
-          </button>
+              ✏️
+            </button>
+          </div>
         </div>
 
-        {badge && (
-          <span className={`text-[12px] px-1.5 py-0.5 rounded ${badge.className} shrink-0 font-normal`}>
-            {badge.label}
-          </span>
-        )}
+        {isEditing && renderEditForm()}
       </div>
-
-      <div className="flex items-center justify-between gap-2 pt-0.5">
-        <div className="text-[11px] font-mono tabular-nums text-zinc-300 flex items-center gap-1.5 shrink-0 pl-1 font-normal">
-          <span className="text-zinc-200">{formatWeight(totalWeight)}</span>
-          {renderWeightEstimatedBadge()}
-          {qty > 1 && (
-            <span className="text-[11px] font-mono font-bold text-[#FFB800] bg-[#FFB800]/15 border border-[#FFB800]/40 px-1 py-0.2 rounded shrink-0">
-              ×{qty}
-            </span>
-          )}
-          <span className="text-zinc-500 font-sans">/</span>
-          {renderUsageBadge()}
-        </div>
-
-        <div className="flex items-center gap-1.5 shrink-0">
-          <button
-            onClick={handleToggleEdit}
-            className={`w-7 h-7 flex items-center justify-center rounded-lg text-[12px] transition border cursor-pointer ${
-              isEditing
-                ? 'bg-[#FF5500]/20 border-[#FF5500] text-white'
-                : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white border-zinc-700'
-            }`}
-            title="ギア詳細を編集"
-          >
-            ✏️
-          </button>
-        </div>
-      </div>
-
-      {isEditing && renderEditForm()}
     </div>
   );
 
@@ -622,12 +710,7 @@ export default function GearItemCard({
             {onDeleteGear && (
               <button
                 type="button"
-                onClick={() => {
-                  const confirmed = window.confirm(`「${item.name}」を削除してもよろしいですか？`);
-                  if (confirmed) {
-                    onDeleteGear(item.id);
-                  }
-                }}
+                onClick={handleDelete}
                 className="text-[#EF4444] hover:text-white hover:bg-[#EF4444]/20 border border-[#EF4444]/40 px-3 py-1.5 rounded-xl text-[12px] font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
                 title="このギアを削除"
               >
