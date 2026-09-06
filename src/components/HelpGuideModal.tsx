@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { X, Camera, Scale, Layers, Share2, Sparkles } from 'lucide-react';
+import { shareApp } from '@/utils/share';
 
 interface HelpGuideModalProps {
   isOpen: boolean;
@@ -20,6 +21,14 @@ export default function HelpGuideModal({ isOpen, onClose }: HelpGuideModalProps)
       console.warn('Failed to save guide seen status:', err);
     }
     onClose();
+  };
+
+  // 🎯 【場所3】使い方ガイド内からのアプリシェア実行
+  const handleShareFromGuide = () => {
+    shareApp({
+      title: 'Camp Gear Manager | キャンプギア共有・管理',
+      text: 'グループキャンプの持ち物チェックやギア管理に「Camp Gear Manager」がすごく便利！一緒にパッキングを合わせよう⛺🎒',
+    });
   };
 
   return (
@@ -86,13 +95,12 @@ export default function HelpGuideModal({ isOpen, onClose }: HelpGuideModalProps)
             <div className="space-y-2 pl-1">
               <div className="flex items-start gap-2">
                 <span className="font-bold text-white whitespace-nowrap">✏️ ギア編集（準備）:</span>
-                <span className="text-zinc-300 font-normal">今回持参するギア（🎒）とお留守番（💤）を選定・並び替え。</span>
+                <span className="text-zinc-300 font-normal">今回持参するギア（🎒）とお留守番（💤）を選定・並び替え。カードを左スワイプで削除可能。</span>
               </div>
               <div className="flex items-start gap-2">
                 <span className="font-bold text-white whitespace-nowrap">🎒 パッキング（当日）:</span>
                 <span className="text-zinc-300 font-normal">ザックに詰めたアイテムをワンタップでチェック（未チェック絞り込み対応）。</span>
               </div>
-              {/* 🎯 「振り返り」を「レビュー」に統一 */}
               <div className="flex items-start gap-2">
                 <span className="font-bold text-white whitespace-nowrap">⛺ レビュー（帰宅後）:</span>
                 <span className="text-zinc-300 font-normal">使わなかったギア（⚠️）を記録し、稼働率実績を更新して次回の軽量化に活用。</span>
@@ -100,14 +108,25 @@ export default function HelpGuideModal({ isOpen, onClose }: HelpGuideModalProps)
             </div>
           </div>
 
-          {/* 便利機能（Tipsカード） */}
-          <div className="bg-amber-950/30 border border-amber-800/60 rounded-xl p-4 space-y-1.5">
-            <h3 className="text-[14px] font-semibold text-amber-400 flex items-center gap-2">
-              <Share2 className="w-4 h-4 shrink-0" />
-              <span>グループキャンプ・リスト共有</span>
-            </h3>
+          {/* 🎯 【場所3】グループキャンプ・リスト共有（シェアボタン設置） */}
+          <div className="bg-amber-950/30 border border-amber-800/60 rounded-xl p-4 space-y-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-[14px] font-semibold text-amber-400 flex items-center gap-2 min-w-0">
+                <Share2 className="w-4 h-4 shrink-0" />
+                <span className="truncate">グループキャンプ・リスト共有</span>
+              </h3>
+              <button
+                type="button"
+                onClick={handleShareFromGuide}
+                className="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white border border-zinc-700 text-[11px] font-bold transition flex items-center gap-1.5 cursor-pointer shrink-0 active:scale-95 shadow-sm"
+                title="友だちにアプリを紹介"
+              >
+                <Share2 className="w-3.5 h-3.5 text-[#FF5500]" />
+                <span>キャンプ仲間に教える</span>
+              </button>
+            </div>
             <p className="text-zinc-300 font-normal leading-relaxed">
-              右上の「公開」ボタンからURLを共有するだけで、仲間と同じパッキングリストを閲覧・共有できます。
+              右上の「公開」ボタンからURLを共有するだけで、仲間と同じパッキングリストをリアルタイムに閲覧・共有できます。
             </p>
           </div>
 
@@ -119,6 +138,7 @@ export default function HelpGuideModal({ isOpen, onClose }: HelpGuideModalProps)
             ※いつでも右上の「使い方」ボタンから再確認できます
           </p>
           <button
+            type="button"
             onClick={handleComplete}
             className="w-full py-3 bg-[#FF5500] hover:bg-[#e04c00] text-white font-bold rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-[12px] cursor-pointer active:scale-95"
           >

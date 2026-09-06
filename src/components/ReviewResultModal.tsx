@@ -1,7 +1,8 @@
 'use client';
 
-import React from 'react';
-import { Loader2, Check, X } from 'lucide-react';
+import React, { useState } from 'react';
+import { Loader2, Check, X, Share2 } from 'lucide-react';
+import { shareApp } from '@/utils/share';
 
 export interface ReviewResultData {
   totalWeightGrams: number;
@@ -54,7 +55,35 @@ export default function ReviewResultModal({
   onClose,
   onApplyNextPacking,
 }: Props) {
+  const [isShared, setIsShared] = useState(false);
+
   if (!result) return null;
+
+  const usageRate =
+    result.totalCount > 0 ? Math.round((result.usedCount / result.totalCount) * 100) : 100;
+
+  // 🎯 スコア結果の動的シェア実行
+  const handleShareResult = async () => {
+    const text =
+      `🏕️【キャンプ パッキング結果】\n` +
+      `パッキングスコア: ${result.score}点 [ランク${result.rank} ${result.rankTitle}]\n` +
+      `持参総重量: ${formatWeightDisplay(result.totalWeightGrams)} ➔ 実使用重量: ${formatWeightDisplay(result.usedWeightGrams)}\n` +
+      `装備稼働率: ${usageRate}% (${result.usedCount}/${result.totalCount}点 使用)\n` +
+      (result.unusedCount > 0
+        ? `未使用重量: ${formatWeightDisplay(result.unusedWeightGrams)} (${result.unusedCount}点)\n`
+        : `持っていったギアをすべて使い切りました！✨\n`) +
+      `\n#CampGearManager #キャンプ #ULハイク`;
+
+    const success = await shareApp({
+      title: `パッキングスコア: ${result.score}点 [ランク${result.rank}] | Camp Gear Manager`,
+      text,
+    });
+
+    if (success) {
+      setIsShared(true);
+      setTimeout(() => setIsShared(false), 3000);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
@@ -164,6 +193,29 @@ export default function ReviewResultModal({
               {getWeightEquivalentMessage(result.unusedWeightGrams)}
             </p>
           </div>
+
+          {/* 🎯 【指示書要件】アドバイスカード下・フッター直前のシェアボタン */}
+          <button
+            type="button"
+            onClick={handleShareResult}
+            className={`w-full py-2.5 rounded-xl border text-[12px] font-bold transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer active:scale-95 shadow-md ${
+              isShared
+                ? 'bg-emerald-600 text-white border-emerald-500'
+                : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white border-zinc-700'
+            }`}
+          >
+            {isShared ? (
+              <>
+                <Check className="w-4 h-4 text-white stroke-[2.5]" />
+                <span>スコアをコピーしました！</span>
+              </>
+            ) : (
+              <>
+                <Share2 className="w-4 h-4 text-[#FF5500]" />
+                <span>スコア結果を友だちやSNSにシェア</span>
+              </>
+            )}
+          </button>
         </div>
 
         {/* フッターアクション */}

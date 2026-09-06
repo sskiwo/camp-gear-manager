@@ -3,12 +3,13 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { HelpCircle, Lock, Globe } from 'lucide-react';
+import { HelpCircle, Lock, Globe, AlertTriangle, RefreshCw } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import WeightsSummary from '@/components/WeightsSummary';
 import GearSearch from '@/components/GearSearch';
 import GearList from '@/components/GearList';
 import CsvManager from '@/components/CsvManager';
+import ShareAppCard from '@/components/ShareAppCard';
 import HelpGuideModal, { STORAGE_KEY_GUIDE_SEEN } from '@/components/HelpGuideModal';
 import { GearItem } from '@/components/GearItemCard';
 
@@ -33,6 +34,10 @@ export default function Home() {
   const [unusedGearIds, setUnusedGearIds] = useState<Set<string>>(new Set());
   const [targetWeightKg, setTargetWeightKg] = useState<number>(15.0);
 
+  // 接続エラー診断用ステート
+  const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
   const [isAddCampOpen, setIsAddCampOpen] = useState(false);
   const [newCampTitle, setNewCampTitle] = useState('');
   const [copyOption, setCopyOption] = useState<'latest' | 'select' | 'none'>('latest');
@@ -51,7 +56,6 @@ export default function Home() {
     消耗品: false,
   });
 
-  // 初回ロード時の設定復元
   useEffect(() => {
     try {
       const savedMode = localStorage.getItem(STORAGE_KEY_SCREEN_MODE) as 'edit' | 'packing' | 'review' | null;
@@ -91,58 +95,79 @@ export default function Home() {
     }
   };
 
+  // キャンプ一覧取得
   const fetchCamps = async () => {
-    const { data, error } = await supabase
-      .from('camps')
-      .select('*')
-      .order('created_at', { ascending: false });
+    setIsLoading(true);
+    setConnectionError(null);
 
-    if (error) {
-      console.error('Fetch Camps Error:', error);
-      return;
-    }
-
-    if (data && data.length > 0) {
-      setCamps(data);
-      if (!selectedCampId || !data.some((c) => c.id === selectedCampId)) {
-        setSelectedCampId(data[0].id);
-      }
-    } else {
-      const { data: newCamp, error: createErr } = await supabase
+    try {
+      const { data, error } = await supabase
         .from('camps')
-        .insert([{ title: 'マイ・ファーストキャンプ', is_public: false }])
-        .select()
-        .single();
+        .select('*')
+        .order('created_at', { ascending: false });
 
-      if (createErr) {
-        console.error('Create Initial Camp Error:', createErr);
+      if (error) {
+        console.error('Fetch Camps Error:', error);
+        setConnectionError(`Supabaseエラー: ${error.message} (${error.code || 'CODEなし'})`);
+        setIsLoading(false);
         return;
       }
 
-      if (newCamp) {
-        setCamps([newCamp]);
-        setSelectedCampId(newCamp.id);
+      if (data && data.length > 0) {
+        setCamps(data);
+        if (!selectedCampId || !data.some((c) => c.id === selectedCampId)) {
+          setSelectedCampId(data[0].id);
+        }
+      } else {
+        const { data: newCamp, error: createErr } = await supabase
+          .from('camps')
+          .insert([{ title: 'マイ・ファーストキャンプ', is_public: false }])
+          .select()
+          .single();
+
+        if (createErr) {
+          console.error('Create Initial Camp Error:', createErr);
+          setConnectionError(`初期キャンプ作成エラー: ${createErr.message}`);
+          setIsLoading(false);
+          return;
+        }
+
+        if (newCamp) {
+          setCamps([newCamp]);
+          setSelectedCampId(newCamp.id);
+        }
       }
+    } catch (err: any) {
+      console.error('Network / Unexpected Error:', err);
+      setConnectionError(`ネットワーク接続エラー: ${err?.message || 'Supabaseサーバーと通信できませんでした'}`);
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  // ギア一覧取得
   const fetchGears = async () => {
     if (!selectedCampId) return;
 
-    const { data: currentGears, error } = await supabase
-      .from('gears')
-      .select('*')
-      .eq('camp_id', selectedCampId)
-      .order('created_at', { ascending: false });
+    try {
+      const { data: currentGears, error } = await supabase
+        .from('gears')
+        .select('*')
+        .eq('camp_id', selectedCampId)
+        .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Fetch Gears Error:', error);
-      return;
+      if (error) {
+        console.error('Fetch Gears Error:', error);
+        setConnectionError(`ギア取得エラー: ${error.message}`);
+        return;
+      }
+      if (currentGears) setGears(currentGears as GearItem[]);
+
+      const { data: allGears } = await supabase.from('gears').select('*');
+      if (allGears) setAllGearsInAccount(allGears as GearItem[]);
+    } catch (err: any) {
+      console.error('Fetch Gears Network Error:', err);
     }
-    if (currentGears) setGears(currentGears as GearItem[]);
-
-    const { data: allGears } = await supabase.from('gears').select('*');
-    if (allGears) setAllGearsInAccount(allGears as GearItem[]);
   };
 
   useEffect(() => {
@@ -236,6 +261,7 @@ export default function Home() {
     setSelectedCampId(newCamp.id);
     setNewCampTitle('');
     setIsAddCampOpen(false);
+    setConnectionError(null);
     fetchGears();
   };
 
@@ -341,7 +367,10 @@ export default function Home() {
   };
 
   const handleAddGear = async (item: any) => {
-    if (!selectedCampId) return;
+    if (!selectedCampId) {
+      alert('保存先のキャンプが読み込まれていません。上部の「再読み込み」ボタンを押してください。');
+      return;
+    }
 
     const fullName = `${item.brand || ''} ${item.product_name || ''} ${item.model_number || ''}`.trim();
     let cat = item.category || 'ベース';
@@ -373,14 +402,18 @@ export default function Home() {
       is_weight_estimated: item.is_weight_estimated ?? false,
     };
 
-    const { data } = await supabase.from('gears').insert([newGearData]).select().single();
+    const { data, error } = await supabase.from('gears').insert([newGearData]).select().single();
+    if (error) {
+      alert(`ギアの追加に失敗しました:\n${error.message}`);
+      return;
+    }
+
     if (data) {
       setGears((prev) => [data as GearItem, ...prev]);
     }
     fetchGears();
   };
 
-  // 🎯 即時State更新 ➔ サマリーへ瞬時反映
   const togglePacked = async (id: string, currentStatus: boolean) => {
     const nextStatus = !currentStatus;
     setGears((prev) =>
@@ -410,7 +443,6 @@ export default function Home() {
     }
   };
 
-  // 🎯 レビュー時の未使用チェックを確実に新規SetとしてState更新
   const handleToggleUnusedGear = (gearId: string) => {
     const cleanId = String(gearId);
     setUnusedGearIds((prev) => {
@@ -463,6 +495,31 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-[#09090B] text-zinc-100 p-3 sm:p-4 md:p-8 font-sans">
       <div className="max-w-5xl mx-auto space-y-4 w-full">
+
+        {/* 通信エラー診断バナー */}
+        {connectionError && (
+          <div className="bg-red-950/80 border border-red-500/80 p-4 rounded-2xl space-y-2 shadow-2xl">
+            <div className="flex items-start gap-2.5">
+              <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <h3 className="text-[13px] font-bold text-white">Supabaseとの通信に失敗しました</h3>
+                <p className="text-[11px] font-mono text-red-200 mt-1 break-all bg-red-900/50 p-2 rounded-lg">
+                  {connectionError}
+                </p>
+              </div>
+            </div>
+            <div className="flex justify-end pt-1">
+              <button
+                type="button"
+                onClick={fetchCamps}
+                className="px-3 py-1.5 bg-red-800 hover:bg-red-700 text-white rounded-xl text-[11px] font-bold flex items-center gap-1.5 transition cursor-pointer shadow-sm"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>再接続を試す</span>
+              </button>
+            </div>
+          </div>
+        )}
         
         {/* ヘッダーエリア */}
         <header className="border-b border-zinc-800 pb-3 space-y-3 w-full">
@@ -523,19 +580,35 @@ export default function Home() {
             </div>
           </div>
 
+          {/* キャンプ選択セレクター */}
           <div className="flex items-center justify-between gap-2 bg-[#18181B] px-3.5 py-2.5 rounded-xl border border-zinc-800 shadow-sm w-full">
             <div className="flex-1 min-w-0">
-              <select
-                value={selectedCampId}
-                onChange={(e) => setSelectedCampId(e.target.value)}
-                className="w-full bg-transparent text-white text-[16px] sm:text-[18px] font-bold focus:outline-none cursor-pointer truncate"
-              >
-                {camps.map((camp) => (
-                  <option key={camp.id} value={camp.id} className="bg-[#18181B] text-white text-[16px] sm:text-[18px] font-bold">
-                    {camp.title}
-                  </option>
-                ))}
-              </select>
+              {isLoading ? (
+                <span className="text-[14px] text-zinc-400 font-bold block animate-pulse">
+                  キャンプデータを読み込み中...
+                </span>
+              ) : camps.length > 0 ? (
+                <select
+                  value={selectedCampId}
+                  onChange={(e) => setSelectedCampId(e.target.value)}
+                  className="w-full bg-transparent text-white text-[16px] sm:text-[18px] font-bold focus:outline-none cursor-pointer truncate"
+                >
+                  {camps.map((camp) => (
+                    <option key={camp.id} value={camp.id} className="bg-[#18181B] text-white text-[16px] sm:text-[18px] font-bold">
+                      {camp.title}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <button
+                  type="button"
+                  onClick={fetchCamps}
+                  className="text-[13px] text-amber-400 hover:underline flex items-center gap-1.5 font-bold cursor-pointer"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>未接続: タップしてキャンプを再取得</span>
+                </button>
+              )}
             </div>
 
             <div className="flex items-center shrink-0">
@@ -709,7 +782,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* 🎯 サマリーコンポーネント（全パラメータを完全に同期） */}
+        {/* サマリーコンポーネント */}
         <WeightsSummary
           gears={gears}
           screenMode={screenMode}
@@ -742,7 +815,11 @@ export default function Home() {
           onReorderGears={handleReorderGears}
         />
 
+        {/* CSV管理 */}
         <CsvManager gears={gears} selectedCampId={selectedCampId} onGearsUpdated={fetchGears} />
+
+        {/* 🎯 【場所1】フッター直上の友だち紹介バナー */}
+        <ShareAppCard />
 
         <HelpGuideModal
           isOpen={isHelpOpen}
