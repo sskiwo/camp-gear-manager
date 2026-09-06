@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ShoppingBag, ExternalLink, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
@@ -58,8 +58,12 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 const STORAGE_KEY_OWNED_CAMPS = 'camp_owned_tokens_map';
 
-export default function CommunityPage() {
+function CommunityContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // 遷移元キャンプID（直前に編集していたキャンプ）
+  const fromCampId = searchParams.get('from');
+
   const [activeTab, setActiveTab] = useState<'camps' | 'ranking'>('camps');
   const [selectedCategory, setSelectedCategory] = useState<string>('すべて');
 
@@ -70,10 +74,19 @@ export default function CommunityPage() {
   const [loading, setLoading] = useState(true);
   const [expandedCampId, setExpandedCampId] = useState<string | null>(null);
 
-  // 単品ギア追加モーダル用ステート
   const [addingGear, setAddingGear] = useState<PopularGear | Gear | null>(null);
 
-  // 🎯 自分がこの端末で所有しているキャンプだけを厳選して取得
+  // 戻り先のURL（元のキャンプがあればそのURL、なければトップ）
+  const returnUrl = fromCampId ? `/?camp=${fromCampId}` : '/';
+
+  const handleGoBack = () => {
+    if (fromCampId) {
+      router.push(`/?camp=${fromCampId}`);
+    } else {
+      router.push('/');
+    }
+  };
+
   const fetchMyCamps = async () => {
     try {
       let savedOwnedIds: string[] = [];
@@ -95,7 +108,12 @@ export default function CommunityPage() {
 
       if (data && data.length > 0) {
         setMyCamps(data);
-        setSelectedAddCampId(data[0].id);
+        // 直前まで編集していたキャンプがあればそれを優先選択
+        if (fromCampId && data.some((c) => c.id === fromCampId)) {
+          setSelectedAddCampId(fromCampId);
+        } else {
+          setSelectedAddCampId(data[0].id);
+        }
       } else {
         setMyCamps([]);
       }
@@ -104,7 +122,6 @@ export default function CommunityPage() {
     }
   };
 
-  // 公開中のキャンプ＆ギア一覧を取得
   const fetchPublicData = async () => {
     setLoading(true);
 
@@ -162,7 +179,6 @@ export default function CommunityPage() {
     fetchPublicData();
   }, []);
 
-  // 🎯 他のキャンパーのパッキングリストを自分のリストへ複製（コピー）
   const handleCloneCamp = async (camp: PublicCamp) => {
     const confirmed = window.confirm(
       `「${camp.title}」のギア構成 (${camp.gears.length}点) を自分のパッキングリストへ複製して追加しますか？`
@@ -181,7 +197,6 @@ export default function CommunityPage() {
       return;
     }
 
-    // 🎯 端末のlocalStorageにオーナー権限を確実に登録
     try {
       const current = localStorage.getItem(STORAGE_KEY_OWNED_CAMPS);
       const parsed = current ? JSON.parse(current) : {};
@@ -216,11 +231,9 @@ export default function CommunityPage() {
     }
 
     alert('🎉 自分のパッキングリストに複製しました！');
-    // 複製先のキャンプへ確実に直接移動
     window.location.href = `/?camp=${newCamp.id}`;
   };
 
-  // 🎯 単品ギアを自分のキャンプに追加
   const handleAddSingleGear = async () => {
     if (!addingGear || !selectedAddCampId) return;
 
@@ -295,57 +308,62 @@ export default function CommunityPage() {
 
   return (
     <main className="min-h-screen bg-[#09090B] text-zinc-100 p-3 sm:p-4 md:p-8 font-sans">
-      <div className="max-w-5xl mx-auto space-y-4 sm:space-y-6 w-full">
+      <div className="max-w-5xl mx-auto space-y-3.5 sm:space-y-5 w-full">
 
-        {/* ヘッダー */}
-        <header className="border-b border-zinc-800 pb-3 sm:pb-4 flex items-center justify-between gap-2 sm:gap-3 w-full">
-          <div className="min-w-0">
-            <h1 className="text-lg sm:text-xl md:text-2xl font-black text-white flex items-center gap-1.5 truncate">
+        {/* 🎯 ヘッダー（文字が切れないよう最適化 ＆ 元のキャンプへの戻るリンク） */}
+        <header className="border-b border-zinc-800 pb-3 flex items-center justify-between gap-2 w-full">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-[17px] sm:text-xl md:text-2xl font-black text-white flex items-center gap-1.5 whitespace-nowrap">
               <span>🌐</span>
-              <span className="text-[#00E5FF] truncate">みんなのギア</span>
-              <span className="shrink-0">ギャラリー</span>
+              <span className="text-[#00E5FF]">みんなのギア</span>
+              <span>ギャラリー</span>
             </h1>
-            <p className="text-[11px] sm:text-xs text-zinc-400 mt-0.5 truncate">
-              全国のキャンパーのパッキング構成＆人気ギアランキング！
+            <p className="text-[10.5px] sm:text-xs text-zinc-400 mt-0.5 leading-tight">
+              全国のパッキング構成＆人気ランキング
             </p>
           </div>
 
-          <Link
-            href="/"
-            className="bg-[#27272A] hover:bg-zinc-700 text-white px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-xl text-[11px] sm:text-xs font-bold transition border border-zinc-700 shrink-0 flex items-center gap-1 active:scale-95 whitespace-nowrap"
+          <button
+            type="button"
+            onClick={handleGoBack}
+            className="bg-[#27272A] hover:bg-zinc-700 text-zinc-200 hover:text-white px-2.5 sm:px-3.5 py-1.5 rounded-xl text-xs font-bold transition border border-zinc-700 shrink-0 flex items-center gap-1 active:scale-95 cursor-pointer shadow-sm"
+            title="直前に開いていたキャンプへ戻る"
           >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span className="hidden xs:inline">マイリストに</span>戻る
-          </Link>
+            <ArrowLeft className="w-3.5 h-3.5 text-zinc-400" />
+            <span>戻る</span>
+          </button>
         </header>
 
-        {/* タブ切り替え */}
-        <div className="flex items-center gap-1.5 sm:gap-2 bg-[#18181B] p-1.5 rounded-2xl border border-zinc-800 w-full">
+        {/* 🎯 タブ切り替え（スマホでも文字が絶対切れないスリム文言＆フォント設計） */}
+        <div className="grid grid-cols-2 gap-1.5 bg-[#18181B] p-1.5 rounded-2xl border border-zinc-800 w-full">
           <button
             onClick={() => setActiveTab('camps')}
-            className={`flex-1 py-2 px-1 rounded-xl text-[11px] sm:text-xs font-extrabold transition cursor-pointer text-center truncate ${
+            className={`py-2 px-1 rounded-xl text-[11.5px] sm:text-xs font-extrabold transition cursor-pointer text-center flex items-center justify-center gap-1 whitespace-nowrap ${
               activeTab === 'camps'
                 ? 'bg-[#FF5500] text-white shadow-md'
                 : 'text-zinc-400 hover:text-white'
             }`}
           >
-            ⛺ パッキングリスト ({publicCamps.length}件)
+            <span>⛺ パッキング</span>
+            <span className="text-[10.5px] opacity-90 font-mono font-normal">
+              ({publicCamps.length})
+            </span>
           </button>
           <button
             onClick={() => setActiveTab('ranking')}
-            className={`flex-1 py-2 px-1 rounded-xl text-[11px] sm:text-xs font-extrabold transition cursor-pointer text-center truncate ${
+            className={`py-2 px-1 rounded-xl text-[11.5px] sm:text-xs font-extrabold transition cursor-pointer text-center flex items-center justify-center gap-1 whitespace-nowrap ${
               activeTab === 'ranking'
                 ? 'bg-[#FFB800] text-black shadow-md'
                 : 'text-zinc-400 hover:text-white'
             }`}
           >
-            🏆 人気ランキング TOP 10
+            <span>🏆 ランキング TOP10</span>
           </button>
         </div>
 
-        {/* カテゴリー絞り込み */}
+        {/* カテゴリー絞り込み（横スクロール対応） */}
         <div className="bg-[#18181B] p-2 rounded-2xl border border-zinc-800">
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar -mx-1 px-1">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 no-scrollbar -mx-0.5 px-0.5">
             <span className="text-[11px] font-bold text-zinc-400 pl-1 shrink-0 whitespace-nowrap">
               🏷️ カテゴリー:
             </span>
@@ -658,5 +676,13 @@ export default function CommunityPage() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function CommunityPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#09090B] text-zinc-400 p-8 text-center text-xs">ギャラリーを読み込み中...</div>}>
+      <CommunityContent />
+    </Suspense>
   );
 }
