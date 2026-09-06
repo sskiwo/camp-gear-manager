@@ -1,12 +1,11 @@
+'use client';
+
+import { Suspense } from 'react';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import Footer from '@/components/Footer';
 
-export const metadata = {
-  title: 'プライバシーポリシー | Camp Gear Manager',
-};
-
-export default function PrivacyPage() {
+function PrivacyContent() {
   return (
     <main className="min-h-screen bg-[#09090B] text-zinc-100 p-4 sm:p-8 font-sans flex flex-col justify-between">
       <div className="max-w-3xl mx-auto space-y-6 w-full flex-1">
@@ -22,7 +21,7 @@ export default function PrivacyPage() {
           <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
             プライバシーポリシー
           </h1>
-          <p className="text-xs text-zinc-500 mt-1">最終改定日: 2026年3月1日</p>
+          <p className="text-xs text-zinc-500 mt-1">最終改定日: 2026年9月6日</p>
         </header>
 
         <div className="space-y-6 text-xs text-zinc-300 leading-relaxed pb-12">
@@ -194,7 +193,6 @@ export default function PrivacyPage() {
               <li>運営者名：Camp Gear Manager 運営事務局</li>
               <li>
                 お問い合わせ先：
-                {/* 🎯 「（/contact）」を削除し「お問い合わせフォーム」にすっきり統一 */}
                 <Link href="/contact" className="text-[#FF5500] hover:underline ml-1">
                   お問い合わせフォーム
                 </Link>
@@ -204,10 +202,17 @@ export default function PrivacyPage() {
         </div>
       </div>
 
-      {/* 共通フッター */}
       <div className="max-w-3xl mx-auto w-full">
         <Footer />
       </div>
     </main>
+  );
+}
+
+export default function PrivacyPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#09090B] text-zinc-400 p-8 text-center text-xs">読み込み中...</div>}>
+      <PrivacyContent />
+    </Suspense>
   );
 }
