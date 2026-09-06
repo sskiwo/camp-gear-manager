@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
-import { HelpCircle, Lock, Globe, AlertTriangle, RefreshCw, Eye, Copy, Check, Plus, CopyPlus } from 'lucide-react';
+import { HelpCircle, Lock, Globe, AlertTriangle, RefreshCw, Eye, Plus, CopyPlus } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import WeightsSummary from '@/components/WeightsSummary';
 import GearSearch from '@/components/GearSearch';
@@ -63,7 +63,6 @@ function CampHomeContent() {
   const [isEditCampOpen, setIsEditCampOpen] = useState(false);
   const [editCampTitle, setEditCampTitle] = useState('');
   const [isHelpOpen, setIsHelpOpen] = useState(false);
-  const [copiedShareUrl, setCopiedShareUrl] = useState(false);
 
   const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({
     ベース: false,
@@ -75,12 +74,12 @@ function CampHomeContent() {
 
   const isReadOnly = Boolean(selectedCampId && !ownedCampIds.has(selectedCampId));
 
-  // 🎯 この端末に表示を許可するキャンプ（自分が所有するキャンプ ＋ 現在URLで指定して開いている閲覧対象キャンプ）
+  // この端末に表示を許可するキャンプ（自分が所有するキャンプ ＋ 現在URLで指定して開いている閲覧対象キャンプ）
   const visibleCamps = camps.filter(
     (c) => ownedCampIds.has(c.id) || c.id === selectedCampId
   );
 
-  // 🎯 新規作成モーダルの引き継ぎ元として選べるキャンプ（自分が作成・所有するものだけに限定）
+  // 新規作成モーダルの引き継ぎ元として選べるキャンプ（自分が作成・所有するものだけに限定）
   const myOwnedCamps = camps.filter((c) => ownedCampIds.has(c.id));
 
   const registerCampOwnership = (campId: string) => {
@@ -143,7 +142,6 @@ function CampHomeContent() {
         console.warn('LocalStorage error:', e);
       }
 
-      // 全キャンプを取得（安全にフィルタリングして利用）
       const { data, error } = await supabase
         .from('camps')
         .select('*')
@@ -159,7 +157,7 @@ function CampHomeContent() {
       const allCamps = data || [];
       setCamps(allCamps);
 
-      // 1. URLパラメータで特定のキャンプが指定されている場合（共有URLアクセス）
+      // 1. URLパラメータで特定のキャンプが指定されている場合
       if (urlCampId) {
         const matched = allCamps.find((c) => c.id === urlCampId);
         if (matched) {
@@ -170,7 +168,7 @@ function CampHomeContent() {
         }
       }
 
-      // 2. この端末で過去に作成したキャンプがある場合、その最新を開く
+      // 2. この端末で過去に作成したキャンプがある場合
       const myCamps = allCamps.filter((c) => savedOwnedIds.includes(c.id));
       if (myCamps.length > 0) {
         setSelectedCampId(myCamps[0].id);
@@ -179,7 +177,7 @@ function CampHomeContent() {
         return;
       }
 
-      // 3. 初見アクセス（所有キャンプなし・URL指定なし）：この端末専用の初期キャンプを新規作成
+      // 3. 初見アクセス：初期キャンプを新規作成
       const { data: newCamp, error: createErr } = await supabase
         .from('camps')
         .insert([{ title: 'マイ・ファーストキャンプ', is_public: false }])
@@ -644,26 +642,13 @@ function CampHomeContent() {
     setGears(reorderedGears);
   };
 
-  const copyShareLink = async () => {
-    if (!selectedCampId) return;
-    const origin = window.location.origin;
-    const shareUrl = `${origin}/?camp=${selectedCampId}`;
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      setCopiedShareUrl(true);
-      setTimeout(() => setCopiedShareUrl(false), 2500);
-    } catch (err) {
-      prompt('以下の共有URLをコピーしてください:', shareUrl);
-    }
-  };
-
   const currentSelectedCamp = camps.find((c) => c.id === selectedCampId);
 
   return (
     <main className="min-h-screen bg-[#09090B] text-zinc-100 p-3 sm:p-4 md:p-8 font-sans">
       <div className="max-w-5xl mx-auto space-y-4 w-full">
 
-        {/* 閲覧専用モード案内バナー（他人のキャンプを共有URLで開いた場合） */}
+        {/* 閲覧専用モード案内バナー */}
         {isReadOnly && (
           <div className="bg-amber-950/70 border border-amber-500/50 p-3.5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
             <div className="flex items-center gap-2.5 min-w-0">
@@ -724,7 +709,7 @@ function CampHomeContent() {
           </div>
         )}
         
-        {/* ヘッダーエリア */}
+        {/* ヘッダーエリア（上部の共有ボタンを削除してスッキリ配置） */}
         <header className="border-b border-zinc-800 pb-3 space-y-3 w-full">
           <div className="flex items-center justify-between gap-2 w-full">
             <Link
@@ -748,25 +733,6 @@ function CampHomeContent() {
             </Link>
 
             <div className="flex items-center gap-1.5 shrink-0">
-              <button
-                type="button"
-                onClick={copyShareLink}
-                className="h-8 px-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white border border-zinc-700 flex items-center gap-1.5 text-[11px] font-bold transition cursor-pointer shadow-sm active:scale-95 shrink-0"
-                title="このキャンプのURLをコピー（相手には安全な閲覧専用で共有されます）"
-              >
-                {copiedShareUrl ? (
-                  <>
-                    <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[2.5]" />
-                    <span className="text-emerald-400">共有URLコピー完了</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-3.5 h-3.5 text-[#FF5500]" />
-                    <span>共有URLをコピー</span>
-                  </>
-                )}
-              </button>
-
               <button
                 type="button"
                 onClick={() => setIsHelpOpen(true)}
@@ -803,7 +769,7 @@ function CampHomeContent() {
             </div>
           </div>
 
-          {/* キャンプ選択セレクター：自分が所有するキャンプ＋閲覧中キャンプのみに限定 */}
+          {/* キャンプ選択セレクター */}
           <div className="flex items-center justify-between gap-2 bg-[#18181B] px-3.5 py-2.5 rounded-xl border border-zinc-800 shadow-sm w-full">
             <div className="flex-1 min-w-0">
               {isLoading ? (
@@ -1053,7 +1019,8 @@ function CampHomeContent() {
           <CsvManager gears={gears} selectedCampId={selectedCampId} onGearsUpdated={fetchGears} />
         )}
 
-        {!isReadOnly && <ShareAppCard />}
+        {/* 下部の共有カード（現在のキャンプIDを渡し、内部で共有URLコピーができる） */}
+        <ShareAppCard campId={selectedCampId} isReadOnly={isReadOnly} />
 
         <HelpGuideModal
           isOpen={isHelpOpen}
