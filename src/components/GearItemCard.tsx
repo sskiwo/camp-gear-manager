@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Trash2, ShoppingCart } from 'lucide-react';
+import { Trash2, ExternalLink } from 'lucide-react';
 import { buildAmazonUrl, attachAmazonTag } from '@/utils/affiliate';
 
 export type GearItem = {
@@ -126,7 +126,9 @@ export default function GearItemCard({
   const [editWeight, setEditWeight] = useState(item.weight || 0);
   const [editPrice, setEditPrice] = useState(item.price || 0);
   const [editQuantity, setEditQuantity] = useState(item.quantity || 1);
-  const [editProductUrl, setEditProductUrl] = useState(item.product_url || '');
+  const [editProductUrl, setEditProductUrl] = useState(
+    item.product_url || buildAmazonUrl(item.product_name || item.name, item.brand, item.model_number)
+  );
   const [editPurchaseDate, setEditPurchaseDate] = useState(item.purchase_date || '');
   const [editFuelType, setEditFuelType] = useState(item.fuel_type || '不要/なし');
   const [editMemo, setEditMemo] = useState(item.memo || '');
@@ -145,7 +147,9 @@ export default function GearItemCard({
     setEditWeight(item.weight || 0);
     setEditPrice(item.price || 0);
     setEditQuantity(item.quantity || 1);
-    setEditProductUrl(item.product_url || '');
+    setEditProductUrl(
+      item.product_url || buildAmazonUrl(item.product_name || item.name, item.brand, item.model_number)
+    );
     setEditPurchaseDate(item.purchase_date || '');
     setEditFuelType(item.fuel_type || '不要/なし');
     setEditMemo(item.memo || '');
@@ -184,11 +188,6 @@ export default function GearItemCard({
   const broughtCount = item.total_brought_count || 0;
   const usedCount = item.total_used_count || 0;
   const usageRate = broughtCount > 0 ? (usedCount / broughtCount) * 100 : 0;
-
-  // 🎯 AmazonアソシエイトURLの生成（直接URLがあれば優先、なければ検索URL）
-  const amazonUrl = item.product_url && item.product_url.trim()
-    ? attachAmazonTag(item.product_url)
-    : buildAmazonUrl(item.product_name || item.name, item.brand, item.model_number);
 
   const handleDelete = () => {
     if (onDeleteGear) {
@@ -331,18 +330,23 @@ export default function GearItemCard({
     return (
       <div className="space-y-1">
         <div
-          className={`h-[48px] px-2 rounded-xl border transition-all duration-150 flex items-center justify-between gap-2 select-text ${
+          onClick={handleToggleEdit}
+          className={`h-[48px] px-2 rounded-xl border transition-all duration-150 flex items-center justify-between gap-2 select-none cursor-pointer ${
             !isSelected
               ? 'bg-[#18181B] border-zinc-800/80 border-dashed'
               : item.is_packed
               ? 'bg-[#1F1F23] border-zinc-800'
-              : 'bg-[#27272A] border-zinc-700/80 shadow-sm'
+              : 'bg-[#27272A] border-zinc-700/80 shadow-sm hover:border-zinc-500'
           }`}
         >
           <div className="flex items-center gap-1.5 min-w-0 flex-1">
             {onToggleSelected && (
               <button
-                onClick={() => onToggleSelected(item.id, isSelected)}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleSelected(item.id, isSelected);
+                }}
                 className={`w-8 h-8 rounded-lg text-[12px] transition flex items-center justify-center border shrink-0 cursor-pointer active:scale-95 ${
                   isSelected
                     ? 'bg-[#FF5500]/20 border-[#FF5500]/60 text-[#FF5500]'
@@ -356,7 +360,11 @@ export default function GearItemCard({
 
             {isSelected && onTogglePacked ? (
               <button
-                onClick={() => onTogglePacked(item.id, item.is_packed)}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onTogglePacked(item.id, item.is_packed);
+                }}
                 className={`w-8 h-8 rounded-lg text-[12px] transition flex items-center justify-center border shrink-0 cursor-pointer active:scale-95 ${
                   item.is_packed
                     ? 'bg-[#10B981] border-[#10B981] text-white shadow-sm'
@@ -372,24 +380,19 @@ export default function GearItemCard({
               </span>
             )}
 
-            <button
-              type="button"
-              onClick={handleToggleEdit}
-              className="text-left flex-1 min-w-0 cursor-pointer group focus:outline-none"
-              title="タップしてギア情報を編集"
-            >
+            <div className="text-left flex-1 min-w-0">
               <span
                 className={`text-[12px] font-normal truncate block transition-colors ${
                   !isSelected
-                    ? 'text-zinc-300 group-hover:text-white'
+                    ? 'text-zinc-300'
                     : item.is_packed
-                    ? 'text-zinc-400 group-hover:text-white'
-                    : 'text-white group-hover:text-[#FF5500]'
+                    ? 'text-zinc-400'
+                    : 'text-white'
                 }`}
               >
                 {cleanName}
               </span>
-            </button>
+            </div>
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
@@ -404,18 +407,6 @@ export default function GearItemCard({
             <span className="text-[12px] font-mono tabular-nums font-normal text-zinc-300 shrink-0 min-w-[50px] text-right">
               {formatWeight(totalWeight)}
             </span>
-
-            {/* 🛒 Amazonリンクボタン */}
-            <a
-              href={amazonUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#27272A] hover:bg-[#FF5500]/20 text-zinc-300 hover:text-[#FF5500] border border-zinc-700 transition active:scale-95 shadow-sm"
-              title="Amazonで商品を確認"
-            >
-              <ShoppingCart className="w-3.5 h-3.5" />
-            </a>
           </div>
         </div>
 
@@ -429,16 +420,21 @@ export default function GearItemCard({
     return (
       <div className="space-y-1">
         <div
-          className={`h-[48px] px-2 rounded-xl border transition-all duration-150 flex items-center justify-between gap-2 select-text ${
+          onClick={handleToggleEdit}
+          className={`h-[48px] px-2 rounded-xl border transition-all duration-150 flex items-center justify-between gap-2 select-none cursor-pointer ${
             isUnusedInReview
               ? 'bg-[#18181B] border-zinc-800/80 opacity-60'
-              : 'bg-[#27272A] border-zinc-700/80 shadow-sm'
+              : 'bg-[#27272A] border-zinc-700/80 shadow-sm hover:border-zinc-500'
           }`}
         >
           <div className="flex items-center gap-1.5 min-w-0 flex-1">
             {onToggleUnusedInReview && (
               <button
-                onClick={() => onToggleUnusedInReview(item.id)}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleUnusedInReview(item.id);
+                }}
                 className={`w-8 h-8 rounded-lg text-[12px] transition flex items-center justify-center border shrink-0 cursor-pointer active:scale-95 ${
                   isUnusedInReview
                     ? 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white'
@@ -475,18 +471,6 @@ export default function GearItemCard({
             }`}>
               {formatWeight(totalWeight)}
             </span>
-
-            {/* 🛒 Amazonリンクボタン */}
-            <a
-              href={amazonUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#27272A] hover:bg-[#FF5500]/20 text-zinc-300 hover:text-[#FF5500] border border-zinc-700 transition active:scale-95 shadow-sm"
-              title="Amazonで商品を確認"
-            >
-              <ShoppingCart className="w-3.5 h-3.5" />
-            </a>
           </div>
         </div>
 
@@ -512,15 +496,17 @@ export default function GearItemCard({
         </div>
       )}
 
+      {/* カード全体クリックで編集フォームを開閉 */}
       <div
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
+        onClick={handleToggleEdit}
         style={{
           transform: `translateX(${translateX}px)`,
           transition: isSwiping ? 'none' : 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
         }}
-        className={`relative z-10 py-2.5 px-3 transition-colors select-text hover:bg-[#202024] space-y-1.5 ${
+        className={`relative z-10 py-2.5 px-3 transition-colors select-none cursor-pointer hover:bg-[#202024] space-y-1.5 ${
           !isSelected ? 'bg-[#121214]' : 'bg-[#18181B]'
         }`}
       >
@@ -528,7 +514,11 @@ export default function GearItemCard({
           <div className="flex items-center gap-2 min-w-0 flex-1">
             {onToggleSelected && (
               <button
-                onClick={() => onToggleSelected(item.id, isSelected)}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleSelected(item.id, isSelected);
+                }}
                 className={`w-7 h-7 rounded-lg text-[12px] transition flex items-center justify-center border shrink-0 cursor-pointer active:scale-95 ${
                   isSelected
                     ? 'bg-[#FF5500]/20 border-[#FF5500]/60 text-[#FF5500]'
@@ -540,12 +530,7 @@ export default function GearItemCard({
               </button>
             )}
 
-            <button
-              type="button"
-              onClick={handleToggleEdit}
-              className="min-w-0 flex-1 text-left flex items-center gap-1.5 text-[12px] font-normal truncate cursor-pointer group focus:outline-none"
-              title="タップしてギア情報を編集"
-            >
+            <div className="min-w-0 flex-1 text-left flex items-center gap-1.5 text-[12px] font-normal truncate">
               {item.brand && (
                 <span className="text-zinc-400 font-normal shrink-0">
                   {item.brand}
@@ -558,7 +543,7 @@ export default function GearItemCard({
               >
                 {cleanName}
               </span>
-            </button>
+            </div>
           </div>
 
           {badge && (
@@ -582,20 +567,12 @@ export default function GearItemCard({
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
-            {/* 🎯 【重要】Amazonリンクボタン（鉛筆ボタンの左隣） */}
-            <a
-              href={amazonUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="w-7 h-7 flex items-center justify-center rounded-lg bg-zinc-800 hover:bg-[#FF5500]/20 text-zinc-300 hover:text-[#FF5500] border border-zinc-700 transition active:scale-95 shadow-sm"
-              title="Amazonで商品を確認"
-            >
-              <ShoppingCart className="w-3.5 h-3.5" />
-            </a>
-
             <button
-              onClick={handleToggleEdit}
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleToggleEdit();
+              }}
               className={`w-7 h-7 flex items-center justify-center rounded-lg text-[12px] transition border cursor-pointer ${
                 isEditing
                   ? 'bg-[#FF5500]/20 border-[#FF5500] text-white'
@@ -608,7 +585,11 @@ export default function GearItemCard({
           </div>
         </div>
 
-        {isEditing && renderEditForm()}
+        {isEditing && (
+          <div onClick={(e) => e.stopPropagation()}>
+            {renderEditForm()}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -733,21 +714,32 @@ export default function GearItemCard({
           </div>
         </div>
 
-        {/* 🎯 Amazon特定商品URL入力欄＆注記テキスト */}
+        {/* 🎯 「URL」表記へ変更・注記文言削除・外部リンクトリガー */}
         <div>
-          <label className="text-[12px] font-normal text-zinc-400 block mb-0.5">
-            Amazon特定商品URL
-          </label>
+          <div className="flex items-center justify-between mb-0.5">
+            <label className="text-[12px] font-normal text-zinc-400 block">
+              URL
+            </label>
+            {editProductUrl && (
+              <a
+                href={attachAmazonTag(editProductUrl)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[11px] text-[#FF5500] hover:underline flex items-center gap-1"
+                title="ページを開く"
+              >
+                <span>開く</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            )}
+          </div>
           <input
             type="url"
-            placeholder="https://www.amazon.co.jp/dp/..."
+            placeholder="https://..."
             value={editProductUrl}
             onChange={(e) => setEditProductUrl(e.target.value)}
             className="w-full bg-[#27272A] border border-zinc-700 rounded-lg px-2.5 py-1.5 text-[12px] text-white focus:border-[#FF5500] focus:outline-none font-normal"
           />
-          <p className="text-[11px] text-zinc-500 mt-1 font-normal">
-            ※登録すると🛒アイコンタップ時に直接その商品へ移動します（自動でアソシエイトタグが付与されます）。
-          </p>
         </div>
 
         <div>
@@ -766,12 +758,7 @@ export default function GearItemCard({
             {onDeleteGear && (
               <button
                 type="button"
-                onClick={() => {
-                  const confirmed = window.confirm(`「${item.name}」を削除してもよろしいですか？`);
-                  if (confirmed) {
-                    onDeleteGear(item.id);
-                  }
-                }}
+                onClick={handleDelete}
                 className="text-[#EF4444] hover:text-white hover:bg-[#EF4444]/20 border border-[#EF4444]/40 px-3 py-1.5 rounded-xl text-[12px] font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
                 title="このギアを削除"
               >

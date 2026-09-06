@@ -168,12 +168,16 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
       }
 
       if (data.results && data.results.length > 0) {
-        const formattedResults = data.results.map((item: any) => ({
-          ...item,
-          purchase_date: '',
-          fuel_type: '不要/なし',
-          memo: '',
-        }));
+        const formattedResults = data.results.map((item: any) => {
+          const autoAmazonUrl = buildAmazonUrl(item.product_name || item.name || '', item.brand || '');
+          return {
+            ...item,
+            purchase_date: '',
+            fuel_type: '不要/なし',
+            memo: '',
+            product_url: autoAmazonUrl,
+          };
+        });
         setScannedResults(formattedResults);
         setSelectedIndices(new Set(formattedResults.map((_: any, i: number) => i)));
         setShowModal(true);
@@ -247,7 +251,11 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
     setIsSubmittingBulk(true);
     try {
       for (const item of itemsToAdd) {
-        await onAddGear(item);
+        const itemWithUrl = {
+          ...item,
+          product_url: item.product_url || buildAmazonUrl(item.product_name, item.brand),
+        };
+        await onAddGear(itemWithUrl);
       }
       setShowModal(false);
       setScannedResults([]);
@@ -447,8 +455,7 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
               ) : (
                 scannedResults.map((item, index) => {
                   const isChecked = selectedIndices.has(index);
-                  // 🎯 各ギア候補のAmazonリンクURLを生成
-                  const amazonUrl = buildAmazonUrl(item.product_name, item.brand);
+                  const amazonUrl = item.product_url || buildAmazonUrl(item.product_name, item.brand);
 
                   return (
                     <div
@@ -473,7 +480,6 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
                         </label>
 
                         <div className="flex items-center gap-2">
-                          {/* 🎯 Amazon商品確認リンクボタン */}
                           <a
                             href={amazonUrl}
                             target="_blank"
@@ -503,7 +509,13 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
                           <input
                             type="text"
                             value={item.product_name}
-                            onChange={(e) => handleResultChange(index, { product_name: e.target.value })}
+                            onChange={(e) => {
+                              const newName = e.target.value;
+                              handleResultChange(index, {
+                                product_name: newName,
+                                product_url: buildAmazonUrl(newName, item.brand),
+                              });
+                            }}
                             className="w-full bg-[#18181B] border border-zinc-700 rounded-lg px-2.5 py-1.5 text-[12px] text-white focus:outline-none focus:border-[#FF5500] font-normal"
                           />
                         </div>
@@ -513,7 +525,13 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
                           <input
                             type="text"
                             value={item.brand || ''}
-                            onChange={(e) => handleResultChange(index, { brand: e.target.value })}
+                            onChange={(e) => {
+                              const newBrand = e.target.value;
+                              handleResultChange(index, {
+                                brand: newBrand,
+                                product_url: buildAmazonUrl(item.product_name, newBrand),
+                              });
+                            }}
                             className="w-full bg-[#18181B] border border-zinc-700 rounded-lg px-2.5 py-1.5 text-[12px] text-white focus:outline-none focus:border-[#FF5500] font-normal"
                           />
                         </div>
