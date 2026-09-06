@@ -135,6 +135,7 @@ function CampHomeContent() {
         const savedOwned = localStorage.getItem(STORAGE_KEY_OWNED_CAMPS);
         if (savedOwned) {
           savedOwnedIds = Object.keys(JSON.parse(savedOwned));
+          setOwnedCampIds(new Set(savedOwnedIds));
         }
       } catch (e) {
         console.warn('LocalStorage error:', e);
@@ -155,6 +156,7 @@ function CampHomeContent() {
       const allCamps = data || [];
       setCamps(allCamps);
 
+      // 🎯 1. 【最優先】URLに ?camp=ID がある場合は、複製直後でも共有でも必ずそのキャンプを開く
       if (urlCampId) {
         const matched = allCamps.find((c) => c.id === urlCampId);
         if (matched) {
@@ -165,6 +167,7 @@ function CampHomeContent() {
         }
       }
 
+      // 2. この端末で過去に作成したキャンプがある場合、その最新を開く
       const myCamps = allCamps.filter((c) => savedOwnedIds.includes(c.id));
       if (myCamps.length > 0) {
         setSelectedCampId(myCamps[0].id);
@@ -173,6 +176,7 @@ function CampHomeContent() {
         return;
       }
 
+      // 3. 初見アクセス：初期キャンプを新規作成
       const { data: newCamp, error: createErr } = await supabase
         .from('camps')
         .insert([{ title: 'マイ・ファーストキャンプ', is_public: false }])
@@ -704,7 +708,7 @@ function CampHomeContent() {
           </div>
         )}
         
-        {/* 🎯 ヘッダーエリア（極小画面でもはみ出さないようレスポンシブ最適化） */}
+        {/* ヘッダーエリア */}
         <header className="border-b border-zinc-800 pb-3 space-y-3 w-full">
           <div className="flex items-center justify-between gap-1.5 sm:gap-2 w-full">
             <Link
@@ -727,7 +731,6 @@ function CampHomeContent() {
               </h1>
             </Link>
 
-            {/* 右側アクションボタングループ */}
             <div className="flex items-center gap-1.5 shrink-0">
               <button
                 type="button"
@@ -1011,7 +1014,6 @@ function CampHomeContent() {
           isReadOnly={isReadOnly}
         />
 
-        {/* このキャンプの共有カード */}
         <ShareAppCard campId={selectedCampId} isReadOnly={isReadOnly} />
 
         {!isReadOnly && (

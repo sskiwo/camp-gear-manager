@@ -56,6 +56,8 @@ const CATEGORY_COLORS: Record<string, string> = {
   '食料・消耗品': '#00E676',
 };
 
+const STORAGE_KEY_OWNED_CAMPS = 'camp_owned_tokens_map';
+
 export default function CommunityPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'camps' | 'ranking'>('camps');
@@ -71,16 +73,34 @@ export default function CommunityPage() {
   // 単品ギア追加モーダル用ステート
   const [addingGear, setAddingGear] = useState<PopularGear | Gear | null>(null);
 
-  // 自分のキャンプ一覧を取得
+  // 🎯 自分がこの端末で所有しているキャンプだけを厳選して取得
   const fetchMyCamps = async () => {
-    const { data } = await supabase
-      .from('camps')
-      .select('id, title')
-      .order('created_at', { ascending: false });
+    try {
+      let savedOwnedIds: string[] = [];
+      const savedOwned = localStorage.getItem(STORAGE_KEY_OWNED_CAMPS);
+      if (savedOwned) {
+        savedOwnedIds = Object.keys(JSON.parse(savedOwned));
+      }
 
-    if (data && data.length > 0) {
-      setMyCamps(data);
-      setSelectedAddCampId(data[0].id);
+      if (savedOwnedIds.length === 0) {
+        setMyCamps([]);
+        return;
+      }
+
+      const { data } = await supabase
+        .from('camps')
+        .select('id, title')
+        .in('id', savedOwnedIds)
+        .order('created_at', { ascending: false });
+
+      if (data && data.length > 0) {
+        setMyCamps(data);
+        setSelectedAddCampId(data[0].id);
+      } else {
+        setMyCamps([]);
+      }
+    } catch (e) {
+      console.warn('Failed to load owned camps:', e);
     }
   };
 
@@ -142,7 +162,7 @@ export default function CommunityPage() {
     fetchPublicData();
   }, []);
 
-  // 他のキャンパーのパッキングリストを自分のリストへ複製（コピー）する機能
+  // 🎯 他のキャンパーのパッキングリストを自分のリストへ複製（コピー）
   const handleCloneCamp = async (camp: PublicCamp) => {
     const confirmed = window.confirm(
       `「${camp.title}」のギア構成 (${camp.gears.length}点) を自分のパッキングリストへ複製して追加しますか？`
@@ -161,12 +181,12 @@ export default function CommunityPage() {
       return;
     }
 
-    // 端末のlocalStorageに所有キーを登録（作成者としてフル編集可能にする）
+    // 🎯 端末のlocalStorageにオーナー権限を確実に登録
     try {
-      const current = localStorage.getItem('camp_owned_tokens_map');
+      const current = localStorage.getItem(STORAGE_KEY_OWNED_CAMPS);
       const parsed = current ? JSON.parse(current) : {};
       parsed[newCamp.id] = 'owned';
-      localStorage.setItem('camp_owned_tokens_map', JSON.stringify(parsed));
+      localStorage.setItem(STORAGE_KEY_OWNED_CAMPS, JSON.stringify(parsed));
     } catch (e) {
       console.warn('Failed to register ownership:', e);
     }
@@ -181,7 +201,7 @@ export default function CommunityPage() {
         weight: g.weight || 0,
         price: g.price || 0,
         quantity: g.quantity || 1,
-        is_packed: true,
+        is_packed: false,
         is_selected: true,
         is_consumable: (g.category || '') === '食料・消耗品',
         product_url: g.product_url || '',
@@ -196,10 +216,11 @@ export default function CommunityPage() {
     }
 
     alert('🎉 自分のパッキングリストに複製しました！');
-    router.push(`/?camp=${newCamp.id}`);
+    // 複製先のキャンプへ確実に直接移動
+    window.location.href = `/?camp=${newCamp.id}`;
   };
 
-  // 単品ギアを自分のキャンプに追加する機能
+  // 🎯 単品ギアを自分のキャンプに追加
   const handleAddSingleGear = async () => {
     if (!addingGear || !selectedAddCampId) return;
 
@@ -216,7 +237,7 @@ export default function CommunityPage() {
         weight: Number(addingGear.weight) || 0,
         price: Number(addingGear.price) || 0,
         quantity: 1,
-        is_packed: true,
+        is_packed: false,
         is_selected: true,
         is_consumable: isConsumable,
         product_url: addingGear.product_url || '',
@@ -228,17 +249,16 @@ export default function CommunityPage() {
       return;
     }
 
-    alert(`🎉 「${addingGear.name}」を自分のキャンプに追加しました！`);
+    const targetCamp = myCamps.find((c) => c.id === selectedAddCampId);
+    alert(`🎉 「${targetCamp?.title || '自分のキャンプ'}」に「${addingGear.name}」を追加しました！`);
     setAddingGear(null);
   };
 
-  // Amazon検索URLの生成関数
   const getAmazonSearchUrl = (brand?: string, name?: string) => {
     const query = `${brand || ''} ${name || ''}`.trim();
     return `https://www.amazon.co.jp/s?k=${encodeURIComponent(query)}&tag=campgearmanager-22`;
   };
 
-  // 🏆 カテゴリー絞り込みに対応した人気ギアランキング集計
   const getFilteredRanking = (): PopularGear[] => {
     const targetGears =
       selectedCategory === 'すべて'
@@ -299,7 +319,7 @@ export default function CommunityPage() {
           </Link>
         </header>
 
-        {/* タブ切り替えボタン */}
+        {/* タブ切り替え */}
         <div className="flex items-center gap-1.5 sm:gap-2 bg-[#18181B] p-1.5 rounded-2xl border border-zinc-800 w-full">
           <button
             onClick={() => setActiveTab('camps')}
@@ -323,7 +343,7 @@ export default function CommunityPage() {
           </button>
         </div>
 
-        {/* 🏷️ カテゴリー絞り込みフィルターボタン（スマホ横スクロール対応） */}
+        {/* カテゴリー絞り込み */}
         <div className="bg-[#18181B] p-2 rounded-2xl border border-zinc-800">
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar -mx-1 px-1">
             <span className="text-[11px] font-bold text-zinc-400 pl-1 shrink-0 whitespace-nowrap">
@@ -369,33 +389,39 @@ export default function CommunityPage() {
             <h3 className="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5 truncate">
               ➕ 「{addingGear.name}」を自分のキャンプに追加
             </h3>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <select
-                value={selectedAddCampId}
-                onChange={(e) => setSelectedAddCampId(e.target.value)}
-                className="flex-1 bg-[#27272A] text-white text-xs font-bold px-3 py-2 rounded-xl border border-zinc-700 focus:outline-none focus:border-[#FFB800] truncate"
-              >
-                {myCamps.map((camp) => (
-                  <option key={camp.id} value={camp.id}>
-                    {camp.title}
-                  </option>
-                ))}
-              </select>
-              <div className="flex items-center gap-1.5 shrink-0">
-                <button
-                  onClick={handleAddSingleGear}
-                  className="flex-1 sm:flex-none bg-[#FFB800] hover:bg-amber-600 text-black px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer shadow-sm active:scale-95 whitespace-nowrap"
+            {myCamps.length === 0 ? (
+              <p className="text-xs text-zinc-400">
+                追加先のマイキャンプが見つかりません。先にトップ画面でキャンプを作成してください。
+              </p>
+            ) : (
+              <div className="flex flex-col sm:flex-row gap-2">
+                <select
+                  value={selectedAddCampId}
+                  onChange={(e) => setSelectedAddCampId(e.target.value)}
+                  className="flex-1 bg-[#27272A] text-white text-xs font-bold px-3 py-2 rounded-xl border border-zinc-700 focus:outline-none focus:border-[#FFB800] truncate"
                 >
-                  追加する
-                </button>
-                <button
-                  onClick={() => setAddingGear(null)}
-                  className="flex-1 sm:flex-none bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer border border-zinc-700 whitespace-nowrap"
-                >
-                  中止
-                </button>
+                  {myCamps.map((camp) => (
+                    <option key={camp.id} value={camp.id}>
+                      {camp.title}
+                    </option>
+                  ))}
+                </select>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    onClick={handleAddSingleGear}
+                    className="flex-1 sm:flex-none bg-[#FFB800] hover:bg-amber-600 text-black px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer shadow-sm active:scale-95 whitespace-nowrap"
+                  >
+                    追加する
+                  </button>
+                  <button
+                    onClick={() => setAddingGear(null)}
+                    className="flex-1 sm:flex-none bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer border border-zinc-700 whitespace-nowrap"
+                  >
+                    中止
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         )}
 
@@ -462,7 +488,7 @@ export default function CommunityPage() {
                       </div>
                     </div>
 
-                    {/* パッキングギア詳細（5カテゴリーグループ分け表示） */}
+                    {/* パッキングギア詳細 */}
                     {isExpanded && (
                       <div className="pt-3 border-t border-zinc-800 space-y-3 animate-fade-in">
                         {['ベースギア', '調理ギア', '衣類', 'その他・日用品', '食料・消耗品'].map((catName) => {
@@ -512,7 +538,6 @@ export default function CommunityPage() {
                                         {g.weight * (g.quantity || 1)}g
                                       </span>
 
-                                      {/* Amazon検索ボタン */}
                                       <a
                                         href={getAmazonSearchUrl(g.brand, g.name)}
                                         target="_blank"
@@ -574,7 +599,6 @@ export default function CommunityPage() {
                     className="bg-[#18181B] border border-zinc-800 hover:border-zinc-700 p-3 sm:p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 shadow-lg transition"
                   >
                     <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-                      {/* 順位バッジ */}
                       <span className="text-xs sm:text-sm font-black text-amber-400 shrink-0 w-11 sm:w-12 text-center bg-[#27272A] py-1 px-1.5 rounded-xl border border-zinc-700 font-mono">
                         {rankBadge}
                       </span>
@@ -605,9 +629,7 @@ export default function CommunityPage() {
                       </div>
                     </div>
 
-                    {/* 右側ボタングループ（Amazonリンク ＋ 追加ボタン） */}
                     <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto pt-1 sm:pt-0">
-                      {/* 🛒 Amazonで探すボタン */}
                       <a
                         href={getAmazonSearchUrl(gear.brand, gear.name)}
                         target="_blank"
@@ -620,7 +642,6 @@ export default function CommunityPage() {
                         <ExternalLink className="w-2.5 h-2.5 text-amber-400/80" />
                       </a>
 
-                      {/* 自分のリストに追加ボタン */}
                       <button
                         onClick={() => setAddingGear(gear)}
                         className="h-8 bg-[#FFB800] hover:bg-amber-600 text-black px-3 rounded-xl text-[11px] font-extrabold transition shrink-0 cursor-pointer flex items-center gap-1 shadow-sm active:scale-95 whitespace-nowrap"
