@@ -482,13 +482,12 @@ function CampHomeContent() {
 
     setIsSubmitting(true);
 
+    // ⛺ Supabaseのスキーマキャッシュに location / event_date カラムが存在しない環境でも安全に作成できるよう、基本カラムのみでINSERT
     const insertData: Record<string, any> = {
       title: finalTitle,
       is_public: false,
       user_id: currentUserId || undefined,
     };
-    if (finalDate) insertData.event_date = finalDate;
-    if (finalLocation) insertData.location = finalLocation;
 
     const { data: newCamp, error: createErr } = await supabase
       .from('camps')
@@ -500,6 +499,18 @@ function CampHomeContent() {
       alert(`保存に失敗しました:\n${createErr?.message}`);
       setIsSubmitting(false);
       return;
+    }
+
+    // ⛺ クラウドDBに location / event_date カラムが存在する場合は同期を試みる（存在しなくても安全に握りつぶす）
+    if (finalDate || finalLocation) {
+      try {
+        const updates: Record<string, any> = {};
+        if (finalDate) updates.event_date = finalDate;
+        if (finalLocation) updates.location = finalLocation;
+        await supabase.from('camps').update(updates).eq('id', newCamp.id);
+      } catch (e) {
+        console.warn('Optional camp meta sync to supabase:', e);
+      }
     }
 
     registerCampOwnership(newCamp.id);
