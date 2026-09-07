@@ -1,29 +1,49 @@
 'use client';
 
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
-import { Users, FileText, Shield, Mail } from 'lucide-react';
+import { usePathname, useSearchParams } from 'next/navigation';
+import { Users, FileText, Shield, Mail, Home } from 'lucide-react';
 
-// 🎯 設定したGoogleフォームのURL
 const GOOGLE_FORM_URL = 'https://forms.gle/e5Lf5GT4MFiHSUwy7';
 
 export default function Footer() {
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const currentCampId = searchParams.get('camp');
+  const fromCampId = searchParams.get('from');
 
+  // 現在「みんなのギアギャラリー」ページにいるかどうかを判定
+  const isCommunityPage = pathname === '/community';
+
+  // ギャラリーへ移動するURL（現在のキャンプIDを保持）
   const galleryUrl = currentCampId ? `/community?from=${currentCampId}` : '/community';
+
+  // トップ（マイパッキング）へ戻るURL（直前に開いていたキャンプがあればそこへ復帰）
+  const targetHomeCampId = fromCampId || currentCampId;
+  const homeUrl = targetHomeCampId ? `/?camp=${targetHomeCampId}` : '/';
 
   return (
     <footer className="border-t border-zinc-800/80 pt-6 pb-10 mt-8 text-zinc-500 text-xs space-y-4">
       {/* ナビゲーションリンク */}
       <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 text-zinc-400 font-bold">
-        <Link
-          href={galleryUrl}
-          className="hover:text-[#00E5FF] transition flex items-center gap-1.5"
-        >
-          <Users className="w-3.5 h-3.5 text-[#00E5FF]" />
-          <span>みんなのギアギャラリー</span>
-        </Link>
+        {/* 🎯 ギャラリーにいる時は「マイパッキング（トップ）」を表示、それ以外のページでは「みんなのギアギャラリー」を表示 */}
+        {isCommunityPage ? (
+          <Link
+            href={homeUrl}
+            className="hover:text-[#FF5500] transition flex items-center gap-1.5"
+          >
+            <Home className="w-3.5 h-3.5 text-[#FF5500]" />
+            <span>マイパッキングに戻る</span>
+          </Link>
+        ) : (
+          <Link
+            href={galleryUrl}
+            className="hover:text-[#00E5FF] transition flex items-center gap-1.5"
+          >
+            <Users className="w-3.5 h-3.5 text-[#00E5FF]" />
+            <span>みんなのギアギャラリー</span>
+          </Link>
+        )}
 
         <Link
           href="/terms"
