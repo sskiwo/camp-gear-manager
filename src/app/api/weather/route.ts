@@ -99,6 +99,7 @@ const FAMOUS_CAMPSITES: Record<string, CampsiteSpot> = {
   海山: { displayName: 'キャンプinn海山 (三重県紀北町)', latitude: 34.1206, longitude: 136.2162 },
   マイアミ浜: { displayName: 'マイアミ浜オートキャンプ場 (滋賀県野洲市)', latitude: 35.1565, longitude: 135.9867 },
   マキノ高原: { displayName: 'マキノ高原キャンプ場 (滋賀県高島市)', latitude: 35.4853, longitude: 136.0375 },
+  昭和記念公園: { displayName: '国営昭和記念公園 (東京都立川市)', latitude: 35.7088, longitude: 139.3951 },
 };
 
 function lookupKnownCampsite(query: string): CampsiteSpot | null {
@@ -118,6 +119,47 @@ function lookupKnownCampsite(query: string): CampsiteSpot | null {
     }
   }
   return null;
+}
+
+// 日本の地名検索候補を生成（Open-Meteoのデータベース登録ゆらぎ・市区町村サフィックス有無を自動補正）
+function generateSearchCandidates(rawQuery: string): string[] {
+  const candidates: string[] = [];
+  const seen = new Set<string>();
+
+  const add = (str: string) => {
+    const trimmed = str.trim();
+    if (trimmed && !seen.has(trimmed)) {
+      seen.add(trimmed);
+      candidates.push(trimmed);
+    }
+  };
+
+  // 1. キャンプ場などのサフィックスを除去
+  const clean = rawQuery
+    .replace(/(オート|ソロ)?キャンプ場?$/g, '')
+    .replace(/camp(site)?$/gi, '')
+    .trim();
+
+  add(rawQuery);
+  if (clean !== rawQuery) {
+    add(clean);
+  }
+
+  // 2. 都道府県のプレフィックスを除去（例: 東京都立川市 -> 立川市, 立川）
+  const prefRegex = /^(東京都|北海道|(京都|大阪)府|.+?[県])/;
+  if (prefRegex.test(clean)) {
+    const withoutPref = clean.replace(prefRegex, '').trim();
+    add(withoutPref);
+
+    const withoutSuffixAndPref = withoutPref.replace(/[市区町村]$/, '').trim();
+    add(withoutSuffixAndPref);
+  }
+
+  // 3. 末尾の市区町村を除去（例: 立川市 -> 立川, 府中市 -> 府中）
+  const withoutSuffix = clean.replace(/[市区町村]$/, '').trim();
+  add(withoutSuffix);
+
+  return candidates;
 }
 
 export async function GET(request: Request) {
@@ -144,37 +186,44 @@ export async function GET(request: Request) {
       longitude = matchedSpot.longitude;
       displayName = matchedSpot.displayName;
     } else {
-      // 2. 辞書にない場合は Open-Meteo ジオコーディングAPIへ問い合わせ
-      const cleanLocation = locationQuery
-        .replace(/(オート|ソロ)?キャンプ場?$/g, '')
-        .trim();
+      // 2. 辞書にない場合は候補キーワードを順に問い合わせ（市・区の表記揺れを自動救済）
+      const candidates = generateSearchCandidates(locationQuery);
+      let firstResult: any = null;
 
-      const searchTarget = cleanLocation || locationQuery;
-      const geocodeUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(
-        searchTarget
-      )}&count=1&language=ja&format=json`;
+      for (const cand of candidates) {
+        try {
+          const geocodeUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(
+            cand
+          )}&count=1&language=ja&format=json`;
 
-      const geoRes = await fetch(geocodeUrl, { next: { revalidate: 86400 } }); // 1日キャッシュ
-      if (!geoRes.ok) {
-        throw new Error('位置情報の取得に失敗しました');
+          const geoRes = await fetch(geocodeUrl, { next: { revalidate: 86400 } });
+          if (geoRes.ok) {
+            const geoData = await geoRes.json();
+            if (geoData.results && geoData.results.length > 0) {
+              firstResult = geoData.results[0];
+              break;
+            }
+          }
+        } catch {
+          // 次の候補を試行
+        }
       }
 
-      const geoData = await geoRes.json();
-      if (!geoData.results || geoData.results.length === 0) {
+      if (!firstResult) {
         return NextResponse.json(
           {
-            error: `「${locationQuery}」の位置が見つかりませんでした。市町村名（例: 富士宮市、白馬村、日光市など）でお試しください。`,
+            error: `「${locationQuery}」の位置が見つかりませんでした。市町村名（例: 富士宮市、白馬村、立川市など）でお試しください。`,
           },
           { status: 404 }
         );
       }
 
-      const firstResult = geoData.results[0];
       latitude = firstResult.latitude;
       longitude = firstResult.longitude;
+      const cityName = firstResult.admin2 || firstResult.name;
       displayName = firstResult.admin1
-        ? `${firstResult.name} (${firstResult.admin1})`
-        : firstResult.name;
+        ? `${cityName} (${firstResult.admin1})`
+        : cityName;
     }
 
     // 3. Open-Meteo で天気予報を取得 (毎日予報)
