@@ -30,6 +30,39 @@ type Camp = {
 const STORAGE_KEY_SCREEN_MODE = 'camp_active_screen_mode';
 const STORAGE_KEY_TARGET_WEIGHT = 'camp_target_weight_kg';
 const STORAGE_KEY_OWNED_CAMPS = 'camp_owned_tokens_map';
+const STORAGE_KEY_CAMPS_CACHE = 'camp_cached_camps_list';
+
+type CampMeta = {
+  title?: string;
+  location?: string;
+  event_date?: string;
+  updated_at?: number;
+};
+
+function getCampMeta(campId: string): CampMeta | null {
+  try {
+    const cached = localStorage.getItem(`camp_meta_${campId}`);
+    return cached ? JSON.parse(cached) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveCampMeta(campId: string, updates: Partial<CampMeta>) {
+  try {
+    const existing = getCampMeta(campId) || {};
+    const merged: CampMeta = {
+      ...existing,
+      ...updates,
+      updated_at: Date.now(),
+    };
+    localStorage.setItem(`camp_meta_${campId}`, JSON.stringify(merged));
+    return merged;
+  } catch (e) {
+    console.warn('LocalStorage saveCampMeta error:', e);
+    return null;
+  }
+}
 
 function generateRandomToken() {
   const chars = 'abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -165,25 +198,54 @@ function CampHomeContent() {
       if (error) {
         console.error('Fetch Camps Error:', error);
         setConnectionError(`Supabaseエラー: ${error.message}`);
+        // オフライン・通信エラー時のローカルフォールバック
+        try {
+          const cachedCamps = localStorage.getItem(STORAGE_KEY_CAMPS_CACHE);
+          if (cachedCamps) {
+            const parsed: Camp[] = JSON.parse(cachedCamps);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              const enriched = parsed.map((c) => {
+                const meta = getCampMeta(c.id);
+                if (meta) {
+                  return {
+                    ...c,
+                    title: meta.title?.trim() ? meta.title.trim() : c.title,
+                    location: meta.location !== undefined ? meta.location : (c.location || ''),
+                    event_date: meta.event_date !== undefined ? meta.event_date : (c.event_date || ''),
+                  };
+                }
+                return c;
+              });
+              setCamps(enriched);
+              const initialId = urlCampId || enriched[0]?.id;
+              if (initialId) {
+                setSelectedCampId(initialId);
+                updateUrlWithCamp(initialId);
+              }
+            }
+          }
+        } catch {}
         setIsLoading(false);
         return;
       }
 
       const allCamps = (data || []).map((c: any) => {
-        try {
-          const cached = localStorage.getItem(`camp_meta_${c.id}`);
-          if (cached) {
-            const parsed = JSON.parse(cached);
-            return {
-              ...c,
-              location: c.location || parsed.location || '',
-              event_date: c.event_date || parsed.event_date || '',
-            };
-          }
-        } catch {}
+        const meta = getCampMeta(c.id);
+        if (meta) {
+          return {
+            ...c,
+            // ⛺ 端末で編集した最新データを最優先（DB同期遅れやRLS制限があっても絶対に元に戻らない）
+            title: meta.title?.trim() ? meta.title.trim() : c.title,
+            location: meta.location !== undefined ? meta.location : (c.location || ''),
+            event_date: meta.event_date !== undefined ? meta.event_date : (c.event_date || ''),
+          };
+        }
         return c;
       });
       setCamps(allCamps);
+      try {
+        localStorage.setItem(STORAGE_KEY_CAMPS_CACHE, JSON.stringify(allCamps));
+      } catch {}
 
       // ⛺ 2. 自分のキャンプID一覧（LocalStorage または user_id 一致）
       const myCampIdsFromDb = userId
@@ -238,7 +300,14 @@ function CampHomeContent() {
       }
 
       registerCampOwnership(newCamp.id);
-      setCamps((prev) => [newCamp, ...prev]);
+      saveCampMeta(newCamp.id, { title: newCamp.title, location: '', event_date: '' });
+      setCamps((prev) => {
+        const updated = [newCamp, ...prev];
+        try {
+          localStorage.setItem(STORAGE_KEY_CAMPS_CACHE, JSON.stringify(updated));
+        } catch {}
+        return updated;
+      });
       setSelectedCampId(newCamp.id);
       updateUrlWithCamp(newCamp.id);
     } catch (err: any) {
@@ -294,6 +363,31 @@ function CampHomeContent() {
       const hasSeenGuide = localStorage.getItem(STORAGE_KEY_GUIDE_SEEN);
       if (!hasSeenGuide) {
         setIsHelpOpen(true);
+      }
+
+      // ⛺ キャッシュからキャンプ一覧を即時復元（リロード時のチラつき・巻き戻りを完全防止）
+      const cachedCamps = localStorage.getItem(STORAGE_KEY_CAMPS_CACHE);
+      if (cachedCamps) {
+        const parsed: Camp[] = JSON.parse(cachedCamps);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const enriched = parsed.map((c) => {
+            const meta = getCampMeta(c.id);
+            if (meta) {
+              return {
+                ...c,
+                title: meta.title?.trim() ? meta.title.trim() : c.title,
+                location: meta.location !== undefined ? meta.location : (c.location || ''),
+                event_date: meta.event_date !== undefined ? meta.event_date : (c.event_date || ''),
+              };
+            }
+            return c;
+          });
+          setCamps(enriched);
+          const initialId = urlCampId || enriched[0]?.id;
+          if (initialId) {
+            setSelectedCampId(initialId);
+          }
+        }
       }
     } catch (err) {
       console.warn('LocalStorage load error:', err);
@@ -388,7 +482,19 @@ function CampHomeContent() {
     }
 
     setIsSubmitting(false);
-    setCamps((prev) => [newCamp, ...prev]);
+    registerCampOwnership(newCamp.id);
+    saveCampMeta(newCamp.id, {
+      title: newCamp.title,
+      location: '',
+      event_date: '',
+    });
+    setCamps((prev) => {
+      const updated = [newCamp, ...prev];
+      try {
+        localStorage.setItem(STORAGE_KEY_CAMPS_CACHE, JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
     setSelectedCampId(newCamp.id);
     updateUrlWithCamp(newCamp.id);
     setNewCampTitle('');
@@ -415,6 +521,18 @@ function CampHomeContent() {
     }
 
     registerCampOwnership(newCamp.id);
+    const clonedLoc = currentSelectedCamp.location || '';
+    const clonedDate = currentSelectedCamp.event_date || '';
+    const clonedCampObj = {
+      ...newCamp,
+      location: clonedLoc,
+      event_date: clonedDate,
+    };
+    saveCampMeta(newCamp.id, {
+      title,
+      location: clonedLoc,
+      event_date: clonedDate,
+    });
 
     if (gears.length > 0) {
       const clonedGears = gears.map((g) => ({
@@ -445,7 +563,13 @@ function CampHomeContent() {
     }
 
     setIsSubmitting(false);
-    setCamps((prev) => [newCamp, ...prev]);
+    setCamps((prev) => {
+      const updated = [clonedCampObj, ...prev];
+      try {
+        localStorage.setItem(STORAGE_KEY_CAMPS_CACHE, JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
     setSelectedCampId(newCamp.id);
     updateUrlWithCamp(newCamp.id);
     alert('🎉 このパッキングをあなたの端末専用に複製しました！編集を開始できます。');
@@ -454,51 +578,67 @@ function CampHomeContent() {
 
   const handleUpdateCampTitle = async () => {
     if (!editCampTitle.trim() || !selectedCampId || isReadOnly) return;
+    const trimmedTitle = editCampTitle.trim();
 
-    const { error } = await supabase
-      .from('camps')
-      .update({ title: editCampTitle.trim() })
-      .eq('id', selectedCampId);
-
-    if (error) {
-      alert(`名前の変更に失敗しました:\n${error.message}`);
-      return;
-    }
-
-    setCamps((prev) =>
-      prev.map((c) => (c.id === selectedCampId ? { ...c, title: editCampTitle.trim() } : c))
-    );
+    // 1. ローカルStateおよびキャッシュ一覧を即時更新
+    setCamps((prev) => {
+      const updated = prev.map((c) => (c.id === selectedCampId ? { ...c, title: trimmedTitle } : c));
+      try {
+        localStorage.setItem(STORAGE_KEY_CAMPS_CACHE, JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
     setIsEditCampOpen(false);
+
+    // 2. ローカルストレージに確実に永続保存（リフレッシュしても絶対に元に戻らない）
+    saveCampMeta(selectedCampId, { title: trimmedTitle });
+
+    // 3. Supabase（クラウド側）へ同期
+    try {
+      const { error } = await supabase
+        .from('camps')
+        .update({ title: trimmedTitle })
+        .eq('id', selectedCampId);
+
+      if (error) {
+        console.warn('Supabase title sync warning (saved locally):', error.message);
+      }
+    } catch (e) {
+      console.warn('Supabase title sync network error (saved locally):', e);
+    }
   };
 
   const handleUpdateCampWeather = async (newLocation: string, newDate: string) => {
     if (!selectedCampId || isReadOnly) return;
-    const updates: Record<string, any> = {
-      location: newLocation,
-      event_date: newDate,
-    };
 
-    setCamps((prev) =>
-      prev.map((c) =>
+    // 1. ローカルStateおよびキャッシュ一覧を即時更新
+    setCamps((prev) => {
+      const updated = prev.map((c) =>
         c.id === selectedCampId
           ? { ...c, location: newLocation, event_date: newDate }
           : c
-      )
-    );
-
-    try {
-      localStorage.setItem(
-        `camp_meta_${selectedCampId}`,
-        JSON.stringify({ location: newLocation, event_date: newDate })
       );
-    } catch (e) {
-      console.warn('LocalStorage error:', e);
-    }
+      try {
+        localStorage.setItem(STORAGE_KEY_CAMPS_CACHE, JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
 
+    // 2. ローカルストレージに確実に永続保存（リフレッシュしても絶対に元に戻らない）
+    saveCampMeta(selectedCampId, { location: newLocation, event_date: newDate });
+
+    // 3. Supabase（クラウド側）へ同期
     try {
-      await supabase.from('camps').update(updates).eq('id', selectedCampId);
+      const updates: Record<string, any> = {
+        location: newLocation,
+        event_date: newDate,
+      };
+      const { error } = await supabase.from('camps').update(updates).eq('id', selectedCampId);
+      if (error) {
+        console.warn('Supabase weather sync warning (saved locally):', error.message);
+      }
     } catch (e) {
-      console.warn('Camp location update error:', e);
+      console.warn('Camp location update error (saved locally):', e);
     }
   };
 
@@ -551,7 +691,16 @@ function CampHomeContent() {
     }
 
     const remaining = myOwnedCamps.filter((c) => c.id !== selectedCampId);
-    setCamps((prev) => prev.filter((c) => c.id !== selectedCampId));
+    try {
+      localStorage.removeItem(`camp_meta_${selectedCampId}`);
+    } catch {}
+    setCamps((prev) => {
+      const updated = prev.filter((c) => c.id !== selectedCampId);
+      try {
+        localStorage.setItem(STORAGE_KEY_CAMPS_CACHE, JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
     setSelectedCampId(remaining[0].id);
     updateUrlWithCamp(remaining[0].id);
     setIsEditCampOpen(false);

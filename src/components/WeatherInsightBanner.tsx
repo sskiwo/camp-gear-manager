@@ -49,14 +49,52 @@ export default function WeatherInsightBanner({
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    setLocation(externalLocation);
-    setInputLocation(externalLocation);
-  }, [externalLocation]);
+    if (externalLocation) {
+      setLocation(externalLocation);
+      setInputLocation(externalLocation);
+    } else if (campId) {
+      try {
+        const cached = localStorage.getItem(`camp_meta_${campId}`);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed.location) {
+            setLocation(parsed.location);
+            setInputLocation(parsed.location);
+            return;
+          }
+        }
+      } catch {}
+      setLocation('');
+      setInputLocation('');
+    } else {
+      setLocation('');
+      setInputLocation('');
+    }
+  }, [externalLocation, campId]);
 
   useEffect(() => {
-    setEventDate(externalDate);
-    setInputDate(externalDate);
-  }, [externalDate]);
+    if (externalDate) {
+      setEventDate(externalDate);
+      setInputDate(externalDate);
+    } else if (campId) {
+      try {
+        const cached = localStorage.getItem(`camp_meta_${campId}`);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed.event_date) {
+            setEventDate(parsed.event_date);
+            setInputDate(parsed.event_date);
+            return;
+          }
+        }
+      } catch {}
+      setEventDate('');
+      setInputDate('');
+    } else {
+      setEventDate('');
+      setInputDate('');
+    }
+  }, [externalDate, campId]);
 
   const fetchWeather = useCallback(async (loc: string, date: string) => {
     if (!loc.trim()) {

@@ -106,11 +106,21 @@ function CommunityContent() {
         .order('created_at', { ascending: false });
 
       if (data && data.length > 0) {
-        setMyCamps(data);
-        if (fromCampId && data.some((c) => c.id === fromCampId)) {
+        const mapped = data.map((c) => {
+          try {
+            const cached = localStorage.getItem(`camp_meta_${c.id}`);
+            if (cached) {
+              const parsed = JSON.parse(cached);
+              return { ...c, title: (parsed.title && parsed.title.trim()) || c.title };
+            }
+          } catch {}
+          return c;
+        });
+        setMyCamps(mapped);
+        if (fromCampId && mapped.some((c) => c.id === fromCampId)) {
           setSelectedAddCampId(fromCampId);
         } else {
-          setSelectedAddCampId(data[0].id);
+          setSelectedAddCampId(mapped[0].id);
         }
       } else {
         setMyCamps([]);
