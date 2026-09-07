@@ -26,7 +26,6 @@ export default function Footer() {
     <footer className="border-t border-zinc-800/80 pt-6 pb-10 mt-8 text-zinc-500 text-xs space-y-4">
       {/* ナビゲーションリンク */}
       <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 text-zinc-400 font-bold">
-        {/* 🎯 ギャラリーにいる時は「マイパッキング（トップ）」を表示、それ以外のページでは「みんなのギアギャラリー」を表示 */}
         {isCommunityPage ? (
           <Link
             href={homeUrl}
@@ -73,12 +72,14 @@ export default function Footer() {
         </a>
       </div>
 
-      {/* Amazonアソシエイト規約遵守文言 ＆ コピーライト */}
-      <div className="text-center space-y-1.5 text-[11px] text-zinc-500 max-w-xl mx-auto px-4 leading-relaxed">
-        <p className="text-[10px] text-zinc-600">
+      {/* 視認性を改善したAmazonアソシエイト免責文 ＆ コピーライト */}
+      <div className="text-center space-y-2 text-[11px] max-w-xl mx-auto px-4 leading-relaxed">
+        <p className="text-[11px] text-zinc-400 font-normal">
           Camp Gear Manager は、Amazon.co.jpを宣伝しリンクすることによってサイトが紹介料を獲得できる手段を提供することを目的に設定されたアフィリエイトプログラムである、Amazonアソシエイト・プログラムの参加者です。
         </p>
-        <p className="text-zinc-600 font-mono">© 2026 Camp Gear Manager. All rights reserved.</p>
+        <p className="text-[11px] text-zinc-500 font-normal tracking-wide">
+          © 2026 Camp Gear Manager. All rights reserved.
+        </p>
       </div>
     </footer>
   );
