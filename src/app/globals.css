@@ -4,6 +4,7 @@
 @media screen and (max-width: 640px) {
   input[type="text"],
   input[type="number"],
+  input[type="date"],
   input[type="month"],
   input[type="url"],
   input[type="search"],

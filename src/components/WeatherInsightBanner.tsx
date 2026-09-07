@@ -160,7 +160,7 @@ export default function WeatherInsightBanner({
   };
 
   return (
-    <div className="bg-[#18181B] border border-zinc-800 rounded-2xl p-2.5 sm:p-3.5 shadow-xl space-y-2 transition-all">
+    <div className="bg-[#18181B] border border-zinc-800 rounded-2xl p-2.5 sm:p-3.5 shadow-xl space-y-2 transition-all overflow-hidden">
       {/* コンパクト要約バー（通常時は1行でスマート表示） */}
       <div className="flex items-center justify-between gap-2">
         <div
@@ -229,31 +229,33 @@ export default function WeatherInsightBanner({
 
       {/* 設定編集フォーム（アコーディオン） */}
       {isEditing && (
-        <div className="bg-[#27272A]/70 p-3 rounded-xl border border-zinc-700/80 space-y-2.5 animate-fade-in text-left">
+        <div className="bg-[#27272A]/70 p-3 rounded-xl border border-zinc-700/80 space-y-2.5 animate-fade-in text-left overflow-hidden">
           <span className="text-[11.5px] font-bold text-white block">
             📍 キャンプ予定地と日程を設定
           </span>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <div className="space-y-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full min-w-0">
+            <div className="space-y-1 min-w-0 w-full">
               <label className="text-[11px] text-zinc-400 font-normal block">
                 キャンプ場名 または 市町村名
               </label>
               <input
                 type="text"
-                placeholder="例: ふもとっぱら、富士宮市、白馬村"
+                placeholder="例: ふもとっぱら、あきる野市、白馬村"
                 value={inputLocation}
                 onChange={(e) => setInputLocation(e.target.value)}
-                className="w-full bg-[#18181B] border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#00E5FF]"
+                className="w-full min-w-0 max-w-full box-border block bg-[#18181B] border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#00E5FF]"
+                style={{ minWidth: 0, maxWidth: '100%', boxSizing: 'border-box' }}
               />
             </div>
 
-            <div className="space-y-1">
+            <div className="space-y-1 min-w-0 w-full">
               <label className="text-[11px] text-zinc-400 font-normal block">キャンプ日程</label>
               <input
                 type="date"
                 value={inputDate}
                 onChange={(e) => setInputDate(e.target.value)}
-                className="w-full bg-[#18181B] border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-[#00E5FF]"
+                className="w-full min-w-0 max-w-full box-border block [color-scheme:dark] bg-[#18181B] border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-[#00E5FF]"
+                style={{ minWidth: 0, maxWidth: '100%', boxSizing: 'border-box' }}
               />
             </div>
           </div>

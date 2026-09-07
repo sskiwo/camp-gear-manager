@@ -1227,12 +1227,12 @@ function CampHomeContent() {
         )}
 
         {isAddCampOpen && (
-          <div className="bg-[#18181B] border border-[#FF5500]/50 p-5 rounded-2xl space-y-4 shadow-2xl animate-fade-in w-full">
+          <div className="bg-[#18181B] border border-[#FF5500]/50 p-5 rounded-2xl space-y-4 shadow-2xl animate-fade-in w-full overflow-hidden">
             <h3 className="text-[14px] font-semibold text-white">新しいキャンプを追加</h3>
 
             {/* 日程と場所（アシスト自動生成連動） */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="space-y-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full min-w-0">
+              <div className="space-y-1 min-w-0 w-full">
                 <label className="text-[12px] font-normal text-zinc-400 block">
                   📅 キャンプ日程（任意）
                 </label>
@@ -1240,20 +1240,22 @@ function CampHomeContent() {
                   type="date"
                   value={newCampDate}
                   onChange={(e) => handleNewCampDateChange(e.target.value)}
-                  className="w-full bg-[#27272A] border border-zinc-700 rounded-xl px-3 py-2 text-[12px] text-white focus:border-[#FF5500] focus:outline-none"
+                  className="w-full min-w-0 max-w-full box-border block [color-scheme:dark] bg-[#27272A] border border-zinc-700 rounded-xl px-3 py-2 text-[12px] text-white focus:border-[#FF5500] focus:outline-none"
+                  style={{ minWidth: 0, maxWidth: '100%', boxSizing: 'border-box' }}
                 />
               </div>
 
-              <div className="space-y-1">
+              <div className="space-y-1 min-w-0 w-full">
                 <label className="text-[12px] font-normal text-zinc-400 block">
                   📍 キャンプ場・場所（任意）
                 </label>
                 <input
                   type="text"
-                  placeholder="例: ふもとっぱら、立川市"
+                  placeholder="例: ふもとっぱら、あきる野市、立川市"
                   value={newCampLocation}
                   onChange={(e) => handleNewCampLocationChange(e.target.value)}
-                  className="w-full bg-[#27272A] border border-zinc-700 rounded-xl px-3 py-2 text-[12px] text-white focus:border-[#FF5500] focus:outline-none"
+                  className="w-full min-w-0 max-w-full box-border block bg-[#27272A] border border-zinc-700 rounded-xl px-3 py-2 text-[12px] text-white focus:border-[#FF5500] focus:outline-none"
+                  style={{ minWidth: 0, maxWidth: '100%', boxSizing: 'border-box' }}
                 />
               </div>
             </div>
