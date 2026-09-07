@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Users, FileText, Shield, Sparkles } from 'lucide-react';
+import { Users, FileText, Shield, Mail } from 'lucide-react';
 
 export default function Footer() {
   const searchParams = useSearchParams();
@@ -13,8 +13,8 @@ export default function Footer() {
 
   return (
     <footer className="border-t border-zinc-800/80 pt-6 pb-12 mt-8 text-zinc-500 text-xs space-y-4">
-      <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-zinc-400 font-bold">
-        {/* 🎯 現在のキャンプを記憶してギャラリーへ移動 */}
+      <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 text-zinc-400 font-bold">
+        {/* みんなのギアギャラリー */}
         <Link
           href={galleryUrl}
           className="hover:text-[#00E5FF] transition flex items-center gap-1.5"
@@ -23,6 +23,7 @@ export default function Footer() {
           <span>みんなのギアギャラリー</span>
         </Link>
 
+        {/* 利用規約 */}
         <Link
           href="/terms"
           className="hover:text-zinc-200 transition flex items-center gap-1.5"
@@ -31,12 +32,22 @@ export default function Footer() {
           <span>利用規約</span>
         </Link>
 
+        {/* プライバシーポリシー */}
         <Link
           href="/privacy"
           className="hover:text-zinc-200 transition flex items-center gap-1.5"
         >
           <Shield className="w-3.5 h-3.5" />
           <span>プライバシーポリシー</span>
+        </Link>
+
+        {/* 🎯 お問い合わせリンクを復活 */}
+        <Link
+          href="/contact"
+          className="hover:text-[#FF5500] transition flex items-center gap-1.5"
+        >
+          <Mail className="w-3.5 h-3.5 text-[#FF5500]" />
+          <span>お問い合わせ</span>
         </Link>
       </div>
 
