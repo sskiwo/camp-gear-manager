@@ -295,6 +295,7 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
       <form onSubmit={handleFormSubmit} className="flex gap-2 items-center">
         <div className="relative flex-1 min-w-0">
           <input
+            id="gear-search-input"
             type="text"
             value={searchQuery}
             onChange={handleSearchChange}
@@ -677,6 +678,49 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* 📱 片手操作UP：フローティング追加ボタン（FAB） */}
+      {!showModal && !showTipsModal && (
+        <div className="fixed bottom-6 right-4 sm:right-6 z-40 flex flex-col items-end gap-2 animate-fade-in pointer-events-none">
+          {/* サブボタン：検索窓へジャンプ */}
+          <button
+            type="button"
+            onClick={() => {
+              const el = document.getElementById('gear-search-input');
+              if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTimeout(() => el.focus(), 300);
+              }
+            }}
+            className="w-10 h-10 rounded-full bg-[#18181B]/90 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-700/80 shadow-xl flex items-center justify-center transition-all cursor-pointer active:scale-90 backdrop-blur-md group pointer-events-auto"
+            title="キーワード検索へ移動"
+            aria-label="キーワード検索へ移動"
+          >
+            <Search className="w-4 h-4 transition-transform group-hover:scale-110" />
+          </button>
+
+          {/* メイン浮き輪ボタン：カメラ即起動・AIスキャン */}
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isScanning || isRefreshing}
+            className="w-14 h-14 rounded-full bg-[#FF5500] hover:bg-[#E04B00] text-white shadow-2xl flex items-center justify-center transition-all cursor-pointer active:scale-90 disabled:opacity-50 ring-4 ring-[#FF5500]/25 group relative pointer-events-auto"
+            title="カメラで撮影・連続ギア追加"
+            aria-label="カメラで撮影・連続ギア追加"
+          >
+            {isScanning && lastSelectedFile ? (
+              <Loader2 className="w-6 h-6 animate-spin text-white" />
+            ) : (
+              <div className="relative flex items-center justify-center">
+                <Camera className="w-6 h-6 transition-transform group-hover:scale-110" />
+                <span className="absolute -top-1.5 -right-1.5 bg-white text-[#FF5500] text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center shadow leading-none">
+                  +
+                </span>
+              </div>
+            )}
+          </button>
         </div>
       )}
     </div>
