@@ -4,11 +4,13 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Users, FileText, Shield, Mail } from 'lucide-react';
 
+// 🎯 設定したGoogleフォームのURL
+const GOOGLE_FORM_URL = 'https://forms.gle/e5Lf5GT4MFiHSUwy7';
+
 export default function Footer() {
   const searchParams = useSearchParams();
   const currentCampId = searchParams.get('camp');
 
-  // 現在開いているキャンプIDを保持したままギャラリーへ移動するURL
   const galleryUrl = currentCampId ? `/community?from=${currentCampId}` : '/community';
 
   return (
@@ -39,13 +41,16 @@ export default function Footer() {
           <span>プライバシーポリシー</span>
         </Link>
 
-        <Link
-          href="/contact"
+        {/* Googleフォームへの直通リンク */}
+        <a
+          href={GOOGLE_FORM_URL}
+          target="_blank"
+          rel="noopener noreferrer"
           className="hover:text-[#FF5500] transition flex items-center gap-1.5"
         >
           <Mail className="w-3.5 h-3.5 text-[#FF5500]" />
           <span>お問い合わせ</span>
-        </Link>
+        </a>
       </div>
 
       {/* Amazonアソシエイト規約遵守文言 ＆ コピーライト */}
