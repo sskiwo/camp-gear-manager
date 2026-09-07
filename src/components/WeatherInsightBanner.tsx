@@ -6,7 +6,10 @@ import { CloudSun, MapPin, Calendar, Loader2, Sparkles, AlertCircle, Edit2, X, C
 interface WeatherData {
   location: string;
   query: string;
+  targetDate?: string | null;
   date: string;
+  isDateMatched: boolean;
+  dateNote?: string | null;
   weatherCode: number;
   weatherLabel: string;
   weatherIcon: string;
@@ -210,13 +213,28 @@ export default function WeatherInsightBanner({
                   <MapPin className="w-3.5 h-3.5 text-[#00E5FF]" />
                   <span>{weather.location}</span>
                 </span>
-                {weather.date && (
+                {(eventDate || weather.targetDate) ? (
+                  <span className="flex items-center gap-1 text-cyan-300 font-mono text-[11px] bg-cyan-950/60 border border-cyan-800/60 px-2 py-0.5 rounded-md font-bold">
+                    <Calendar className="w-3 h-3 text-[#00E5FF]" />
+                    <span>{eventDate || weather.targetDate}</span>
+                    {weather.isDateMatched && (
+                      <span className="text-[10px] text-emerald-400 font-sans ml-0.5">（当日予報）</span>
+                    )}
+                  </span>
+                ) : weather.date ? (
                   <span className="flex items-center gap-1 text-zinc-400 font-mono text-[11px]">
                     <Calendar className="w-3 h-3 text-zinc-400" />
-                    <span>{weather.date}</span>
+                    <span>本日: {weather.date}</span>
                   </span>
-                )}
+                ) : null}
               </div>
+
+              {!weather.isDateMatched && weather.dateNote && (
+                <div className="text-[11px] text-amber-300 bg-amber-950/40 border border-amber-800/50 px-2.5 py-1 rounded-lg mt-1.5 flex items-center gap-1.5 text-left">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0 text-amber-400" />
+                  <span>{weather.dateNote}</span>
+                </div>
+              )}
 
               <div className="flex items-baseline gap-3 mt-1.5 flex-wrap font-mono">
                 <span className="text-sm sm:text-base font-bold text-white flex items-center gap-1 font-sans">

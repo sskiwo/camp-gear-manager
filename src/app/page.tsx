@@ -169,7 +169,20 @@ function CampHomeContent() {
         return;
       }
 
-      const allCamps = data || [];
+      const allCamps = (data || []).map((c: any) => {
+        try {
+          const cached = localStorage.getItem(`camp_meta_${c.id}`);
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            return {
+              ...c,
+              location: c.location || parsed.location || '',
+              event_date: c.event_date || parsed.event_date || '',
+            };
+          }
+        } catch {}
+        return c;
+      });
       setCamps(allCamps);
 
       // ⛺ 2. 自分のキャンプID一覧（LocalStorage または user_id 一致）
@@ -462,18 +475,25 @@ function CampHomeContent() {
     if (!selectedCampId || isReadOnly) return;
     const updates: Record<string, any> = {
       location: newLocation,
+      event_date: newDate,
     };
-    if (newDate) {
-      updates.event_date = newDate;
-    }
 
     setCamps((prev) =>
       prev.map((c) =>
         c.id === selectedCampId
-          ? { ...c, location: newLocation, event_date: newDate || c.event_date }
+          ? { ...c, location: newLocation, event_date: newDate }
           : c
       )
     );
+
+    try {
+      localStorage.setItem(
+        `camp_meta_${selectedCampId}`,
+        JSON.stringify({ location: newLocation, event_date: newDate })
+      );
+    } catch (e) {
+      console.warn('LocalStorage error:', e);
+    }
 
     try {
       await supabase.from('camps').update(updates).eq('id', selectedCampId);

@@ -226,8 +226,8 @@ export async function GET(request: Request) {
         : cityName;
     }
 
-    // 3. Open-Meteo で天気予報を取得 (毎日予報)
-    const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FTokyo`;
+    // 3. Open-Meteo で天気予報を取得 (毎日予報・最大16日間取得)
+    const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FTokyo&forecast_days=16`;
 
     const weatherRes = await fetch(weatherUrl, { next: { revalidate: 3600 } }); // 1時間キャッシュ
     if (!weatherRes.ok) {
@@ -241,13 +241,38 @@ export async function GET(request: Request) {
       throw new Error('天気予報データが見つかりませんでした');
     }
 
-    // 日付の一致を検索、なければ直近（今日）の予報を返す
-    let dateIndex = targetDate ? daily.time.indexOf(targetDate) : 0;
-    if (dateIndex === -1) {
-      dateIndex = 0; // 日程が範囲外の場合は当日の予報
+    // 日付文字列を正規化（例: 2026/9/8 -> 2026-09-08）
+    const normalizeDate = (d: string) => {
+      if (!d) return '';
+      const clean = d.trim().replace(/\//g, '-');
+      const parts = clean.split('-');
+      if (parts.length === 3) {
+        return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+      }
+      return clean;
+    };
+
+    const normalizedTarget = normalizeDate(targetDate);
+    const matchedIndex = normalizedTarget ? daily.time.indexOf(normalizedTarget) : -1;
+    const isDateMatched = matchedIndex !== -1;
+
+    // 一致する日があればその日、なければ今日（index: 0）を採用
+    const dateIndex = isDateMatched ? matchedIndex : 0;
+    const chosenDate = daily.time[dateIndex];
+
+    let dateNote: string | null = null;
+    if (normalizedTarget && !isDateMatched) {
+      const latestDate = daily.time[daily.time.length - 1];
+      const earliestDate = daily.time[0];
+      if (normalizedTarget > latestDate) {
+        dateNote = `※指定日（${normalizedTarget}）は16日以上先のため、現地の直近（本日 ${chosenDate}）の天気を表示しています`;
+      } else if (normalizedTarget < earliestDate) {
+        dateNote = `※指定日（${normalizedTarget}）は過去の日程のため、現地の直近（本日 ${chosenDate}）の天気を表示しています`;
+      } else {
+        dateNote = `※指定日（${normalizedTarget}）の個別予報が見つからなかったため、直近（本日 ${chosenDate}）の天気を表示しています`;
+      }
     }
 
-    const chosenDate = daily.time[dateIndex];
     const weatherCode = daily.weather_code[dateIndex] ?? 1;
     const maxTemp = Math.round((daily.temperature_2m_max[dateIndex] ?? 20) * 10) / 10;
     const minTemp = Math.round((daily.temperature_2m_min[dateIndex] ?? 10) * 10) / 10;
@@ -259,7 +284,10 @@ export async function GET(request: Request) {
     return NextResponse.json({
       location: displayName,
       query: locationQuery,
+      targetDate: normalizedTarget || null,
       date: chosenDate,
+      isDateMatched,
+      dateNote,
       weatherCode,
       weatherLabel: weatherInfo.label,
       weatherIcon: weatherInfo.icon,
@@ -267,7 +295,6 @@ export async function GET(request: Request) {
       minTemp,
       rainChance,
       advice,
-      isDateMatched: targetDate ? dateIndex !== -1 && daily.time[dateIndex] === targetDate : true,
     });
   } catch (error: any) {
     console.error('Weather API Error:', error);
