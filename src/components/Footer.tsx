@@ -44,7 +44,7 @@ function DynamicNavLinks() {
 
 export default function Footer() {
   return (
-    <footer className="border-t border-zinc-800/80 pt-6 pb-10 mt-8 text-zinc-500 text-xs space-y-4">
+    <footer className="border-t border-zinc-800/80 pt-6 pb-20 sm:pb-24 mt-8 text-zinc-500 text-xs space-y-4">
       {/* ナビゲーションリンク */}
       <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 text-zinc-400 font-bold">
         {/* 🎯 クエリパラメータが必要な動的リンク部分のみをSuspenseで保護 */}

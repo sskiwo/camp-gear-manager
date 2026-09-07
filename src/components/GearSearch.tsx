@@ -681,26 +681,9 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
         </div>
       )}
 
-      {/* 📱 片手操作UP：フローティング追加ボタン（FAB） */}
+      {/* 📱 片手操作UP：フローティングカメラ追加ボタン（FAB） */}
       {!showModal && !showTipsModal && (
-        <div className="fixed bottom-6 right-4 sm:right-6 z-40 flex flex-col items-end gap-2 animate-fade-in pointer-events-none">
-          {/* サブボタン：検索窓へジャンプ */}
-          <button
-            type="button"
-            onClick={() => {
-              const el = document.getElementById('gear-search-input');
-              if (el) {
-                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                setTimeout(() => el.focus(), 300);
-              }
-            }}
-            className="w-10 h-10 rounded-full bg-[#18181B]/90 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-700/80 shadow-xl flex items-center justify-center transition-all cursor-pointer active:scale-90 backdrop-blur-md group pointer-events-auto"
-            title="キーワード検索へ移動"
-            aria-label="キーワード検索へ移動"
-          >
-            <Search className="w-4 h-4 transition-transform group-hover:scale-110" />
-          </button>
-
+        <div className="fixed bottom-6 right-4 sm:right-6 z-40 animate-fade-in pointer-events-none">
           {/* メイン浮き輪ボタン：カメラ即起動・AIスキャン */}
           <button
             type="button"
