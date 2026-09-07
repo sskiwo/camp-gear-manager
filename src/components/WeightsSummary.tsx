@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { GearItem } from './GearItemCard';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 
@@ -38,6 +38,8 @@ const normalizeCategory = (
   return 'その他';
 };
 
+const STORAGE_KEY_SUMMARY_OPEN = 'camp_weights_summary_open';
+
 export default function WeightsSummary({
   gears = [],
   screenMode = 'edit',
@@ -49,6 +51,25 @@ export default function WeightsSummary({
   const [isOpen, setIsOpen] = useState(true);
   const [isEditingTarget, setIsEditingTarget] = useState(false);
   const [tempTargetInput, setTempTargetInput] = useState<number>(targetWeightKg);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_SUMMARY_OPEN);
+      if (saved !== null) {
+        setIsOpen(saved === 'true');
+      }
+    } catch {}
+  }, []);
+
+  const toggleOpen = () => {
+    setIsOpen((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem(STORAGE_KEY_SUMMARY_OPEN, String(next));
+      } catch {}
+      return next;
+    });
+  };
 
   const handleSaveTarget = () => {
     if (onTargetWeightChange) {
@@ -165,19 +186,40 @@ export default function WeightsSummary({
   };
 
   return (
-    <section className="sticky top-2 z-30 bg-[#18181B]/95 backdrop-blur-md border border-zinc-800 rounded-2xl p-3.5 sm:p-4 shadow-2xl space-y-3 w-full overflow-hidden transition-all duration-200">
+    <section className="sticky top-2 z-30 bg-[#18181B]/95 backdrop-blur-md border border-zinc-800 rounded-2xl p-2.5 sm:p-3.5 shadow-2xl space-y-2 w-full overflow-hidden transition-all duration-200">
       {/* ヘッダー */}
       <div
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-between gap-2 border-b border-zinc-800/80 pb-2 cursor-pointer select-none group/header hover:opacity-90 transition-opacity"
+        onClick={toggleOpen}
+        className={`flex items-center justify-between gap-2 select-none cursor-pointer group/header hover:opacity-95 transition-all ${
+          isOpen ? 'border-b border-zinc-800/80 pb-2' : ''
+        }`}
         title={isOpen ? 'クリックして詳細を折りたたむ' : 'クリックして詳細を展開'}
       >
-        <div className="flex items-center gap-2 min-w-0">
-          <h2 className="text-[16px] sm:text-[17px] font-bold text-white tracking-tight shrink-0 whitespace-nowrap group-hover/header:text-[#FF5500] transition-colors">
-            サマリー
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <h2 className="text-[15px] sm:text-[16px] font-bold text-white tracking-tight shrink-0 whitespace-nowrap group-hover/header:text-[#FF5500] transition-colors flex items-center gap-1.5">
+            <span>⚖️ サマリー</span>
           </h2>
 
-          {screenMode === 'review' && (
+          {/* 折りたたみ時：1行ミニ要約バッジ（スクロール中も邪魔にならない） */}
+          {!isOpen && (
+            <div className="flex items-center gap-2 text-xs font-mono truncate min-w-0 animate-fade-in">
+              {screenMode === 'packing' ? (
+                <span className="text-[#10B981] font-bold truncate">
+                  {formatPackedWeightRatio(packedTotalWeight, outboundTotalWeight)} ({packingProgressRatio.toFixed(0)}%)
+                </span>
+              ) : screenMode === 'review' ? (
+                <span className="text-white font-bold truncate">
+                  実使用: {formatWeight(usedTotalWeight)}
+                </span>
+              ) : (
+                <span className={`truncate font-bold ${isOverTarget ? 'text-[#EF4444]' : 'text-zinc-300'}`}>
+                  持参: {formatWeight(outboundTotalWeight)} / 目標: {targetWeightKg.toFixed(1)}kg
+                </span>
+              )}
+            </div>
+          )}
+
+          {screenMode === 'review' && isOpen && (
             <span className="px-2 py-0.5 bg-amber-950/70 border border-amber-800/80 text-amber-400 rounded-lg text-[10px] font-bold shrink-0 whitespace-nowrap flex items-center gap-1">
               <span>⛺</span>
               <span>レビュー中</span>
@@ -185,144 +227,171 @@ export default function WeightsSummary({
           )}
         </div>
 
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsOpen(!isOpen);
-          }}
-          className="h-7 w-7 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-zinc-700 flex items-center justify-center transition-all cursor-pointer shrink-0 active:scale-95 shadow-sm group-hover/header:border-zinc-500"
-          aria-label="詳細サマリーを開閉"
-          title={isOpen ? '詳細を折りたたむ' : '詳細を展開'}
-        >
-          {isOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-        </button>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className="text-[11px] font-bold text-zinc-400 group-hover/header:text-zinc-200 hidden xs:inline">
+            {isOpen ? '折りたたむ' : '詳細を見る'}
+          </span>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleOpen();
+            }}
+            className="h-7 w-7 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-zinc-700 flex items-center justify-center transition-all cursor-pointer shrink-0 active:scale-95 shadow-sm group-hover/header:border-zinc-500"
+            aria-label="詳細サマリーを開閉"
+          >
+            {isOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+          </button>
+        </div>
       </div>
 
-      {/* 【常時表示】モードに応じたプログレスバー */}
-      <div className="bg-[#27272A]/70 hover:bg-[#27272A] border border-zinc-700/60 hover:border-zinc-600 rounded-xl p-2.5 sm:p-3 space-y-1.5 transition-all duration-200">
-        {screenMode === 'packing' ? (
-          /* パッキングモード時 */
-          <>
-            <div className="flex items-center justify-between text-[11px] sm:text-[12px] gap-2 font-mono tabular-nums">
-              <div className="flex items-center gap-1.5 text-zinc-300 font-bold min-w-0">
-                <span className="text-white font-sans font-semibold shrink-0">パッキング完了</span>
-                <span>
-                  {formatPackedWeightRatio(packedTotalWeight, outboundTotalWeight)}
-                </span>
-              </div>
+      {/* 【折りたたみ時】極細プログレスライン */}
+      {!isOpen && (
+        <div className="w-full bg-zinc-800/80 rounded-full h-1 overflow-hidden">
+          <div
+            className={`h-1 rounded-full transition-all duration-300 ${
+              screenMode === 'packing' || screenMode === 'review'
+                ? 'bg-[#10B981]'
+                : isOverTarget
+                ? 'bg-[#EF4444]'
+                : 'bg-[#FF5500]'
+            }`}
+            style={{
+              width: `${
+                screenMode === 'packing'
+                  ? packingProgressRatio
+                  : screenMode === 'review'
+                  ? reviewUsedRatio
+                  : editProgressRatio
+              }%`,
+            }}
+          />
+        </div>
+      )}
 
-              <div className="text-right shrink-0 text-zinc-300 font-bold">
-                <span>
-                  {packedCount} / {totalCount} 点
-                </span>
-              </div>
-            </div>
-
-            <div className="w-full bg-zinc-800 rounded-full h-2 overflow-hidden border border-zinc-700/80">
-              <div
-                className="h-2 bg-[#10B981] rounded-full transition-all duration-300"
-                style={{ width: `${packingProgressRatio}%` }}
-              />
-            </div>
-          </>
-        ) : screenMode === 'review' ? (
-          /* レビューモード時 */
-          <>
-            <div className="flex items-center justify-between text-[11px] sm:text-[12px] font-mono tabular-nums">
-              <div className="flex items-center gap-1.5 font-bold text-white min-w-0">
-                <span className="font-sans font-semibold shrink-0">実使用重量</span>
-                <span>{formatWeight(usedTotalWeight)}</span>
-              </div>
-
-              <div className="text-right font-bold text-zinc-300 shrink-0">
-                <span className="text-zinc-400 font-sans font-normal mr-1">未使用</span>
-                <span>{formatWeight(unusedTotalWeight)}</span>
-              </div>
-            </div>
-
-            <div className="w-full bg-zinc-800 rounded-full h-2 overflow-hidden border border-zinc-700/80">
-              <div
-                className="h-2 bg-[#10B981] rounded-full transition-all duration-300"
-                style={{ width: `${reviewUsedRatio}%` }}
-                title={`実使用重量: ${formatWeight(usedTotalWeight)} / 持参総重量: ${formatWeight(outboundTotalWeight)}`}
-              />
-            </div>
-          </>
-        ) : (
-          /* 🎯 エディット時：「:」「差分:」を削除し、「残り」を白文字に統一 */
-          <>
-            <div className="flex items-center justify-between text-[11px] sm:text-[12px] gap-2">
-              <div className="flex items-center gap-1.5 text-zinc-300 min-w-0">
-                <span className="font-semibold text-white shrink-0">目標</span>
-                {isEditingTarget ? (
-                  <div className="flex items-center gap-1">
-                    <input
-                      type="number"
-                      step="0.5"
-                      min="1"
-                      max="50"
-                      value={tempTargetInput}
-                      onChange={(e) => setTempTargetInput(Number(e.target.value))}
-                      className="w-16 bg-[#18181B] border border-[#FF5500] text-white rounded px-1.5 py-0.5 text-[11px] font-mono font-bold focus:outline-none"
-                      autoFocus
-                    />
-                    <span className="text-zinc-400 font-bold">kg</span>
-                    <button
-                      type="button"
-                      onClick={handleSaveTarget}
-                      className="px-2 py-0.5 bg-[#FF5500] hover:bg-[#e04c00] text-white rounded text-[10px] font-bold cursor-pointer transition active:scale-95"
-                    >
-                      完了
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setTempTargetInput(targetWeightKg);
-                      setIsEditingTarget(true);
-                    }}
-                    className="flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-zinc-700/70 font-mono font-bold text-white transition cursor-pointer group/edit"
-                    title="目標重量を変更"
-                  >
-                    <span className="group-hover/edit:text-[#FF5500] transition-colors">
-                      {(targetWeightKg || 15.0).toFixed(2)} kg
-                    </span>
-                    <span className="text-[10px] text-zinc-400 group-hover/edit:text-[#FF5500] transition-colors">
-                      ✏️
-                    </span>
-                  </button>
-                )}
-              </div>
-
-              <div className="text-right shrink-0 font-mono text-[11px] sm:text-[12px]">
-                <span
-                  className={`font-bold ${isOverTarget ? 'text-[#EF4444]' : 'text-white'}`}
-                >
-                  {isOverTarget
-                    ? `+${formatWeight(outboundTotalWeight - targetGrams)} 超過`
-                    : `残り ${formatWeight(targetGrams - outboundTotalWeight)}`}
-                </span>
-              </div>
-            </div>
-
-            <div className="w-full bg-zinc-800 rounded-full h-2 overflow-hidden border border-zinc-700/80">
-              <div
-                className={`h-2 transition-all duration-300 ${
-                  isOverTarget ? 'bg-[#EF4444]' : 'bg-[#FF5500]'
-                }`}
-                style={{ width: `${editProgressRatio}%` }}
-                title={`持参総重量: ${formatWeight(outboundTotalWeight)}`}
-              />
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* 【開閉対象】3分割サマリーカード ＆ 積載バランス */}
+      {/* 【開閉対象】詳細プログレス ＆ 3分割サマリーカード ＆ 積載バランス */}
       {isOpen && (
-        <div className="space-y-3 pt-0.5 animate-fade-in">
+        <div className="space-y-2.5 pt-0.5 animate-fade-in">
+          {/* モードに応じた詳細プログレスバー */}
+          <div className="bg-[#27272A]/70 hover:bg-[#27272A] border border-zinc-700/60 hover:border-zinc-600 rounded-xl p-2.5 sm:p-3 space-y-1.5 transition-all duration-200">
+            {screenMode === 'packing' ? (
+              /* パッキングモード時 */
+              <>
+                <div className="flex items-center justify-between text-[11px] sm:text-[12px] gap-2 font-mono tabular-nums">
+                  <div className="flex items-center gap-1.5 text-zinc-300 font-bold min-w-0">
+                    <span className="text-white font-sans font-semibold shrink-0">パッキング完了</span>
+                    <span>
+                      {formatPackedWeightRatio(packedTotalWeight, outboundTotalWeight)}
+                    </span>
+                  </div>
+
+                  <div className="text-right shrink-0 text-zinc-300 font-bold">
+                    <span>
+                      {packedCount} / {totalCount} 点
+                    </span>
+                  </div>
+                </div>
+
+                <div className="w-full bg-zinc-800 rounded-full h-2 overflow-hidden border border-zinc-700/80">
+                  <div
+                    className="h-2 bg-[#10B981] rounded-full transition-all duration-300"
+                    style={{ width: `${packingProgressRatio}%` }}
+                  />
+                </div>
+              </>
+            ) : screenMode === 'review' ? (
+              /* レビューモード時 */
+              <>
+                <div className="flex items-center justify-between text-[11px] sm:text-[12px] font-mono tabular-nums">
+                  <div className="flex items-center gap-1.5 font-bold text-white min-w-0">
+                    <span className="font-sans font-semibold shrink-0">実使用重量</span>
+                    <span>{formatWeight(usedTotalWeight)}</span>
+                  </div>
+
+                  <div className="text-right font-bold text-zinc-300 shrink-0">
+                    <span className="text-zinc-400 font-sans font-normal mr-1">未使用</span>
+                    <span>{formatWeight(unusedTotalWeight)}</span>
+                  </div>
+                </div>
+
+                <div className="w-full bg-zinc-800 rounded-full h-2 overflow-hidden border border-zinc-700/80">
+                  <div
+                    className="h-2 bg-[#10B981] rounded-full transition-all duration-300"
+                    style={{ width: `${reviewUsedRatio}%` }}
+                    title={`実使用重量: ${formatWeight(usedTotalWeight)} / 持参総重量: ${formatWeight(outboundTotalWeight)}`}
+                  />
+                </div>
+              </>
+            ) : (
+              /* エディット時 */
+              <>
+                <div className="flex items-center justify-between text-[11px] sm:text-[12px] gap-2">
+                  <div className="flex items-center gap-1.5 text-zinc-300 min-w-0">
+                    <span className="font-semibold text-white shrink-0">目標</span>
+                    {isEditingTarget ? (
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="number"
+                          step="0.5"
+                          min="1"
+                          max="50"
+                          value={tempTargetInput}
+                          onChange={(e) => setTempTargetInput(Number(e.target.value))}
+                          className="w-16 bg-[#18181B] border border-[#FF5500] text-white rounded px-1.5 py-0.5 text-[11px] font-mono font-bold focus:outline-none"
+                          autoFocus
+                        />
+                        <span className="text-zinc-400 font-bold">kg</span>
+                        <button
+                          type="button"
+                          onClick={handleSaveTarget}
+                          className="px-2 py-0.5 bg-[#FF5500] hover:bg-[#e04c00] text-white rounded text-[10px] font-bold cursor-pointer transition active:scale-95"
+                        >
+                          完了
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTempTargetInput(targetWeightKg);
+                          setIsEditingTarget(true);
+                        }}
+                        className="flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-zinc-700/70 font-mono font-bold text-white transition cursor-pointer group/edit"
+                        title="目標重量を変更"
+                      >
+                        <span className="group-hover/edit:text-[#FF5500] transition-colors">
+                          {(targetWeightKg || 15.0).toFixed(2)} kg
+                        </span>
+                        <span className="text-[10px] text-zinc-400 group-hover/edit:text-[#FF5500] transition-colors">
+                          ✏️
+                        </span>
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="text-right shrink-0 font-mono text-[11px] sm:text-[12px]">
+                    <span
+                      className={`font-bold ${isOverTarget ? 'text-[#EF4444]' : 'text-white'}`}
+                    >
+                      {isOverTarget
+                        ? `+${formatWeight(outboundTotalWeight - targetGrams)} 超過`
+                        : `残り ${formatWeight(targetGrams - outboundTotalWeight)}`}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="w-full bg-zinc-800 rounded-full h-2 overflow-hidden border border-zinc-700/80">
+                  <div
+                    className={`h-2 transition-all duration-300 ${
+                      isOverTarget ? 'bg-[#EF4444]' : 'bg-[#FF5500]'
+                    }`}
+                    style={{ width: `${editProgressRatio}%` }}
+                    title={`持参総重量: ${formatWeight(outboundTotalWeight)}`}
+                  />
+                </div>
+              </>
+            )}
+          </div>
           <div className="grid grid-cols-3 gap-1.5 sm:gap-2 text-center">
             {screenMode === 'review' ? (
               <>

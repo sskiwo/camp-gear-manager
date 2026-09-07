@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { CloudSun, MapPin, Calendar, Loader2, Sparkles, AlertCircle, Edit2, X, Check } from 'lucide-react';
+import { CloudSun, MapPin, Calendar, Loader2, Sparkles, AlertCircle, Edit2, X, Check, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface WeatherData {
   location: string;
@@ -137,6 +137,8 @@ export default function WeatherInsightBanner({
     }
   }, [location, eventDate, fetchWeather]);
 
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+
   const handleSaveSettings = async () => {
     setIsSaving(true);
     const finalLoc = inputLocation.trim();
@@ -158,35 +160,71 @@ export default function WeatherInsightBanner({
   };
 
   return (
-    <div className="bg-[#18181B] border border-zinc-800 rounded-2xl p-3.5 sm:p-4 shadow-xl space-y-2.5 transition-all">
-      {/* ヘッダーエリア */}
-      <div className="flex items-center justify-between gap-2 border-b border-zinc-800/80 pb-2">
-        <div className="flex items-center gap-1.5 min-w-0">
-          <CloudSun className={`w-4 h-4 ${weather?.isHistorical ? 'text-amber-400' : 'text-[#00E5FF]'} shrink-0`} />
-          <h3 className="text-xs sm:text-sm font-bold text-white truncate flex items-center gap-1.5">
-            <span>
-              {weather?.isHistorical
-                ? '当時の気象実績 ＆ 振り返り'
-                : 'キャンプ現地の天気 ＆ 防寒アドバイス'}
-            </span>
-          </h3>
+    <div className="bg-[#18181B] border border-zinc-800 rounded-2xl p-2.5 sm:p-3.5 shadow-xl space-y-2 transition-all">
+      {/* コンパクト要約バー（通常時は1行でスマート表示） */}
+      <div className="flex items-center justify-between gap-2">
+        <div
+          onClick={() => weather && setIsDetailOpen(!isDetailOpen)}
+          className={`flex items-center gap-2 min-w-0 flex-1 ${weather ? 'cursor-pointer select-none group/weather' : ''}`}
+          title={weather ? (isDetailOpen ? 'クリックして助言を折りたたむ' : 'クリックして山仲間の助言を展開') : undefined}
+        >
+          <div className="flex items-center gap-1.5 shrink-0">
+            <CloudSun className={`w-4 h-4 ${weather?.isHistorical ? 'text-amber-400' : 'text-[#00E5FF]'} shrink-0`} />
+            {weather ? (
+              <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-bold text-white flex-wrap sm:flex-nowrap">
+                <span className="truncate max-w-[120px] sm:max-w-none text-zinc-100 group-hover/weather:text-[#00E5FF] transition-colors">
+                  {weather.location}
+                </span>
+                <span className="text-zinc-600 hidden sm:inline">•</span>
+                <span className="font-mono text-zinc-300 text-[11px] sm:text-xs shrink-0">
+                  {weather.weatherIcon} {weather.maxTemp}℃ <span className="text-zinc-500">/</span> {weather.minTemp}℃
+                </span>
+                <span className="text-[11px] text-zinc-400 font-mono shrink-0 hidden xs:inline">
+                  ☔ {weather.isHistorical ? `${weather.precipitationSum ?? 0}mm` : `${weather.rainChance}%`}
+                </span>
+              </div>
+            ) : (
+              <h3 className="text-xs sm:text-sm font-bold text-white truncate">
+                キャンプ現地の天気 ＆ 防寒アドバイス
+              </h3>
+            )}
+          </div>
         </div>
 
-        {!isReadOnly && (
-          <button
-            type="button"
-            onClick={() => {
-              setInputLocation(location);
-              setInputDate(eventDate);
-              setIsEditing(!isEditing);
-            }}
-            className="text-[11px] font-bold text-zinc-300 hover:text-white bg-[#27272A] hover:bg-zinc-700 px-2.5 py-1 rounded-lg border border-zinc-700 transition flex items-center gap-1 shrink-0 cursor-pointer active:scale-95"
-            title="キャンプ場名・日程を設定"
-          >
-            <Edit2 className="w-3 h-3 text-[#00E5FF]" />
-            <span>{location ? '場所・日程変更' : '設定する'}</span>
-          </button>
-        )}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {!isReadOnly && (
+            <button
+              type="button"
+              onClick={() => {
+                setInputLocation(location);
+                setInputDate(eventDate);
+                setIsEditing(!isEditing);
+              }}
+              className="text-[11px] font-bold text-zinc-300 hover:text-white bg-[#27272A] hover:bg-zinc-700 px-2 sm:px-2.5 py-1 rounded-lg border border-zinc-700 transition flex items-center gap-1 shrink-0 cursor-pointer active:scale-95"
+              title="キャンプ場名・日程を設定"
+            >
+              <Edit2 className="w-3 h-3 text-[#00E5FF]" />
+              <span className="hidden sm:inline">{location ? '場所・日程変更' : '設定する'}</span>
+              <span className="sm:hidden">{location ? '変更' : '設定'}</span>
+            </button>
+          )}
+
+          {weather && (
+            <button
+              type="button"
+              onClick={() => setIsDetailOpen(!isDetailOpen)}
+              className={`text-[11px] font-bold px-2 sm:px-2.5 py-1 rounded-lg border transition flex items-center gap-1 shrink-0 cursor-pointer active:scale-95 ${
+                isDetailOpen
+                  ? 'bg-zinc-700 text-white border-zinc-600'
+                  : 'bg-[#27272A] hover:bg-zinc-700 text-[#00E5FF] border-zinc-700'
+              }`}
+              title={isDetailOpen ? '助言を閉じる' : '山仲間のパッキング助言を見る'}
+            >
+              <span className="hidden xs:inline">{isDetailOpen ? '助言を閉じる' : '助言を見る'}</span>
+              {isDetailOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* 設定編集フォーム（アコーディオン） */}
@@ -224,7 +262,7 @@ export default function WeatherInsightBanner({
             <button
               type="button"
               onClick={() => setIsEditing(false)}
-              className="px-3 py-1 rounded-lg text-xs font-normal text-zinc-400 hover:text-zinc-200 transition"
+              className="px-3 py-1 rounded-lg text-xs font-normal text-zinc-400 hover:text-zinc-200 transition cursor-pointer"
             >
               中止
             </button>
@@ -243,129 +281,105 @@ export default function WeatherInsightBanner({
 
       {/* 天気コンテンツ表示エリア */}
       {isLoading ? (
-        <div className="py-4 flex items-center justify-center gap-2 text-zinc-400 text-xs font-normal">
+        <div className="py-2.5 flex items-center justify-center gap-2 text-zinc-400 text-xs font-normal">
           <Loader2 className="w-4 h-4 animate-spin text-[#00E5FF]" />
           <span>現地の最新気象データを集計中...</span>
         </div>
       ) : weather ? (
-        <div className="space-y-2 animate-fade-in">
-          {/* 天気・気温・降水サマリー */}
-          <div className="bg-[#27272A]/50 border border-zinc-700/60 rounded-xl p-2.5 sm:p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 flex-wrap text-xs font-bold text-zinc-300">
-                <span className="flex items-center gap-1 text-white">
-                  <MapPin className="w-3.5 h-3.5 text-[#00E5FF]" />
-                  <span>{weather.location}</span>
+        isDetailOpen && (
+          <div className="space-y-2 pt-1.5 border-t border-zinc-800/80 animate-fade-in text-left">
+            {/* 日付・予報対象日タグ */}
+            <div className="flex items-center gap-2 flex-wrap text-xs">
+              {(eventDate || weather.targetDate) ? (
+                <span
+                  className={`flex items-center gap-1 font-mono text-[11px] px-2 py-0.5 rounded-md font-bold ${
+                    weather.isHistorical
+                      ? 'text-amber-300 bg-amber-950/60 border border-amber-700/60'
+                      : 'text-cyan-300 bg-cyan-950/60 border border-cyan-800/60'
+                  }`}
+                >
+                  <Calendar
+                    className={`w-3 h-3 ${weather.isHistorical ? 'text-amber-400' : 'text-[#00E5FF]'}`}
+                  />
+                  <span>{eventDate || weather.targetDate}</span>
+                  {weather.isDateMatched && (
+                    <span
+                      className={`text-[10px] font-sans ml-0.5 ${
+                        weather.isHistorical ? 'text-amber-400' : 'text-emerald-400'
+                      }`}
+                    >
+                      {weather.isHistorical ? '（当時の気象実績）' : '（当日予報）'}
+                    </span>
+                  )}
                 </span>
-                {(eventDate || weather.targetDate) ? (
-                  <span
-                    className={`flex items-center gap-1 font-mono text-[11px] px-2 py-0.5 rounded-md font-bold ${
-                      weather.isHistorical
-                        ? 'text-amber-300 bg-amber-950/60 border border-amber-700/60'
-                        : 'text-cyan-300 bg-cyan-950/60 border border-cyan-800/60'
-                    }`}
-                  >
-                    <Calendar
-                      className={`w-3 h-3 ${weather.isHistorical ? 'text-amber-400' : 'text-[#00E5FF]'}`}
-                    />
-                    <span>{eventDate || weather.targetDate}</span>
-                    {weather.isDateMatched && (
-                      <span
-                        className={`text-[10px] font-sans ml-0.5 ${
-                          weather.isHistorical ? 'text-amber-400' : 'text-emerald-400'
-                        }`}
-                      >
-                        {weather.isHistorical ? '（当時の気象実績）' : '（当日予報）'}
-                      </span>
-                    )}
-                  </span>
-                ) : weather.date ? (
-                  <span className="flex items-center gap-1 text-zinc-400 font-mono text-[11px]">
-                    <Calendar className="w-3 h-3 text-zinc-400" />
-                    <span>本日: {weather.date}</span>
-                  </span>
-                ) : null}
-              </div>
-
-              {!weather.isDateMatched && weather.dateNote && (
-                <div className="text-[11px] text-amber-300 bg-amber-950/40 border border-amber-800/50 px-2.5 py-1 rounded-lg mt-1.5 flex items-center gap-1.5 text-left">
-                  <AlertCircle className="w-3.5 h-3.5 shrink-0 text-amber-400" />
-                  <span>{weather.dateNote}</span>
-                </div>
-              )}
-
-              <div className="flex items-baseline gap-3 mt-1.5 flex-wrap font-mono">
-                <span className="text-sm sm:text-base font-bold text-white flex items-center gap-1 font-sans">
-                  <span>{weather.weatherIcon}</span>
-                  <span>{weather.weatherLabel}</span>
+              ) : weather.date ? (
+                <span className="flex items-center gap-1 text-zinc-400 font-mono text-[11px]">
+                  <Calendar className="w-3 h-3 text-zinc-400" />
+                  <span>本日: {weather.date}</span>
                 </span>
+              ) : null}
 
-                <span className="text-xs sm:text-sm text-zinc-200">
-                  <span className="text-red-400 font-bold">最高 {weather.maxTemp}℃</span>
-                  <span className="text-zinc-500 mx-1">/</span>
-                  <span className="text-cyan-400 font-bold">最低 {weather.minTemp}℃</span>
-                </span>
-
-                {weather.isHistorical && weather.precipitationSum !== undefined && weather.precipitationSum !== null ? (
-                  <span className="text-xs text-zinc-300 font-bold font-sans">
-                    ☔ 降水量: <strong className="text-white font-mono">{weather.precipitationSum} mm</strong>
-                  </span>
-                ) : (
-                  <span className="text-xs text-zinc-300 font-bold font-sans">
-                    ☔ 降水確率: <strong className="text-white font-mono">{weather.rainChance}%</strong>
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* 山仲間のアドバイス／過去実績振り返りバナー */}
-          <div
-            className={`${
-              weather.isHistorical
-                ? 'bg-amber-950/30 border border-amber-700/50'
-                : 'bg-cyan-950/30 border border-cyan-700/50'
-            } p-2.5 sm:p-3 rounded-xl flex items-start gap-2 text-left`}
-          >
-            <Sparkles
-              className={`w-4 h-4 ${
-                weather.isHistorical ? 'text-amber-400' : 'text-[#00E5FF]'
-              } shrink-0 mt-0.5`}
-            />
-            <div className="min-w-0 flex-1">
-              <span
-                className={`text-[11px] font-bold ${
-                  weather.isHistorical ? 'text-amber-400' : 'text-[#00E5FF]'
-                } block`}
-              >
-                {weather.isHistorical ? '🏕️ 当日の気象実績と振り返り:' : '🏕️ 山仲間のパッキング助言:'}
+              <span className="text-xs text-white font-bold flex items-center gap-1 font-sans ml-1">
+                <span>{weather.weatherIcon}</span>
+                <span>{weather.weatherLabel}</span>
               </span>
-              <p className="text-[11.5px] sm:text-xs text-zinc-200 font-normal leading-relaxed mt-0.5">
-                {weather.advice}
-              </p>
+            </div>
+
+            {!weather.isDateMatched && weather.dateNote && (
+              <div className="text-[11px] text-amber-300 bg-amber-950/40 border border-amber-800/50 px-2.5 py-1 rounded-lg flex items-center gap-1.5">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0 text-amber-400" />
+                <span>{weather.dateNote}</span>
+              </div>
+            )}
+
+            {/* 山仲間のアドバイス／過去実績振り返りバナー */}
+            <div
+              className={`${
+                weather.isHistorical
+                  ? 'bg-amber-950/30 border border-amber-700/50'
+                  : 'bg-cyan-950/30 border border-cyan-700/50'
+              } p-2.5 sm:p-3 rounded-xl flex items-start gap-2`}
+            >
+              <Sparkles
+                className={`w-4 h-4 ${
+                  weather.isHistorical ? 'text-amber-400' : 'text-[#00E5FF]'
+                } shrink-0 mt-0.5`}
+              />
+              <div className="min-w-0 flex-1">
+                <span
+                  className={`text-[11px] font-bold ${
+                    weather.isHistorical ? 'text-amber-400' : 'text-[#00E5FF]'
+                  } block`}
+                >
+                  {weather.isHistorical ? '🏕️ 当日の気象実績と振り返り:' : '🏕️ 山仲間のパッキング助言:'}
+                </span>
+                <p className="text-[11.5px] sm:text-xs text-zinc-200 font-normal leading-relaxed mt-0.5">
+                  {weather.advice}
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        )
       ) : errorMessage ? (
-        <div className="bg-amber-950/30 border border-amber-800/60 p-2.5 rounded-xl text-xs text-amber-300 flex items-start gap-2 text-left">
+        <div className="bg-amber-950/30 border border-amber-800/60 p-2 rounded-xl text-xs text-amber-300 flex items-start gap-2 text-left">
           <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
           <div className="flex-1">
             <span>{errorMessage}</span>
           </div>
         </div>
       ) : (
-        /* 未設定時の案内 */
-        <div className="bg-[#27272A]/30 border border-zinc-800/80 rounded-xl p-3 text-center space-y-1.5">
-          <p className="text-xs text-zinc-400 font-normal">
-            📍 キャンプ場や日程を設定すると、当日の予想気温や防寒・雨具アドバイスがここに表示されます。
+        /* 未設定時の案内（コンパクト化） */
+        <div className="bg-[#27272A]/30 border border-zinc-800/80 rounded-xl px-3 py-2 text-center flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+          <p className="text-xs text-zinc-400 font-normal text-left truncate">
+            📍 キャンプ場や日程を設定すると、現地の予想気温や防寒助言が表示されます
           </p>
           {!isReadOnly && (
             <button
               type="button"
               onClick={() => setIsEditing(true)}
-              className="text-xs text-[#00E5FF] hover:underline font-bold inline-flex items-center gap-1 cursor-pointer"
+              className="text-xs text-[#00E5FF] hover:underline font-bold shrink-0 cursor-pointer"
             >
-              <span>キャンプ地を設定してみる ➔</span>
+              設定する ➔
             </button>
           )}
         </div>

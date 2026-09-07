@@ -24,6 +24,8 @@ type Props = {
   onDeleteAllGears?: () => void;
   onResetAllPacked?: () => void;
   onReorderGears?: (reorderedGears: GearItem[]) => void;
+  selectedCategoryTab?: string;
+  onSelectCategoryTab?: (tab: string) => void;
   isReadOnly?: boolean;
 };
 
@@ -71,6 +73,8 @@ export default function GearList({
   onUpdateGear,
   onDeleteGear,
   onResetAllPacked,
+  selectedCategoryTab: externalSelectedCategoryTab,
+  onSelectCategoryTab,
   isReadOnly = false,
 }: Props) {
   const [sortOrders, setSortOrders] = useState<Record<string, string>>({});
@@ -116,6 +120,20 @@ export default function GearList({
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [isApplyingNext, setIsApplyingNext] = useState(false);
   const [reviewResultModal, setReviewResultModal] = useState<ReviewResultData | null>(null);
+
+  const [internalCategoryTab, setInternalCategoryTab] = useState<string>('すべて');
+  const activeCategoryTab = externalSelectedCategoryTab !== undefined ? externalSelectedCategoryTab : internalCategoryTab;
+  const setCategoryTab = onSelectCategoryTab || setInternalCategoryTab;
+
+  const areAllCategoriesOpen = CATEGORIES.every((cat) => openCategories[cat] !== false);
+  const handleToggleAllCategories = () => {
+    const nextState = !areAllCategoriesOpen;
+    CATEGORIES.forEach((cat) => {
+      if ((openCategories[cat] !== false) !== nextState) {
+        onToggleCategoryOpen(cat);
+      }
+    });
+  };
 
   const selectedGears = gears.filter((g) => g.is_selected !== false);
   const packedCount = selectedGears.filter((g) => g.is_packed).length;
@@ -266,11 +284,13 @@ export default function GearList({
     }
   };
 
+  const displayedCategories = activeCategoryTab === 'すべて' ? CATEGORIES : [activeCategoryTab];
+
   return (
-    <section className="bg-[#18181B] p-4 md:p-6 rounded-2xl border border-zinc-800 space-y-4 shadow-xl">
+    <section className="bg-[#18181B] p-3.5 sm:p-5 md:p-6 rounded-2xl border border-zinc-800 space-y-3.5 shadow-xl">
       {/* リストヘッダー */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-3">
-        <h2 className="text-[18px] font-bold text-zinc-100 flex items-center gap-1.5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-zinc-800 pb-2.5">
+        <h2 className="text-[17px] sm:text-[18px] font-bold text-zinc-100 flex items-center gap-1.5">
           {screenMode === 'edit'
             ? `ギア選定 (${totalCount} / ${gears.length})`
             : screenMode === 'packing'
@@ -316,20 +336,80 @@ export default function GearList({
         </div>
       </div>
 
-      {/* ギア選定モード ガイドカード */}
+      {/* 🎯 カテゴリ切替タブ（絞り込み ＆ 縦長スクロール解消） */}
+      <div className="flex items-center justify-between gap-2 overflow-x-auto pb-0.5 no-scrollbar -mx-1 px-1">
+        <div className="flex items-center gap-1.5 flex-nowrap">
+          <button
+            type="button"
+            onClick={() => setCategoryTab('すべて')}
+            className={`px-3 py-1.5 rounded-xl text-[12px] font-bold transition shrink-0 cursor-pointer active:scale-95 flex items-center gap-1.5 border ${
+              activeCategoryTab === 'すべて'
+                ? 'bg-[#FF5500] text-white border-[#FF5500] shadow-md'
+                : 'bg-[#27272A]/70 hover:bg-[#27272A] text-zinc-400 hover:text-white border-zinc-700/60'
+            }`}
+          >
+            <span>すべて</span>
+            <span className="text-[10px] font-mono opacity-80 font-normal">({gears.length})</span>
+          </button>
+
+          {CATEGORIES.map((cat) => {
+            const count = gears.filter((g) => normalizeCategory(g.category, g.is_consumable) === cat).length;
+            const isCurrent = activeCategoryTab === cat;
+            const catColor = CATEGORY_COLORS[cat as keyof typeof CATEGORY_COLORS];
+            const catIcon =
+              cat === 'ベース' ? '⛺' : cat === '調理' ? '🍳' : cat === '衣類' ? '👕' : cat === 'その他' ? '📦' : '🍱';
+
+            return (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => setCategoryTab(cat)}
+                className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-[12px] font-bold transition shrink-0 cursor-pointer active:scale-95 flex items-center gap-1.5 border ${
+                  isCurrent
+                    ? 'bg-[#27272A] text-white shadow-md'
+                    : 'bg-[#18181B] hover:bg-[#27272A]/60 text-zinc-400 hover:text-white border-zinc-800'
+                }`}
+                style={{
+                  borderColor: isCurrent ? catColor : undefined,
+                }}
+              >
+                <span>{catIcon}</span>
+                <span>{cat}</span>
+                <span
+                  className="text-[10.5px] font-mono"
+                  style={{ color: isCurrent ? catColor : '#71717A' }}
+                >
+                  ({count})
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {activeCategoryTab === 'すべて' && screenMode === 'edit' && (
+          <button
+            type="button"
+            onClick={handleToggleAllCategories}
+            className="text-[11px] text-zinc-400 hover:text-white transition cursor-pointer whitespace-nowrap shrink-0 px-2 py-1 bg-zinc-800/80 hover:bg-zinc-700 border border-zinc-700 rounded-lg ml-auto"
+            title={areAllCategoriesOpen ? 'すべてのカテゴリを折りたたむ' : 'すべてのカテゴリを展開する'}
+          >
+            {areAllCategoriesOpen ? 'すべて閉じる ▲' : 'すべて開く ▼'}
+          </button>
+        )}
+      </div>
+
+      {/* ギア選定モード ガイドカード（スリム化） */}
       {screenMode === 'edit' && (
-        <div className="bg-[#27272A]/40 border border-zinc-700/60 p-3 rounded-xl">
-          <p className="text-[12px] text-zinc-300 font-normal leading-relaxed">
-            {isReadOnly
-              ? '持参するギア（🎒）とお留守番（💤）の選定状況です。（閲覧専用）'
-              : '持っていくギアにチェックを入れ、今回持っていかないギアはチェックを外して「お留守番（💤）」に設定できます。'}
-          </p>
+        <div className="bg-[#27272A]/30 border border-zinc-800/80 px-3 py-1.5 rounded-xl text-[11.5px] text-zinc-400 font-normal flex items-center justify-between gap-2">
+          <span className="truncate">
+            💡 荷物に含めるギア（🎒）と、お留守番させるギア（💤）を切り替えられます
+          </span>
         </div>
       )}
 
       {/* パッキングモード：スリムな操作バー */}
       {screenMode === 'packing' && (
-        <div className="bg-[#27272A]/40 border border-zinc-700/60 p-2.5 sm:p-3 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+        <div className="bg-[#27272A]/40 border border-zinc-700/60 p-2 sm:p-2.5 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <p className="text-[12px] text-zinc-300 font-normal leading-relaxed">
             💡 ザックに詰めたギアにチェック（✅）
           </p>
@@ -362,7 +442,7 @@ export default function GearList({
 
       {/* レビューモード ガイドカード */}
       {screenMode === 'review' && (
-        <div className="bg-[#27272A]/40 border border-zinc-700/60 p-3.5 rounded-2xl space-y-1.5">
+        <div className="bg-[#27272A]/40 border border-zinc-700/60 p-3 rounded-2xl space-y-1">
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
             <span className="text-[13px] font-bold text-white">
@@ -385,7 +465,7 @@ export default function GearList({
           <p className="text-[12px] text-zinc-400 font-normal">持っていく予定のギアはすべてザックに入っています。行ってらっしゃい！⛺✨</p>
         </div>
       ) : (
-        CATEGORIES.map((catName) => {
+        displayedCategories.map((catName) => {
           const categoryAllGears = gears.filter((g) => normalizeCategory(g.category, g.is_consumable) === catName);
           if (categoryAllGears.length === 0 && (screenMode === 'packing' || screenMode === 'review')) return null;
 

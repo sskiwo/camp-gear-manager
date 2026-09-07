@@ -110,6 +110,11 @@ function CampHomeContent() {
     消耗品: false,
   });
 
+  // ⛺ 縦長スクロール圧迫感を解消するスタッキング状態（カテゴリタブ & 下部ツール開閉）
+  const [selectedCategoryTab, setSelectedCategoryTab] = useState<string>('すべて');
+  const [isShareOpen, setIsShareOpen] = useState<boolean>(false);
+  const [isCsvOpen, setIsCsvOpen] = useState<boolean>(false);
+
   // ⛺ 閲覧専用判定: 自分のバッジ（user_id）が付いているか、または端末所有トークンがある場合は編集可能
   const isReadOnly = Boolean(
     selectedCampId && 
@@ -729,6 +734,7 @@ function CampHomeContent() {
   };
 
   const scrollToCategory = (catName: string) => {
+    setSelectedCategoryTab(catName);
     setOpenCategories((prev) => ({ ...prev, [catName]: true }));
     setTimeout(() => {
       document.getElementById(`category-${catName}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1252,14 +1258,81 @@ function CampHomeContent() {
           onDeleteAllGears={handleDeleteAllGears}
           onResetAllPacked={handleResetAllPacked}
           onReorderGears={handleReorderGears}
+          selectedCategoryTab={selectedCategoryTab}
+          onSelectCategoryTab={setSelectedCategoryTab}
           isReadOnly={isReadOnly}
         />
 
-        <ShareAppCard campId={selectedCampId} isReadOnly={isReadOnly} />
+        {/* ⛺ 下部ツールのスタッキング収納（共有 & CSV管理アコーディオン） */}
+        <div className="space-y-3 pt-2">
+          {/* 🔗 パッキング共有カード（アコーディオン） */}
+          <div className="bg-[#18181B] border border-zinc-800 rounded-2xl overflow-hidden shadow-md transition-all">
+            <button
+              type="button"
+              onClick={() => setIsShareOpen((prev) => !prev)}
+              className="w-full px-4 py-3 sm:px-5 sm:py-3.5 flex items-center justify-between hover:bg-zinc-800/40 transition cursor-pointer text-left"
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className="text-base sm:text-lg">🔗</span>
+                <div>
+                  <span className="text-[13px] sm:text-[14px] font-bold text-white block">
+                    このパッキングを共有する
+                  </span>
+                  <span className="text-[11px] text-zinc-400 block font-normal">
+                    LINEやSNSで仲間・家族と持ち物リストを共有
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5 text-[11px] text-zinc-400 shrink-0 font-medium">
+                <span>{isShareOpen ? '閉じる' : '開く'}</span>
+                <span className={`transform transition-transform duration-200 ${isShareOpen ? 'rotate-180' : ''}`}>
+                  ▼
+                </span>
+              </div>
+            </button>
 
-        {!isReadOnly && (
-          <CsvManager gears={gears} selectedCampId={selectedCampId} onGearsUpdated={fetchGears} />
-        )}
+            {isShareOpen && (
+              <div className="p-4 sm:p-5 pt-2 border-t border-zinc-800/60 animate-fade-in">
+                <ShareAppCard campId={selectedCampId} isReadOnly={isReadOnly} />
+              </div>
+            )}
+          </div>
+
+          {/* 📂 CSVデータ管理・バックアップ（アコーディオン） */}
+          {!isReadOnly && (
+            <div className="bg-[#18181B] border border-zinc-800 rounded-2xl overflow-hidden shadow-md transition-all">
+              <button
+                type="button"
+                onClick={() => setIsCsvOpen((prev) => !prev)}
+                className="w-full px-4 py-3 sm:px-5 sm:py-3.5 flex items-center justify-between hover:bg-zinc-800/40 transition cursor-pointer text-left"
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span className="text-base sm:text-lg">📂</span>
+                  <div>
+                    <span className="text-[13px] sm:text-[14px] font-bold text-white block">
+                      CSVデータ管理・バックアップ
+                    </span>
+                    <span className="text-[11px] text-zinc-400 block font-normal">
+                      エクセルでの一括編集やバックアップ・復元
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 text-[11px] text-zinc-400 shrink-0 font-medium">
+                  <span>{isCsvOpen ? '閉じる' : '開く'}</span>
+                  <span className={`transform transition-transform duration-200 ${isCsvOpen ? 'rotate-180' : ''}`}>
+                    ▼
+                  </span>
+                </div>
+              </button>
+
+              {isCsvOpen && (
+                <div className="p-4 sm:p-5 pt-2 border-t border-zinc-800/60 animate-fade-in">
+                  <CsvManager gears={gears} selectedCampId={selectedCampId} onGearsUpdated={fetchGears} />
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
         <HelpGuideModal
           isOpen={isHelpOpen}

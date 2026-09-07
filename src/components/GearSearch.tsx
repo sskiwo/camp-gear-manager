@@ -271,13 +271,13 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
   };
 
   return (
-    <div className="bg-[#18181B] border border-zinc-800 rounded-2xl p-5 shadow-lg space-y-4">
+    <div className="bg-[#18181B] border border-zinc-800 rounded-2xl p-3.5 sm:p-4 shadow-md space-y-2.5">
       <div className="flex items-center justify-between">
-        <h2 className="text-white font-bold text-[18px]">ギア追加</h2>
+        <h2 className="text-white font-bold text-[15px] sm:text-[16px]">ギア追加</h2>
         <button
           type="button"
           onClick={() => setShowTipsModal(true)}
-          className="text-[12px] text-amber-400 hover:text-amber-300 flex items-center gap-1 cursor-pointer font-normal transition"
+          className="text-[11px] sm:text-[12px] text-amber-400 hover:text-amber-300 flex items-center gap-1 cursor-pointer font-normal transition"
         >
           <Lightbulb className="w-3.5 h-3.5" />
           <span>撮影のコツ</span>
@@ -299,14 +299,14 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
             value={searchQuery}
             onChange={handleSearchChange}
             placeholder="型番・商品名・Amazon URLを入力"
-            className="w-full bg-[#27272A] border border-zinc-700 rounded-xl px-3.5 py-2.5 text-zinc-100 placeholder-zinc-500 text-[12px] focus:outline-none focus:border-[#FF5500] transition shadow-inner font-normal"
+            className="w-full bg-[#27272A] border border-zinc-700 rounded-xl px-3 py-2 text-zinc-100 placeholder-zinc-500 text-[12px] focus:outline-none focus:border-[#FF5500] transition shadow-inner font-normal"
           />
         </div>
 
         <button
           type="submit"
           disabled={isScanning || isRefreshing}
-          className="h-10 w-10 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded-xl border border-zinc-700 transition flex items-center justify-center shrink-0 cursor-pointer disabled:opacity-50 active:scale-95 shadow-sm"
+          className="h-9 w-9 sm:h-10 sm:w-10 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded-xl border border-zinc-700 transition flex items-center justify-center shrink-0 cursor-pointer disabled:opacity-50 active:scale-95 shadow-sm"
           title="キーワードで検索"
         >
           {isScanning && !lastSelectedFile ? (
@@ -320,21 +320,21 @@ export default function GearSearch({ onAddGear, onSearchQueryChange }: GearSearc
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={isScanning || isRefreshing}
-          className="h-10 w-11 bg-[#FF5500] hover:bg-[#e04c00] text-white rounded-xl shadow-md transition flex items-center justify-center shrink-0 cursor-pointer disabled:opacity-50 active:scale-95"
+          className="h-9 w-10 sm:h-10 sm:w-11 bg-[#FF5500] hover:bg-[#e04c00] text-white rounded-xl shadow-md transition flex items-center justify-center shrink-0 cursor-pointer disabled:opacity-50 active:scale-95"
           title="カメラで撮影または写真から自動認識"
         >
           {isScanning && lastSelectedFile ? (
             <Loader2 className="w-4 h-4 animate-spin text-white" />
           ) : (
-            <Camera className="w-5 h-5" />
+            <Camera className="w-4 h-4 sm:w-5 sm:h-5" />
           )}
         </button>
       </form>
 
-      <div className="pt-1 pb-1">
+      <div className="pt-0.5">
         <Link
           href="/community"
-          className="w-full inline-flex items-center justify-center gap-2 bg-transparent hover:bg-[#FF5500]/10 text-white border border-[#FF5500] px-4 py-2.5 rounded-xl text-[12px] font-bold transition shadow-sm group cursor-pointer"
+          className="w-full inline-flex items-center justify-center gap-1.5 bg-transparent hover:bg-[#FF5500]/10 text-white border border-[#FF5500]/80 px-3 py-2 rounded-xl text-[12px] font-bold transition shadow-sm group cursor-pointer"
         >
           <span>みんなのギアから追加</span>
           <span className="group-hover:translate-x-1 transition-transform">➔</span>
