@@ -162,36 +162,40 @@ export default function WeatherInsightBanner({
   return (
     <div className="bg-[#18181B] border border-zinc-800 rounded-2xl p-2.5 sm:p-3.5 shadow-xl space-y-2 transition-all overflow-hidden">
       {/* コンパクト要約バー（通常時は1行でスマート表示） */}
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex items-center justify-between gap-1.5 sm:gap-2">
         <div
           onClick={() => weather && setIsDetailOpen(!isDetailOpen)}
-          className={`flex items-center gap-2 min-w-0 flex-1 ${weather ? 'cursor-pointer select-none group/weather' : ''}`}
+          className={`flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1 ${
+            weather ? 'cursor-pointer select-none group/weather' : ''
+          }`}
           title={weather ? (isDetailOpen ? 'クリックして助言を折りたたむ' : 'クリックして山仲間の助言を展開') : undefined}
         >
-          <div className="flex items-center gap-1.5 shrink-0">
-            <CloudSun className={`w-4 h-4 ${weather?.isHistorical ? 'text-amber-400' : 'text-[#00E5FF]'} shrink-0`} />
-            {weather ? (
-              <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-bold text-white flex-wrap sm:flex-nowrap min-w-0 flex-1">
-                <span
-                  className="truncate text-zinc-100 group-hover/weather:text-[#00E5FF] transition-colors"
-                  title={weather.location}
-                >
-                  {weather.location}
-                </span>
-                <span className="text-zinc-600 hidden sm:inline">•</span>
-                <span className="font-mono text-zinc-300 text-[11px] sm:text-xs shrink-0">
-                  {weather.weatherIcon} {weather.maxTemp}℃ <span className="text-zinc-500">/</span> {weather.minTemp}℃
-                </span>
-                <span className="text-[11px] text-zinc-400 font-mono shrink-0 hidden xs:inline">
-                  ☔ {weather.isHistorical ? `${weather.precipitationSum ?? 0}mm` : `${weather.rainChance}%`}
-                </span>
-              </div>
-            ) : (
-              <h3 className="text-xs sm:text-sm font-bold text-white truncate">
-                キャンプ現地の天気 ＆ 防寒アドバイス
-              </h3>
-            )}
-          </div>
+          <CloudSun
+            className={`w-4 h-4 shrink-0 ${
+              weather?.isHistorical ? 'text-amber-400' : 'text-[#00E5FF]'
+            }`}
+          />
+          {weather ? (
+            <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-bold text-white min-w-0 flex-1">
+              <span
+                className="truncate text-zinc-100 group-hover/weather:text-[#00E5FF] transition-colors min-w-0 flex-1"
+                title={weather.location}
+              >
+                {weather.location}
+              </span>
+              <span className="text-zinc-600 shrink-0">•</span>
+              <span className="font-mono text-zinc-300 text-[11px] sm:text-xs shrink-0 whitespace-nowrap">
+                {weather.weatherIcon} {weather.maxTemp}℃<span className="text-zinc-500">/</span>{weather.minTemp}℃
+              </span>
+              <span className="text-[11px] text-zinc-400 font-mono shrink-0 whitespace-nowrap hidden xs:inline">
+                ☔ {weather.isHistorical ? `${weather.precipitationSum ?? 0}mm` : `${weather.rainChance}%`}
+              </span>
+            </div>
+          ) : (
+            <h3 className="text-xs sm:text-sm font-bold text-white truncate min-w-0">
+              キャンプ現地の天気 ＆ 防寒アドバイス
+            </h3>
+          )}
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0">
@@ -203,7 +207,7 @@ export default function WeatherInsightBanner({
                 setInputDate(eventDate);
                 setIsEditing(!isEditing);
               }}
-              className="p-1.5 sm:px-2 sm:py-1.5 rounded-lg border border-zinc-700 bg-[#27272A] hover:bg-zinc-700 text-[#00E5FF] hover:text-white transition flex items-center justify-center shrink-0 cursor-pointer active:scale-95 shadow-sm"
+              className="h-7 sm:h-8 w-7 sm:w-8 rounded-lg border border-zinc-700 bg-[#27272A] hover:bg-zinc-700 text-[#00E5FF] hover:text-white transition flex items-center justify-center shrink-0 cursor-pointer active:scale-95 shadow-sm"
               title="キャンプ場名・日程を設定・変更"
             >
               <Edit2 className="w-3.5 h-3.5" />
@@ -214,7 +218,7 @@ export default function WeatherInsightBanner({
             <button
               type="button"
               onClick={() => setIsDetailOpen(!isDetailOpen)}
-              className={`text-[11px] font-bold px-2 sm:px-2.5 py-1 rounded-lg border transition flex items-center gap-1 shrink-0 cursor-pointer active:scale-95 ${
+              className={`h-7 sm:h-8 px-2 sm:px-2.5 rounded-lg border transition flex items-center justify-center gap-1 shrink-0 cursor-pointer active:scale-95 text-[11px] font-bold ${
                 isDetailOpen
                   ? 'bg-zinc-700 text-white border-zinc-600'
                   : 'bg-[#27272A] hover:bg-zinc-700 text-[#00E5FF] border-zinc-700'
@@ -244,7 +248,8 @@ export default function WeatherInsightBanner({
                 placeholder="例: ふもとっぱら、あきる野市、白馬村"
                 value={inputLocation}
                 onChange={(e) => setInputLocation(e.target.value)}
-                className="w-full bg-[#18181B] border border-zinc-700 rounded-lg px-2.5 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#00E5FF]"
+                className="w-full block box-border bg-[#18181B] border border-zinc-700 rounded-lg px-2.5 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#00E5FF]"
+                style={{ width: '100%', minWidth: '100%', maxWidth: '100%', boxSizing: 'border-box' }}
               />
             </div>
 
@@ -254,7 +259,8 @@ export default function WeatherInsightBanner({
                 type="date"
                 value={inputDate}
                 onChange={(e) => setInputDate(e.target.value)}
-                className="w-full [color-scheme:dark] bg-[#18181B] border border-zinc-700 rounded-lg px-2.5 py-2 text-xs text-white focus:outline-none focus:border-[#00E5FF]"
+                className="w-full block box-border [color-scheme:dark] bg-[#18181B] border border-zinc-700 rounded-lg px-2.5 py-2 text-xs text-white focus:outline-none focus:border-[#00E5FF]"
+                style={{ width: '100%', minWidth: '100%', maxWidth: '100%', boxSizing: 'border-box' }}
               />
             </div>
           </div>

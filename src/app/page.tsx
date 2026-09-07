@@ -1242,7 +1242,8 @@ function CampHomeContent() {
                   type="date"
                   value={newCampDate}
                   onChange={(e) => handleNewCampDateChange(e.target.value)}
-                  className="w-full [color-scheme:dark] bg-[#27272A] border border-zinc-700 rounded-xl px-3 py-2 text-[12px] text-white focus:border-[#FF5500] focus:outline-none"
+                  className="block w-full box-border [color-scheme:dark] bg-[#27272A] border border-zinc-700 rounded-xl px-3 py-2 text-[12px] text-white focus:border-[#FF5500] focus:outline-none"
+                  style={{ width: '100%', minWidth: '100%', maxWidth: '100%', boxSizing: 'border-box' }}
                 />
               </div>
 
@@ -1255,7 +1256,8 @@ function CampHomeContent() {
                   placeholder="例: ふもとっぱら、あきる野市、立川市"
                   value={newCampLocation}
                   onChange={(e) => handleNewCampLocationChange(e.target.value)}
-                  className="w-full bg-[#27272A] border border-zinc-700 rounded-xl px-3 py-2 text-[12px] text-white focus:border-[#FF5500] focus:outline-none"
+                  className="block w-full box-border bg-[#27272A] border border-zinc-700 rounded-xl px-3 py-2 text-[12px] text-white focus:border-[#FF5500] focus:outline-none"
+                  style={{ width: '100%', minWidth: '100%', maxWidth: '100%', boxSizing: 'border-box' }}
                 />
               </div>
             </div>
