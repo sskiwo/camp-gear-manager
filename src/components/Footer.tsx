@@ -12,9 +12,9 @@ export default function Footer() {
   const galleryUrl = currentCampId ? `/community?from=${currentCampId}` : '/community';
 
   return (
-    <footer className="border-t border-zinc-800/80 pt-6 pb-12 mt-8 text-zinc-500 text-xs space-y-4">
+    <footer className="border-t border-zinc-800/80 pt-6 pb-10 mt-8 text-zinc-500 text-xs space-y-4">
+      {/* ナビゲーションリンク */}
       <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 text-zinc-400 font-bold">
-        {/* みんなのギアギャラリー */}
         <Link
           href={galleryUrl}
           className="hover:text-[#00E5FF] transition flex items-center gap-1.5"
@@ -23,7 +23,6 @@ export default function Footer() {
           <span>みんなのギアギャラリー</span>
         </Link>
 
-        {/* 利用規約 */}
         <Link
           href="/terms"
           className="hover:text-zinc-200 transition flex items-center gap-1.5"
@@ -32,7 +31,6 @@ export default function Footer() {
           <span>利用規約</span>
         </Link>
 
-        {/* プライバシーポリシー */}
         <Link
           href="/privacy"
           className="hover:text-zinc-200 transition flex items-center gap-1.5"
@@ -41,7 +39,6 @@ export default function Footer() {
           <span>プライバシーポリシー</span>
         </Link>
 
-        {/* 🎯 お問い合わせリンクを復活 */}
         <Link
           href="/contact"
           className="hover:text-[#FF5500] transition flex items-center gap-1.5"
@@ -51,13 +48,12 @@ export default function Footer() {
         </Link>
       </div>
 
-      <div className="text-center space-y-1 text-[11px] text-zinc-600 font-mono">
-        <p className="flex items-center justify-center gap-1">
-          <span>Camp Gear Manager</span>
-          <span>•</span>
-          <span className="text-[#FF5500]">UL Packing & Gear Tool</span>
+      {/* Amazonアソシエイト規約遵守文言 ＆ コピーライト */}
+      <div className="text-center space-y-1.5 text-[11px] text-zinc-500 max-w-xl mx-auto px-4 leading-relaxed">
+        <p className="text-[10px] text-zinc-600">
+          Camp Gear Manager は、Amazon.co.jpを宣伝しリンクすることによってサイトが紹介料を獲得できる手段を提供することを目的に設定されたアフィリエイトプログラムである、Amazonアソシエイト・プログラムの参加者です。
         </p>
-        <p>© 2026 Camp Gear Manager. All rights reserved.</p>
+        <p className="text-zinc-600 font-mono">© 2026 Camp Gear Manager. All rights reserved.</p>
       </div>
     </footer>
   );

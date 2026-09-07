@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ShoppingBag, ExternalLink, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import Footer from '@/components/Footer';
 
 type Gear = {
   id: string;
@@ -61,7 +62,6 @@ const STORAGE_KEY_OWNED_CAMPS = 'camp_owned_tokens_map';
 function CommunityContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  // 遷移元キャンプID（直前に編集していたキャンプ）
   const fromCampId = searchParams.get('from');
 
   const [activeTab, setActiveTab] = useState<'camps' | 'ranking'>('camps');
@@ -75,9 +75,6 @@ function CommunityContent() {
   const [expandedCampId, setExpandedCampId] = useState<string | null>(null);
 
   const [addingGear, setAddingGear] = useState<PopularGear | Gear | null>(null);
-
-  // 戻り先のURL（元のキャンプがあればそのURL、なければトップ）
-  const returnUrl = fromCampId ? `/?camp=${fromCampId}` : '/';
 
   const handleGoBack = () => {
     if (fromCampId) {
@@ -108,7 +105,6 @@ function CommunityContent() {
 
       if (data && data.length > 0) {
         setMyCamps(data);
-        // 直前まで編集していたキャンプがあればそれを優先選択
         if (fromCampId && data.some((c) => c.id === fromCampId)) {
           setSelectedAddCampId(fromCampId);
         } else {
@@ -307,10 +303,9 @@ function CommunityContent() {
   const popularGears = getFilteredRanking();
 
   return (
-    <main className="min-h-screen bg-[#09090B] text-zinc-100 p-3 sm:p-4 md:p-8 font-sans">
-      <div className="max-w-5xl mx-auto space-y-3.5 sm:space-y-5 w-full">
-
-        {/* 🎯 ヘッダー（文字が切れないよう最適化 ＆ 元のキャンプへの戻るリンク） */}
+    <main className="min-h-screen bg-[#09090B] text-zinc-100 p-3 sm:p-4 md:p-8 font-sans flex flex-col justify-between">
+      <div className="max-w-5xl mx-auto space-y-3.5 sm:space-y-5 w-full flex-1">
+        {/* ヘッダー */}
         <header className="border-b border-zinc-800 pb-3 flex items-center justify-between gap-2 w-full">
           <div className="min-w-0 flex-1">
             <h1 className="text-[17px] sm:text-xl md:text-2xl font-black text-white flex items-center gap-1.5 whitespace-nowrap">
@@ -334,7 +329,7 @@ function CommunityContent() {
           </button>
         </header>
 
-        {/* 🎯 タブ切り替え（スマホでも文字が絶対切れないスリム文言＆フォント設計） */}
+        {/* タブ切り替え */}
         <div className="grid grid-cols-2 gap-1.5 bg-[#18181B] p-1.5 rounded-2xl border border-zinc-800 w-full">
           <button
             onClick={() => setActiveTab('camps')}
@@ -361,7 +356,7 @@ function CommunityContent() {
           </button>
         </div>
 
-        {/* カテゴリー絞り込み（横スクロール対応） */}
+        {/* カテゴリー絞り込み */}
         <div className="bg-[#18181B] p-2 rounded-2xl border border-zinc-800">
           <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 no-scrollbar -mx-0.5 px-0.5">
             <span className="text-[11px] font-bold text-zinc-400 pl-1 shrink-0 whitespace-nowrap">
@@ -674,6 +669,11 @@ function CommunityContent() {
             </div>
           )
         )}
+      </div>
+
+      {/* 🎯 みんなのギャラリー最下部にもフッターを設置 */}
+      <div className="max-w-5xl mx-auto w-full">
+        <Footer />
       </div>
     </main>
   );
