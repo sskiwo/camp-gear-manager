@@ -9,6 +9,7 @@ interface WeatherData {
   targetDate?: string | null;
   date: string;
   isDateMatched: boolean;
+  isHistorical?: boolean;
   dateNote?: string | null;
   weatherCode: number;
   weatherLabel: string;
@@ -16,6 +17,7 @@ interface WeatherData {
   maxTemp: number;
   minTemp: number;
   rainChance: number;
+  precipitationSum?: number | null;
   advice: string;
 }
 
@@ -122,9 +124,13 @@ export default function WeatherInsightBanner({
       {/* ヘッダーエリア */}
       <div className="flex items-center justify-between gap-2 border-b border-zinc-800/80 pb-2">
         <div className="flex items-center gap-1.5 min-w-0">
-          <CloudSun className="w-4 h-4 text-[#00E5FF] shrink-0" />
+          <CloudSun className={`w-4 h-4 ${weather?.isHistorical ? 'text-amber-400' : 'text-[#00E5FF]'} shrink-0`} />
           <h3 className="text-xs sm:text-sm font-bold text-white truncate flex items-center gap-1.5">
-            <span>キャンプ現地の天気 ＆ 防寒アドバイス</span>
+            <span>
+              {weather?.isHistorical
+                ? '当時の気象実績 ＆ 振り返り'
+                : 'キャンプ現地の天気 ＆ 防寒アドバイス'}
+            </span>
           </h3>
         </div>
 
@@ -214,11 +220,25 @@ export default function WeatherInsightBanner({
                   <span>{weather.location}</span>
                 </span>
                 {(eventDate || weather.targetDate) ? (
-                  <span className="flex items-center gap-1 text-cyan-300 font-mono text-[11px] bg-cyan-950/60 border border-cyan-800/60 px-2 py-0.5 rounded-md font-bold">
-                    <Calendar className="w-3 h-3 text-[#00E5FF]" />
+                  <span
+                    className={`flex items-center gap-1 font-mono text-[11px] px-2 py-0.5 rounded-md font-bold ${
+                      weather.isHistorical
+                        ? 'text-amber-300 bg-amber-950/60 border border-amber-700/60'
+                        : 'text-cyan-300 bg-cyan-950/60 border border-cyan-800/60'
+                    }`}
+                  >
+                    <Calendar
+                      className={`w-3 h-3 ${weather.isHistorical ? 'text-amber-400' : 'text-[#00E5FF]'}`}
+                    />
                     <span>{eventDate || weather.targetDate}</span>
                     {weather.isDateMatched && (
-                      <span className="text-[10px] text-emerald-400 font-sans ml-0.5">（当日予報）</span>
+                      <span
+                        className={`text-[10px] font-sans ml-0.5 ${
+                          weather.isHistorical ? 'text-amber-400' : 'text-emerald-400'
+                        }`}
+                      >
+                        {weather.isHistorical ? '（当時の気象実績）' : '（当日予報）'}
+                      </span>
                     )}
                   </span>
                 ) : weather.date ? (
@@ -248,19 +268,39 @@ export default function WeatherInsightBanner({
                   <span className="text-cyan-400 font-bold">最低 {weather.minTemp}℃</span>
                 </span>
 
-                <span className="text-xs text-zinc-300 font-bold font-sans">
-                  ☔ 降水確率: <strong className="text-white font-mono">{weather.rainChance}%</strong>
-                </span>
+                {weather.isHistorical && weather.precipitationSum !== undefined && weather.precipitationSum !== null ? (
+                  <span className="text-xs text-zinc-300 font-bold font-sans">
+                    ☔ 降水量: <strong className="text-white font-mono">{weather.precipitationSum} mm</strong>
+                  </span>
+                ) : (
+                  <span className="text-xs text-zinc-300 font-bold font-sans">
+                    ☔ 降水確率: <strong className="text-white font-mono">{weather.rainChance}%</strong>
+                  </span>
+                )}
               </div>
             </div>
           </div>
 
-          {/* 山仲間のアドバイスバナー */}
-          <div className="bg-cyan-950/30 border border-cyan-700/50 p-2.5 sm:p-3 rounded-xl flex items-start gap-2 text-left">
-            <Sparkles className="w-4 h-4 text-[#00E5FF] shrink-0 mt-0.5" />
+          {/* 山仲間のアドバイス／過去実績振り返りバナー */}
+          <div
+            className={`${
+              weather.isHistorical
+                ? 'bg-amber-950/30 border border-amber-700/50'
+                : 'bg-cyan-950/30 border border-cyan-700/50'
+            } p-2.5 sm:p-3 rounded-xl flex items-start gap-2 text-left`}
+          >
+            <Sparkles
+              className={`w-4 h-4 ${
+                weather.isHistorical ? 'text-amber-400' : 'text-[#00E5FF]'
+              } shrink-0 mt-0.5`}
+            />
             <div className="min-w-0 flex-1">
-              <span className="text-[11px] font-bold text-[#00E5FF] block">
-                🏕️ 山仲間のパッキング助言:
+              <span
+                className={`text-[11px] font-bold ${
+                  weather.isHistorical ? 'text-amber-400' : 'text-[#00E5FF]'
+                } block`}
+              >
+                {weather.isHistorical ? '🏕️ 当日の気象実績と振り返り:' : '🏕️ 山仲間のパッキング助言:'}
               </span>
               <p className="text-[11.5px] sm:text-xs text-zinc-200 font-normal leading-relaxed mt-0.5">
                 {weather.advice}

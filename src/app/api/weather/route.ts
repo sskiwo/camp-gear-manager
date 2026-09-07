@@ -39,8 +39,42 @@ function getWeatherInfo(code: number): { label: string; icon: string } {
   }
 }
 
-// 気温と天候に応じたキャンパー向けアドバイス生成
-function generateCampAdvice(minTemp: number, maxTemp: number, rainChance: number): string {
+// 気温と天候に応じたキャンパー向けアドバイス生成（過去・未来両対応）
+function generateCampAdvice(
+  minTemp: number,
+  maxTemp: number,
+  rainChance: number,
+  isPast: boolean = false,
+  precipitationSum?: number
+): string {
+  if (isPast) {
+    const reflections: string[] = [];
+
+    if ((precipitationSum !== undefined && precipitationSum > 0) || rainChance >= 50) {
+      reflections.push(
+        precipitationSum !== undefined && precipitationSum > 0
+          ? `☔ 当日は雨（降水量 ${precipitationSum}mm）でした。レインウェアやタープでの雨対策が重要だったキャンプでした。`
+          : '☔ 当日は雨模様でした。レインウェアや防水スタッフサックが活躍したキャンプでした。'
+      );
+    }
+
+    if (minTemp <= 0) {
+      reflections.push('❄️ 夜間は氷点下の極寒でした！冬用シュラフや厚手ダウン、寒さに強いOD缶が必要な環境でした。');
+    } else if (minTemp <= 5) {
+      reflections.push('❄️ 朝晩は真冬並み（5℃以下）に冷え込みました。しっかりした防寒着が必要な気候でした。');
+    } else if (minTemp <= 11) {
+      reflections.push('🧥 朝晩は肌寒く、フリースや上着がちょうど良い気温でした。');
+    } else if (maxTemp >= 30) {
+      reflections.push('☀️ 日中は30℃を超える暑さでした！タープの日除けや水分補給が欠かせない1日でした。');
+    }
+
+    if (reflections.length === 0) {
+      reflections.push('⛺ 穏やかで過ごしやすく、絶好のキャンプ日和でした✨');
+    }
+
+    return reflections.join(' ');
+  }
+
   const advices: string[] = [];
 
   if (rainChance >= 50) {
@@ -226,7 +260,80 @@ export async function GET(request: Request) {
         : cityName;
     }
 
-    // 3. Open-Meteo で天気予報を取得 (毎日予報・最大16日間取得)
+    // 日付文字列を正規化（例: 2026/9/8 -> 2026-09-08）
+    const normalizeDate = (d: string) => {
+      if (!d) return '';
+      const clean = d.trim().replace(/\//g, '-');
+      const parts = clean.split('-');
+      if (parts.length === 3) {
+        return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+      }
+      return clean;
+    };
+
+    const normalizedTarget = normalizeDate(targetDate);
+
+    // 日本時間（JST）の今日の日付（YYYY-MM-DD）
+    const todayStr = new Intl.DateTimeFormat('ja-JP', {
+      timeZone: 'Asia/Tokyo',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    })
+      .format(new Date())
+      .replace(/\//g, '-');
+
+    const isPast = Boolean(normalizedTarget && normalizedTarget < todayStr);
+
+    // 3. 過去の日程の場合：Open-Meteo Historical Weather Archive API から実際の実績天気を取得
+    if (isPast && normalizedTarget) {
+      try {
+        const archiveUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${latitude}&longitude=${longitude}&start_date=${normalizedTarget}&end_date=${normalizedTarget}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=Asia%2FTokyo`;
+
+        const archiveRes = await fetch(archiveUrl, { next: { revalidate: 86400 * 30 } }); // 過去実績は確定データのため30日キャッシュ
+        if (archiveRes.ok) {
+          const archiveData = await archiveRes.json();
+          const daily = archiveData.daily;
+
+          if (daily && daily.time && daily.time.length > 0) {
+            const weatherCode = daily.weather_code[0] ?? 1;
+            const maxTemp = Math.round((daily.temperature_2m_max[0] ?? 20) * 10) / 10;
+            const minTemp = Math.round((daily.temperature_2m_min[0] ?? 10) * 10) / 10;
+            const precipSum =
+              daily.precipitation_sum?.[0] != null
+                ? Math.round(daily.precipitation_sum[0] * 10) / 10
+                : 0;
+            const rainChance =
+              precipSum > 0 ? (precipSum >= 5 ? 100 : Math.round(precipSum * 20)) : 0;
+
+            const weatherInfo = getWeatherInfo(weatherCode);
+            const advice = generateCampAdvice(minTemp, maxTemp, rainChance, true, precipSum);
+
+            return NextResponse.json({
+              location: displayName,
+              query: locationQuery,
+              targetDate: normalizedTarget,
+              date: normalizedTarget,
+              isDateMatched: true,
+              isHistorical: true,
+              dateNote: null,
+              weatherCode,
+              weatherLabel: weatherInfo.label,
+              weatherIcon: weatherInfo.icon,
+              maxTemp,
+              minTemp,
+              rainChance,
+              precipitationSum: precipSum,
+              advice,
+            });
+          }
+        }
+      } catch (archiveErr) {
+        console.warn('Archive API fetch failed, falling back to forecast API:', archiveErr);
+      }
+    }
+
+    // 4. 当日および未来の日程（またはフォールバック）：Forecast API（最大16日間）から予報を取得
     const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FTokyo&forecast_days=16`;
 
     const weatherRes = await fetch(weatherUrl, { next: { revalidate: 3600 } }); // 1時間キャッシュ
@@ -241,18 +348,6 @@ export async function GET(request: Request) {
       throw new Error('天気予報データが見つかりませんでした');
     }
 
-    // 日付文字列を正規化（例: 2026/9/8 -> 2026-09-08）
-    const normalizeDate = (d: string) => {
-      if (!d) return '';
-      const clean = d.trim().replace(/\//g, '-');
-      const parts = clean.split('-');
-      if (parts.length === 3) {
-        return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
-      }
-      return clean;
-    };
-
-    const normalizedTarget = normalizeDate(targetDate);
     const matchedIndex = normalizedTarget ? daily.time.indexOf(normalizedTarget) : -1;
     const isDateMatched = matchedIndex !== -1;
 
@@ -267,7 +362,7 @@ export async function GET(request: Request) {
       if (normalizedTarget > latestDate) {
         dateNote = `※指定日（${normalizedTarget}）は16日以上先のため、現地の直近（本日 ${chosenDate}）の天気を表示しています`;
       } else if (normalizedTarget < earliestDate) {
-        dateNote = `※指定日（${normalizedTarget}）は過去の日程のため、現地の直近（本日 ${chosenDate}）の天気を表示しています`;
+        dateNote = `※指定日（${normalizedTarget}）の過去データが取得できなかったため、直近（本日 ${chosenDate}）の天気を表示しています`;
       } else {
         dateNote = `※指定日（${normalizedTarget}）の個別予報が見つからなかったため、直近（本日 ${chosenDate}）の天気を表示しています`;
       }
@@ -279,7 +374,7 @@ export async function GET(request: Request) {
     const rainChance = Math.round(daily.precipitation_probability_max[dateIndex] ?? 0);
 
     const weatherInfo = getWeatherInfo(weatherCode);
-    const advice = generateCampAdvice(minTemp, maxTemp, rainChance);
+    const advice = generateCampAdvice(minTemp, maxTemp, rainChance, false);
 
     return NextResponse.json({
       location: displayName,
@@ -287,6 +382,7 @@ export async function GET(request: Request) {
       targetDate: normalizedTarget || null,
       date: chosenDate,
       isDateMatched,
+      isHistorical: false,
       dateNote,
       weatherCode,
       weatherLabel: weatherInfo.label,
@@ -294,6 +390,7 @@ export async function GET(request: Request) {
       maxTemp,
       minTemp,
       rainChance,
+      precipitationSum: null,
       advice,
     });
   } catch (error: any) {
