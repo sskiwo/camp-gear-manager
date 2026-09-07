@@ -8,6 +8,7 @@ import { HelpCircle, Lock, Globe, AlertTriangle, RefreshCw, Eye, Plus, CopyPlus 
 import { supabase } from '@/lib/supabase';
 import { getOrCreateAnonymousUser } from '@/lib/auth';
 import WeightsSummary from '@/components/WeightsSummary';
+import WeatherInsightBanner from '@/components/WeatherInsightBanner';
 import GearSearch from '@/components/GearSearch';
 import GearList from '@/components/GearList';
 import CsvManager from '@/components/CsvManager';
@@ -21,6 +22,7 @@ type Camp = {
   title: string;
   event_date: string;
   memo?: string;
+  location?: string;
   is_public: boolean;
   user_id?: string;
 };
@@ -454,6 +456,30 @@ function CampHomeContent() {
       prev.map((c) => (c.id === selectedCampId ? { ...c, title: editCampTitle.trim() } : c))
     );
     setIsEditCampOpen(false);
+  };
+
+  const handleUpdateCampWeather = async (newLocation: string, newDate: string) => {
+    if (!selectedCampId || isReadOnly) return;
+    const updates: Record<string, any> = {
+      location: newLocation,
+    };
+    if (newDate) {
+      updates.event_date = newDate;
+    }
+
+    setCamps((prev) =>
+      prev.map((c) =>
+        c.id === selectedCampId
+          ? { ...c, location: newLocation, event_date: newDate || c.event_date }
+          : c
+      )
+    );
+
+    try {
+      await supabase.from('camps').update(updates).eq('id', selectedCampId);
+    } catch (e) {
+      console.warn('Camp location update error:', e);
+    }
   };
 
   const startEditCampTitle = () => {
@@ -1015,6 +1041,16 @@ function CampHomeContent() {
               </button>
             </div>
           </div>
+        )}
+
+        {currentSelectedCamp && (
+          <WeatherInsightBanner
+            campId={selectedCampId}
+            location={currentSelectedCamp.location || ''}
+            eventDate={currentSelectedCamp.event_date || ''}
+            onUpdateCampDetails={handleUpdateCampWeather}
+            isReadOnly={isReadOnly}
+          />
         )}
 
         <WeightsSummary

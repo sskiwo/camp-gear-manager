@@ -1,0 +1,230 @@
+import { NextResponse } from 'next/server';
+
+// WMO 天気コード変換マップ
+function getWeatherInfo(code: number): { label: string; icon: string } {
+  switch (code) {
+    case 0:
+      return { label: '快晴', icon: '☀️' };
+    case 1:
+      return { label: '晴れ', icon: '🌤️' };
+    case 2:
+      return { label: '晴れ時々曇り', icon: '⛅' };
+    case 3:
+      return { label: '曇り', icon: '☁️' };
+    case 45:
+    case 48:
+      return { label: '霧', icon: '🌫️' };
+    case 51:
+    case 53:
+    case 55:
+      return { label: '霧雨', icon: '🌧️' };
+    case 61:
+    case 63:
+    case 65:
+      return { label: '雨', icon: '☔' };
+    case 71:
+    case 73:
+    case 75:
+      return { label: '雪', icon: '❄️' };
+    case 80:
+    case 81:
+    case 82:
+      return { label: 'にわか雨', icon: '🌦️' };
+    case 95:
+    case 96:
+    case 99:
+      return { label: '雷雨', icon: '⚡' };
+    default:
+      return { label: '晴れ/曇り', icon: '🌤️' };
+  }
+}
+
+// 気温と天候に応じたキャンパー向けアドバイス生成
+function generateCampAdvice(minTemp: number, maxTemp: number, rainChance: number): string {
+  const advices: string[] = [];
+
+  if (rainChance >= 50) {
+    advices.push('☔ 雨の確率が高めです。レインウェアや防水スタッフサック、予備ペグをお忘れなく！');
+  }
+
+  if (minTemp <= 0) {
+    advices.push('❄️ 夜間は氷点下の極寒です！冬用シュラフ、厚手ダウン、寒さに強いOD缶やカイロを必ず準備してください。');
+  } else if (minTemp <= 5) {
+    advices.push('❄️ 朝晩は真冬並み（5℃以下）に冷え込みます。ダウンジャケットや温かいインナーを持参しましょう。');
+  } else if (minTemp <= 11) {
+    advices.push('🧥 朝晩は肌寒くなります。フリースやウインドブレーカーの防寒着があると安心です。');
+  } else if (maxTemp >= 30) {
+    advices.push('☀️ 日中は30℃以上の暑さです！十分な水分、保冷剤、日除けタープをしっかり備えましょう。');
+  }
+
+  if (advices.length === 0) {
+    advices.push('⛺ 過ごしやすい絶好のキャンプ日和です！軽量パッキングで快適にお過ごしください✨');
+  }
+
+  return advices.join(' ');
+}
+
+// 有名キャンプ場の直接座標辞書（Open-Meteo Geocodingで見つかりにくい人気スポットを網羅）
+interface CampsiteSpot {
+  displayName: string;
+  latitude: number;
+  longitude: number;
+}
+
+const FAMOUS_CAMPSITES: Record<string, CampsiteSpot> = {
+  ふもとっぱら: { displayName: 'ふもとっぱら (静岡県富士宮市)', latitude: 35.4011, longitude: 138.5638 },
+  浩庵: { displayName: '浩庵キャンプ場 (山梨県身延町・本栖湖)', latitude: 35.4746, longitude: 138.5772 },
+  洪庵: { displayName: '浩庵キャンプ場 (山梨県身延町・本栖湖)', latitude: 35.4746, longitude: 138.5772 },
+  ほったらかし: { displayName: 'ほったらかしキャンプ場 (山梨県山梨市)', latitude: 35.7138, longitude: 138.675 },
+  道志の森: { displayName: '道志の森キャンプ場 (山梨県道志村)', latitude: 35.5034, longitude: 139.0068 },
+  道志村: { displayName: '道志村 (山梨県)', latitude: 35.5186, longitude: 139.0232 },
+  パインウッド: { displayName: 'パインウッドキャンプ場 (山梨県山梨市)', latitude: 35.7042, longitude: 138.6655 },
+  スノーピークhq: { displayName: 'Snow Peak HEADQUARTERS (新潟県三条市)', latitude: 37.5255, longitude: 139.0725 },
+  snowpeak: { displayName: 'Snow Peak HEADQUARTERS (新潟県三条市)', latitude: 37.5255, longitude: 139.0725 },
+  渚園: { displayName: '渚園キャンプ場 (静岡県浜松市・浜名湖)', latitude: 34.6976, longitude: 137.6048 },
+  朝霧ジャンボリー: { displayName: '朝霧ジャンボリー (静岡県富士宮市)', latitude: 35.3855, longitude: 138.5727 },
+  田貫湖: { displayName: '田貫湖キャンプ場 (静岡県富士宮市)', latitude: 35.3475, longitude: 138.5658 },
+  若洲: { displayName: '若洲公園キャンプ場 (東京都江東区)', latitude: 35.6178, longitude: 139.8378 },
+  若洲公園: { displayName: '若洲公園キャンプ場 (東京都江東区)', latitude: 35.6178, longitude: 139.8378 },
+  若洲海浜公園: { displayName: '若洲公園キャンプ場 (東京都江東区)', latitude: 35.6178, longitude: 139.8378 },
+  城南島: { displayName: '城南島海浜公園 (東京都大田区)', latitude: 35.5786, longitude: 139.7825 },
+  昭和の森: { displayName: '昭和の森フォレストビレッジ (千葉県千葉市)', latitude: 35.5262, longitude: 140.2642 },
+  フォレストビレッジ: { displayName: '昭和の森フォレストビレッジ (千葉県千葉市)', latitude: 35.5262, longitude: 140.2642 },
+  森のまきば: { displayName: '森のまきばオートキャンプ場 (千葉県袖ケ浦市)', latitude: 35.3888, longitude: 140.0617 },
+  くりの木: { displayName: 'くりの木キャンプ場 (群馬県渋川市)', latitude: 36.495, longitude: 139.015 },
+  白馬: { displayName: '白馬 (長野県白馬村)', latitude: 36.6982, longitude: 137.8619 },
+  陣馬形山: { displayName: '陣馬形山キャンプ場 (長野県中川村)', latitude: 35.6475, longitude: 137.9868 },
+  戸隠: { displayName: '戸隠キャンプ場 (長野県長野市)', latitude: 36.7725, longitude: 138.0772 },
+  笠置: { displayName: '笠置キャンプ場 (京都府笠置町)', latitude: 34.7592, longitude: 135.9325 },
+  海山: { displayName: 'キャンプinn海山 (三重県紀北町)', latitude: 34.1206, longitude: 136.2162 },
+  マイアミ浜: { displayName: 'マイアミ浜オートキャンプ場 (滋賀県野洲市)', latitude: 35.1565, longitude: 135.9867 },
+  マキノ高原: { displayName: 'マキノ高原キャンプ場 (滋賀県高島市)', latitude: 35.4853, longitude: 136.0375 },
+};
+
+function lookupKnownCampsite(query: string): CampsiteSpot | null {
+  const clean = query
+    .toLowerCase()
+    .replace(/[ 　\-_]/g, '')
+    .replace(/(オート|ソロ)?キャンプ場?$/, '')
+    .replace(/camp(site)?$/i, '');
+
+  if (FAMOUS_CAMPSITES[clean]) {
+    return FAMOUS_CAMPSITES[clean];
+  }
+
+  for (const [key, spot] of Object.entries(FAMOUS_CAMPSITES)) {
+    if (clean.includes(key) || key.includes(clean)) {
+      return spot;
+    }
+  }
+  return null;
+}
+
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const locationQuery = searchParams.get('location')?.trim() || '';
+    const targetDate = searchParams.get('date')?.trim() || '';
+
+    if (!locationQuery) {
+      return NextResponse.json(
+        { error: '場所名またはキャンプ場名を入力してください' },
+        { status: 400 }
+      );
+    }
+
+    let latitude: number;
+    let longitude: number;
+    let displayName: string;
+
+    // 1. まず有名キャンプ場辞書を照会（瞬時にヒット＆正確な座標）
+    const matchedSpot = lookupKnownCampsite(locationQuery);
+    if (matchedSpot) {
+      latitude = matchedSpot.latitude;
+      longitude = matchedSpot.longitude;
+      displayName = matchedSpot.displayName;
+    } else {
+      // 2. 辞書にない場合は Open-Meteo ジオコーディングAPIへ問い合わせ
+      const cleanLocation = locationQuery
+        .replace(/(オート|ソロ)?キャンプ場?$/g, '')
+        .trim();
+
+      const searchTarget = cleanLocation || locationQuery;
+      const geocodeUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(
+        searchTarget
+      )}&count=1&language=ja&format=json`;
+
+      const geoRes = await fetch(geocodeUrl, { next: { revalidate: 86400 } }); // 1日キャッシュ
+      if (!geoRes.ok) {
+        throw new Error('位置情報の取得に失敗しました');
+      }
+
+      const geoData = await geoRes.json();
+      if (!geoData.results || geoData.results.length === 0) {
+        return NextResponse.json(
+          {
+            error: `「${locationQuery}」の位置が見つかりませんでした。市町村名（例: 富士宮市、白馬村、日光市など）でお試しください。`,
+          },
+          { status: 404 }
+        );
+      }
+
+      const firstResult = geoData.results[0];
+      latitude = firstResult.latitude;
+      longitude = firstResult.longitude;
+      displayName = firstResult.admin1
+        ? `${firstResult.name} (${firstResult.admin1})`
+        : firstResult.name;
+    }
+
+    // 3. Open-Meteo で天気予報を取得 (毎日予報)
+    const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FTokyo`;
+
+    const weatherRes = await fetch(weatherUrl, { next: { revalidate: 3600 } }); // 1時間キャッシュ
+    if (!weatherRes.ok) {
+      throw new Error('気象データの取得に失敗しました');
+    }
+
+    const weatherData = await weatherRes.json();
+    const daily = weatherData.daily;
+
+    if (!daily || !daily.time || daily.time.length === 0) {
+      throw new Error('天気予報データが見つかりませんでした');
+    }
+
+    // 日付の一致を検索、なければ直近（今日）の予報を返す
+    let dateIndex = targetDate ? daily.time.indexOf(targetDate) : 0;
+    if (dateIndex === -1) {
+      dateIndex = 0; // 日程が範囲外の場合は当日の予報
+    }
+
+    const chosenDate = daily.time[dateIndex];
+    const weatherCode = daily.weather_code[dateIndex] ?? 1;
+    const maxTemp = Math.round((daily.temperature_2m_max[dateIndex] ?? 20) * 10) / 10;
+    const minTemp = Math.round((daily.temperature_2m_min[dateIndex] ?? 10) * 10) / 10;
+    const rainChance = Math.round(daily.precipitation_probability_max[dateIndex] ?? 0);
+
+    const weatherInfo = getWeatherInfo(weatherCode);
+    const advice = generateCampAdvice(minTemp, maxTemp, rainChance);
+
+    return NextResponse.json({
+      location: displayName,
+      query: locationQuery,
+      date: chosenDate,
+      weatherCode,
+      weatherLabel: weatherInfo.label,
+      weatherIcon: weatherInfo.icon,
+      maxTemp,
+      minTemp,
+      rainChance,
+      advice,
+      isDateMatched: targetDate ? dateIndex !== -1 && daily.time[dateIndex] === targetDate : true,
+    });
+  } catch (error: any) {
+    console.error('Weather API Error:', error);
+    return NextResponse.json(
+      { error: error.message || '気象情報の取得中にエラーが発生しました' },
+      { status: 500 }
+    );
+  }
+}
