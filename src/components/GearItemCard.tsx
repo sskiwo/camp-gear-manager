@@ -681,7 +681,7 @@ export default function GearItemCard({
         {/* 🎯 価格・購入時期・燃料：横幅と高さを完全に揃える */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           <div className="w-full min-w-0">
-            <label className="text-[12px] font-normal text-zinc-400 block mb-0.5">価格(円)</label>
+            <label className="text-[12px] font-normal text-zinc-400 block mb-0.5">購入価格・参考価格(円)</label>
             <input
               type="number"
               step="100"

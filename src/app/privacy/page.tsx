@@ -139,7 +139,7 @@ export default function PrivacyPage() {
           <section className="space-y-2">
             <h2 className="text-sm font-bold text-white">第9条（Amazonアソシエイト・プログラム）</h2>
             <p>
-              当サービスは、Amazon.co.jpを宣伝しリンクすることによってサイトが紹介料を獲得できる手段を提供することを目的に設定されたアフィリエイトプログラムである、Amazonアソシエイト・プログラムの参加者です。第三者（Amazon等）がコンテンツおよび宣伝を提供し、訪問者から直接情報を収集し、訪問者のブラウザにCookieを設定または認識する場合があります。
+              Amazonのアソシエイトとして、当サービス（Camp Gear Manager）は適格販売により収入を得ています。また、当サービスはAmazon.co.jpを宣伝しリンクすることによってサイトが紹介料を獲得できる手段を提供することを目的に設定されたアフィリエイトプログラムである、Amazonアソシエイト・プログラムの参加者です。第三者（Amazon等）がコンテンツおよび宣伝を提供し、訪問者から直接情報を収集し、訪問者のブラウザにCookieを設定または認識する場合があります。
             </p>
           </section>
 

@@ -83,6 +83,9 @@ export default function Footer() {
       {/* 視認性を改善したAmazonアソシエイト免責文 ＆ コピーライト */}
       <div className="text-center space-y-2 text-[11px] max-w-xl mx-auto px-4 leading-relaxed">
         <p className="text-[11px] text-zinc-400 font-normal">
+          Amazonのアソシエイトとして、Camp Gear Manager は適格販売により収入を得ています。
+        </p>
+        <p className="text-[11px] text-zinc-400 font-normal">
           Camp Gear Manager は、Amazon.co.jpを宣伝しリンクすることによってサイトが紹介料を獲得できる手段を提供することを目的に設定されたアフィリエイトプログラムである、Amazonアソシエイト・プログラムの参加者です。
         </p>
         <p className="text-[11px] text-zinc-500 font-normal tracking-wide">

@@ -499,7 +499,9 @@ function CommunityContent() {
                         <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px] sm:text-xs text-zinc-400 mt-1 font-bold">
                           <span>📦 {displayGears.length}点</span>
                           <span>⚖️ {(totalWeight / 1000).toFixed(2)}kg</span>
-                          {totalPrice > 0 && <span>💰 ¥{totalPrice.toLocaleString()}</span>}
+                          {totalPrice > 0 && (
+                            <span>💰 ¥{totalPrice.toLocaleString()}<span className="text-[10px] text-zinc-500 font-normal font-sans ml-0.5">(参考総額)</span></span>
+                          )}
                         </div>
                       </div>
 
@@ -615,9 +617,14 @@ function CommunityContent() {
             </div>
           ) : (
             <div className="space-y-2.5 sm:space-y-3">
-              <div className="text-xs font-bold text-zinc-400 flex items-center justify-between px-1">
-                <span>🏆 {selectedCategory} 人気ランキング</span>
-                <span>上位 10 件表示</span>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 px-1 text-xs text-zinc-400 font-bold">
+                <div className="flex items-center gap-2">
+                  <span>🏆 {selectedCategory} 人気ランキング</span>
+                  <span className="text-[11px] text-zinc-500 font-normal">（上位 10 件）</span>
+                </div>
+                <span className="text-[10px] text-zinc-500 font-normal">
+                  ※表示価格はユーザー登録時の参考値です。最新の販売価格・在庫はリンク先をご確認ください。
+                </span>
               </div>
 
               {popularGears.map((gear, index) => {
@@ -656,7 +663,9 @@ function CommunityContent() {
                         <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[10px] sm:text-xs text-zinc-400 mt-1 font-mono">
                           <span>🔥 採用: <strong className="text-white">{gear.count}人</strong></span>
                           <span>⚖️ {gear.weight}g</span>
-                          {gear.price > 0 && <span>💰 ¥{gear.price.toLocaleString()}</span>}
+                          {gear.price > 0 && (
+                            <span>💰 ¥{gear.price.toLocaleString()}<span className="text-[9px] text-zinc-500 font-sans ml-0.5">(参考)</span></span>
+                          )}
                         </div>
                       </div>
                     </div>
