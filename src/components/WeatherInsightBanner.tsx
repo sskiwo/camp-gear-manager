@@ -171,8 +171,11 @@ export default function WeatherInsightBanner({
           <div className="flex items-center gap-1.5 shrink-0">
             <CloudSun className={`w-4 h-4 ${weather?.isHistorical ? 'text-amber-400' : 'text-[#00E5FF]'} shrink-0`} />
             {weather ? (
-              <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-bold text-white flex-wrap sm:flex-nowrap">
-                <span className="truncate max-w-[120px] sm:max-w-none text-zinc-100 group-hover/weather:text-[#00E5FF] transition-colors">
+              <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-bold text-white flex-wrap sm:flex-nowrap min-w-0 flex-1">
+                <span
+                  className="truncate text-zinc-100 group-hover/weather:text-[#00E5FF] transition-colors"
+                  title={weather.location}
+                >
                   {weather.location}
                 </span>
                 <span className="text-zinc-600 hidden sm:inline">•</span>
@@ -200,12 +203,10 @@ export default function WeatherInsightBanner({
                 setInputDate(eventDate);
                 setIsEditing(!isEditing);
               }}
-              className="text-[11px] font-bold text-zinc-300 hover:text-white bg-[#27272A] hover:bg-zinc-700 px-2 sm:px-2.5 py-1 rounded-lg border border-zinc-700 transition flex items-center gap-1 shrink-0 cursor-pointer active:scale-95"
-              title="キャンプ場名・日程を設定"
+              className="p-1.5 sm:px-2 sm:py-1.5 rounded-lg border border-zinc-700 bg-[#27272A] hover:bg-zinc-700 text-[#00E5FF] hover:text-white transition flex items-center justify-center shrink-0 cursor-pointer active:scale-95 shadow-sm"
+              title="キャンプ場名・日程を設定・変更"
             >
-              <Edit2 className="w-3 h-3 text-[#00E5FF]" />
-              <span className="hidden sm:inline">{location ? '場所・日程変更' : '設定する'}</span>
-              <span className="sm:hidden">{location ? '変更' : '設定'}</span>
+              <Edit2 className="w-3.5 h-3.5" />
             </button>
           )}
 
@@ -233,8 +234,8 @@ export default function WeatherInsightBanner({
           <span className="text-[11.5px] font-bold text-white block">
             📍 キャンプ予定地と日程を設定
           </span>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full min-w-0">
-            <div className="space-y-1 min-w-0 w-full">
+          <div className="space-y-2.5 w-full">
+            <div className="space-y-1 w-full">
               <label className="text-[11px] text-zinc-400 font-normal block">
                 キャンプ場名 または 市町村名
               </label>
@@ -243,19 +244,17 @@ export default function WeatherInsightBanner({
                 placeholder="例: ふもとっぱら、あきる野市、白馬村"
                 value={inputLocation}
                 onChange={(e) => setInputLocation(e.target.value)}
-                className="w-full min-w-0 max-w-full box-border block bg-[#18181B] border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#00E5FF]"
-                style={{ minWidth: 0, maxWidth: '100%', boxSizing: 'border-box' }}
+                className="w-full bg-[#18181B] border border-zinc-700 rounded-lg px-2.5 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#00E5FF]"
               />
             </div>
 
-            <div className="space-y-1 min-w-0 w-full">
+            <div className="space-y-1 w-full">
               <label className="text-[11px] text-zinc-400 font-normal block">キャンプ日程</label>
               <input
                 type="date"
                 value={inputDate}
                 onChange={(e) => setInputDate(e.target.value)}
-                className="w-full min-w-0 max-w-full box-border block [color-scheme:dark] bg-[#18181B] border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-[#00E5FF]"
-                style={{ minWidth: 0, maxWidth: '100%', boxSizing: 'border-box' }}
+                className="w-full [color-scheme:dark] bg-[#18181B] border border-zinc-700 rounded-lg px-2.5 py-2 text-xs text-white focus:outline-none focus:border-[#00E5FF]"
               />
             </div>
           </div>
@@ -328,9 +327,9 @@ export default function WeatherInsightBanner({
             </div>
 
             {!weather.isDateMatched && weather.dateNote && (
-              <div className="text-[11px] text-amber-300 bg-amber-950/40 border border-amber-800/50 px-2.5 py-1 rounded-lg flex items-center gap-1.5">
-                <AlertCircle className="w-3.5 h-3.5 shrink-0 text-amber-400" />
-                <span>{weather.dateNote}</span>
+              <div className="text-[11px] text-amber-300 bg-amber-950/40 border border-amber-800/50 px-2.5 py-1.5 rounded-lg flex items-start gap-1.5">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-400" />
+                <span className="flex-1 min-w-0 leading-relaxed">{weather.dateNote}</span>
               </div>
             )}
 

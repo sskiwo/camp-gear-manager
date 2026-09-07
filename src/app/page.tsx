@@ -43,7 +43,8 @@ type CampMeta = {
 // ⛺ 日程と場所からスマートにキャンプ名を生成するアシスト関数
 function formatCampTitle(eventDate?: string, location?: string): string {
   const cleanDate = (eventDate || '').trim();
-  const cleanLoc = (location || '').trim();
+  // 自治体カッコ（例: (東京都あきる野市) や (あきる野市)）を除去してスマートでコンパクトな名前に整形
+  const cleanLoc = (location || '').trim().replace(/\s*[\(（].*?[\)）]/g, '');
 
   let formattedDate = '';
   if (cleanDate) {
@@ -1117,10 +1118,11 @@ function CampHomeContent() {
                 <select
                   value={selectedCampId}
                   onChange={(e) => handleSelectCamp(e.target.value)}
-                  className="w-full bg-transparent text-white text-[15px] sm:text-[17px] md:text-[18px] font-bold focus:outline-none truncate cursor-pointer"
+                  className="w-full bg-transparent text-white text-[14px] sm:text-[16px] md:text-[17px] font-bold focus:outline-none truncate cursor-pointer leading-snug"
+                  title={currentSelectedCamp?.title}
                 >
                   {visibleCamps.map((camp) => (
-                    <option key={camp.id} value={camp.id} className="bg-[#18181B] text-white text-[15px] sm:text-[17px]">
+                    <option key={camp.id} value={camp.id} className="bg-[#18181B] text-white text-[14px] sm:text-[16px]">
                       {camp.title} {!ownedCampIds.has(camp.id) && '（閲覧専用）'}
                     </option>
                   ))}
@@ -1230,9 +1232,9 @@ function CampHomeContent() {
           <div className="bg-[#18181B] border border-[#FF5500]/50 p-5 rounded-2xl space-y-4 shadow-2xl animate-fade-in w-full overflow-hidden">
             <h3 className="text-[14px] font-semibold text-white">新しいキャンプを追加</h3>
 
-            {/* 日程と場所（アシスト自動生成連動） */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full min-w-0">
-              <div className="space-y-1 min-w-0 w-full">
+            {/* 日程と場所（縦並びで広々ジャストフィット） */}
+            <div className="space-y-3 w-full">
+              <div className="space-y-1 w-full">
                 <label className="text-[12px] font-normal text-zinc-400 block">
                   📅 キャンプ日程（任意）
                 </label>
@@ -1240,12 +1242,11 @@ function CampHomeContent() {
                   type="date"
                   value={newCampDate}
                   onChange={(e) => handleNewCampDateChange(e.target.value)}
-                  className="w-full min-w-0 max-w-full box-border block [color-scheme:dark] bg-[#27272A] border border-zinc-700 rounded-xl px-3 py-2 text-[12px] text-white focus:border-[#FF5500] focus:outline-none"
-                  style={{ minWidth: 0, maxWidth: '100%', boxSizing: 'border-box' }}
+                  className="w-full [color-scheme:dark] bg-[#27272A] border border-zinc-700 rounded-xl px-3 py-2 text-[12px] text-white focus:border-[#FF5500] focus:outline-none"
                 />
               </div>
 
-              <div className="space-y-1 min-w-0 w-full">
+              <div className="space-y-1 w-full">
                 <label className="text-[12px] font-normal text-zinc-400 block">
                   📍 キャンプ場・場所（任意）
                 </label>
@@ -1254,8 +1255,7 @@ function CampHomeContent() {
                   placeholder="例: ふもとっぱら、あきる野市、立川市"
                   value={newCampLocation}
                   onChange={(e) => handleNewCampLocationChange(e.target.value)}
-                  className="w-full min-w-0 max-w-full box-border block bg-[#27272A] border border-zinc-700 rounded-xl px-3 py-2 text-[12px] text-white focus:border-[#FF5500] focus:outline-none"
-                  style={{ minWidth: 0, maxWidth: '100%', boxSizing: 'border-box' }}
+                  className="w-full bg-[#27272A] border border-zinc-700 rounded-xl px-3 py-2 text-[12px] text-white focus:border-[#FF5500] focus:outline-none"
                 />
               </div>
             </div>

@@ -107,14 +107,14 @@ interface CampsiteSpot {
 
 const FAMOUS_CAMPSITES: Record<string, CampsiteSpot> = {
   // 東京・多摩・奥多摩
-  ワンダフルネイチャービレッジ: { displayName: 'わんダフルネイチャーヴィレッジ (東京都あきる野市)', latitude: 35.7168, longitude: 139.2626 },
-  ワンダフルネイチャーヴィレッジ: { displayName: 'わんダフルネイチャーヴィレッジ (東京都あきる野市)', latitude: 35.7168, longitude: 139.2626 },
-  わんダフルネイチャービレッジ: { displayName: 'わんダフルネイチャーヴィレッジ (東京都あきる野市)', latitude: 35.7168, longitude: 139.2626 },
-  わんダフルネイチャーヴィレッジ: { displayName: 'わんダフルネイチャーヴィレッジ (東京都あきる野市)', latitude: 35.7168, longitude: 139.2626 },
-  ワンダフルネイチャー: { displayName: 'わんダフルネイチャーヴィレッジ (東京都あきる野市)', latitude: 35.7168, longitude: 139.2626 },
-  わんダフルネイチャー: { displayName: 'わんダフルネイチャーヴィレッジ (東京都あきる野市)', latitude: 35.7168, longitude: 139.2626 },
-  サマーランド: { displayName: '東京サマーランド・わんダフルネイチャー (東京都あきる野市)', latitude: 35.7168, longitude: 139.2626 },
-  東京サマーランド: { displayName: '東京サマーランド・わんダフルネイチャー (東京都あきる野市)', latitude: 35.7168, longitude: 139.2626 },
+  ワンダフルネイチャービレッジ: { displayName: 'わんダフルネイチャーヴィレッジ (あきる野市)', latitude: 35.7168, longitude: 139.2626 },
+  ワンダフルネイチャーヴィレッジ: { displayName: 'わんダフルネイチャーヴィレッジ (あきる野市)', latitude: 35.7168, longitude: 139.2626 },
+  わんダフルネイチャービレッジ: { displayName: 'わんダフルネイチャーヴィレッジ (あきる野市)', latitude: 35.7168, longitude: 139.2626 },
+  わんダフルネイチャーヴィレッジ: { displayName: 'わんダフルネイチャーヴィレッジ (あきる野市)', latitude: 35.7168, longitude: 139.2626 },
+  ワンダフルネイチャー: { displayName: 'わんダフルネイチャーヴィレッジ (あきる野市)', latitude: 35.7168, longitude: 139.2626 },
+  わんダフルネイチャー: { displayName: 'わんダフルネイチャーヴィレッジ (あきる野市)', latitude: 35.7168, longitude: 139.2626 },
+  サマーランド: { displayName: '東京サマーランド (あきる野市)', latitude: 35.7168, longitude: 139.2626 },
+  東京サマーランド: { displayName: '東京サマーランド (あきる野市)', latitude: 35.7168, longitude: 139.2626 },
   十里木ランド: { displayName: '十里木ランド (東京都あきる野市)', latitude: 35.7289, longitude: 139.2081 },
   十里木: { displayName: '十里木ランド (東京都あきる野市)', latitude: 35.7289, longitude: 139.2081 },
   奥秋川ビレッジ: { displayName: '奥秋川ビレッジ (東京都あきる野市)', latitude: 35.7335, longitude: 139.183 },
