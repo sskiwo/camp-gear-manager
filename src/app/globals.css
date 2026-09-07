@@ -1,4 +1,23 @@
 @import "tailwindcss";
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+
+/* 📱 iOS Safari での入力フォーカス時・強制ズーム防止（16pxルール） */
+@media screen and (max-width: 640px) {
+  input[type="text"],
+  input[type="number"],
+  input[type="month"],
+  input[type="url"],
+  input[type="search"],
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* 🎨 スマホでの横スクロールをアプリ風にスッキリ見せるユーティリティ */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

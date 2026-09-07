@@ -332,7 +332,7 @@ export default function GearItemCard({
       <div className="space-y-1">
         <div
           onClick={handleToggleEdit}
-          className={`h-[48px] px-2 rounded-xl border transition-all duration-150 flex items-center justify-between gap-2 select-none cursor-pointer ${
+          className={`h-[50px] px-2.5 rounded-xl border transition-all duration-150 flex items-center justify-between gap-2 select-none cursor-pointer ${
             !isSelected
               ? 'bg-[#18181B] border-zinc-800/80 border-dashed'
               : item.is_packed
@@ -340,7 +340,7 @@ export default function GearItemCard({
               : 'bg-[#27272A] border-zinc-700/80 shadow-sm hover:border-zinc-500'
           }`}
         >
-          <div className="flex items-center gap-1.5 min-w-0 flex-1">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
             {onToggleSelected && (
               <button
                 type="button"
@@ -348,7 +348,7 @@ export default function GearItemCard({
                   e.stopPropagation();
                   onToggleSelected(item.id, isSelected);
                 }}
-                className={`w-8 h-8 rounded-lg text-[12px] transition flex items-center justify-center border shrink-0 cursor-pointer active:scale-95 ${
+                className={`w-9 h-9 rounded-xl text-[13px] transition flex items-center justify-center border shrink-0 cursor-pointer active:scale-95 ${
                   isSelected
                     ? 'bg-[#FF5500]/20 border-[#FF5500]/60 text-[#FF5500]'
                     : 'bg-zinc-800 border-zinc-700 text-zinc-300 hover:text-white'
@@ -366,7 +366,7 @@ export default function GearItemCard({
                   e.stopPropagation();
                   onTogglePacked(item.id, item.is_packed);
                 }}
-                className={`w-8 h-8 rounded-lg text-[12px] transition flex items-center justify-center border shrink-0 cursor-pointer active:scale-95 ${
+                className={`w-9 h-9 rounded-xl text-[13px] transition flex items-center justify-center border shrink-0 cursor-pointer active:scale-95 ${
                   item.is_packed
                     ? 'bg-[#10B981] border-[#10B981] text-white shadow-sm'
                     : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white'
@@ -376,7 +376,7 @@ export default function GearItemCard({
                 {item.is_packed ? '✅' : '⬜'}
               </button>
             ) : (
-              <span className="w-8 h-8 flex items-center justify-center text-[12px] text-zinc-500 font-mono select-none shrink-0 font-normal">
+              <span className="w-9 h-9 flex items-center justify-center text-[12px] text-zinc-500 font-mono select-none shrink-0 font-normal">
                 [-]
               </span>
             )}
@@ -422,13 +422,13 @@ export default function GearItemCard({
       <div className="space-y-1">
         <div
           onClick={handleToggleEdit}
-          className={`h-[48px] px-2 rounded-xl border transition-all duration-150 flex items-center justify-between gap-2 select-none cursor-pointer ${
+          className={`h-[50px] px-2.5 rounded-xl border transition-all duration-150 flex items-center justify-between gap-2 select-none cursor-pointer ${
             isUnusedInReview
               ? 'bg-[#18181B] border-zinc-800/80 opacity-60'
               : 'bg-[#27272A] border-zinc-700/80 shadow-sm hover:border-zinc-500'
           }`}
         >
-          <div className="flex items-center gap-1.5 min-w-0 flex-1">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
             {onToggleUnusedInReview && (
               <button
                 type="button"
@@ -436,7 +436,7 @@ export default function GearItemCard({
                   e.stopPropagation();
                   onToggleUnusedInReview(item.id);
                 }}
-                className={`w-8 h-8 rounded-lg text-[12px] transition flex items-center justify-center border shrink-0 cursor-pointer active:scale-95 ${
+                className={`w-9 h-9 rounded-xl text-[13px] transition flex items-center justify-center border shrink-0 cursor-pointer active:scale-95 ${
                   isUnusedInReview
                     ? 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white'
                     : 'bg-[#10B981] border-[#10B981] text-white shadow-sm'
@@ -520,7 +520,7 @@ export default function GearItemCard({
                   e.stopPropagation();
                   onToggleSelected(item.id, isSelected);
                 }}
-                className={`w-7 h-7 rounded-lg text-[12px] transition flex items-center justify-center border shrink-0 cursor-pointer active:scale-95 ${
+                className={`w-8 h-8 rounded-lg text-[12px] transition flex items-center justify-center border shrink-0 cursor-pointer active:scale-95 ${
                   isSelected
                     ? 'bg-[#FF5500]/20 border-[#FF5500]/60 text-[#FF5500]'
                     : 'bg-zinc-800 border-zinc-700 text-zinc-300 hover:text-white hover:border-zinc-500'
@@ -574,7 +574,7 @@ export default function GearItemCard({
                 e.stopPropagation();
                 handleToggleEdit();
               }}
-              className={`w-7 h-7 flex items-center justify-center rounded-lg text-[12px] transition border cursor-pointer ${
+              className={`w-8 h-8 flex items-center justify-center rounded-lg text-[12px] transition border cursor-pointer active:scale-95 ${
                 isEditing
                   ? 'bg-[#FF5500]/20 border-[#FF5500] text-white'
                   : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white border-zinc-700'

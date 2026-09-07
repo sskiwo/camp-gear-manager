@@ -409,7 +409,8 @@ export default function WeightsSummary({
               )}
             </div>
 
-            <div className="grid grid-cols-5 gap-1 sm:gap-1.5 pt-0.5">
+            {/* 🎯 スマホでは横スクロールで文字切れを防止、PCでは5列グリッド */}
+            <div className="flex sm:grid sm:grid-cols-5 gap-1.5 overflow-x-auto pb-1 sm:pb-0 no-scrollbar pt-0.5 -mx-1 px-1">
               {CATEGORIES.map((cat) => {
                 const weight = categoryWeights[cat] || 0;
                 const catColor = CATEGORY_COLORS[cat as keyof typeof CATEGORY_COLORS];
@@ -420,19 +421,19 @@ export default function WeightsSummary({
                     key={cat}
                     type="button"
                     onClick={() => onCategoryClick?.(cat)}
-                    className="bg-[#27272A]/50 hover:bg-[#27272A] border border-zinc-700/60 hover:border-zinc-500 rounded-lg p-1 flex flex-col items-center justify-center transition-all duration-200 cursor-pointer min-w-0 hover:scale-105 active:scale-95 shadow-sm"
+                    className="flex-shrink-0 sm:flex-shrink min-w-[70px] sm:min-w-0 bg-[#27272A]/50 hover:bg-[#27272A] border border-zinc-700/60 hover:border-zinc-500 rounded-lg p-1.5 flex flex-col items-center justify-center transition-all duration-200 cursor-pointer active:scale-95 shadow-sm"
                     title={`${cat}カテゴリーへスクロール`}
                   >
-                    <div className="flex items-center gap-0.5 max-w-full">
-                      <span className="text-[10px] shrink-0">{icon}</span>
+                    <div className="flex items-center gap-1 max-w-full">
+                      <span className="text-xs shrink-0">{icon}</span>
                       <span
                         style={{ color: catColor }}
-                        className="text-[10px] font-bold truncate"
+                        className="text-[11px] font-bold whitespace-nowrap"
                       >
                         {cat}
                       </span>
                     </div>
-                    <span className="text-[10px] font-mono text-zinc-300 font-semibold mt-0.5 truncate">
+                    <span className="text-[10.5px] font-mono text-zinc-300 font-bold mt-0.5 whitespace-nowrap">
                       {formatWeight(weight)}
                     </span>
                   </button>
