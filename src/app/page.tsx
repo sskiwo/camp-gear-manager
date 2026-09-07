@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import { HelpCircle, Lock, Globe, AlertTriangle, RefreshCw, Eye, Plus, CopyPlus } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { getOrCreateAnonymousUser } from '@/lib/auth';
 import WeightsSummary from '@/components/WeightsSummary';
 import GearSearch from '@/components/GearSearch';
 import GearList from '@/components/GearList';
@@ -21,6 +22,7 @@ type Camp = {
   event_date: string;
   memo?: string;
   is_public: boolean;
+  user_id?: string;
 };
 
 const STORAGE_KEY_SCREEN_MODE = 'camp_active_screen_mode';
@@ -42,6 +44,7 @@ function CampHomeContent() {
 
   const [camps, setCamps] = useState<Camp[]>([]);
   const [selectedCampId, setSelectedCampId] = useState<string>('');
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [gears, setGears] = useState<GearItem[]>([]);
   const [allGearsInAccount, setAllGearsInAccount] = useState<GearItem[]>([]);
 
@@ -72,13 +75,20 @@ function CampHomeContent() {
     消耗品: false,
   });
 
-  const isReadOnly = Boolean(selectedCampId && !ownedCampIds.has(selectedCampId));
-
-  const visibleCamps = camps.filter(
-    (c) => ownedCampIds.has(c.id) || c.id === selectedCampId
+  // ⛺ 閲覧専用判定: 自分のバッジ（user_id）が付いているか、または端末所有トークンがある場合は編集可能
+  const isReadOnly = Boolean(
+    selectedCampId && 
+    !ownedCampIds.has(selectedCampId) && 
+    !(currentUserId && camps.find((c) => c.id === selectedCampId)?.user_id === currentUserId)
   );
 
-  const myOwnedCamps = camps.filter((c) => ownedCampIds.has(c.id));
+  const visibleCamps = camps.filter(
+    (c) => ownedCampIds.has(c.id) || c.id === selectedCampId || (currentUserId && c.user_id === currentUserId)
+  );
+
+  const myOwnedCamps = camps.filter(
+    (c) => ownedCampIds.has(c.id) || (currentUserId && c.user_id === currentUserId)
+  );
 
   const registerCampOwnership = (campId: string) => {
     try {
@@ -130,6 +140,10 @@ function CampHomeContent() {
     setConnectionError(null);
 
     try {
+      // ⛺ 1. 匿名ユーザーバッジを自動発行・取得
+      const userId = await getOrCreateAnonymousUser();
+      setCurrentUserId(userId);
+
       let savedOwnedIds: string[] = [];
       try {
         const savedOwned = localStorage.getItem(STORAGE_KEY_OWNED_CAMPS);
@@ -156,7 +170,26 @@ function CampHomeContent() {
       const allCamps = data || [];
       setCamps(allCamps);
 
-      // 🎯 1. 【最優先】URLに ?camp=ID がある場合は、複製直後でも共有でも必ずそのキャンプを開く
+      // ⛺ 2. 自分のキャンプID一覧（LocalStorage または user_id 一致）
+      const myCampIdsFromDb = userId
+        ? allCamps.filter((c) => c.user_id === userId).map((c) => c.id)
+        : [];
+      const combinedOwnedIds = Array.from(new Set([...savedOwnedIds, ...myCampIdsFromDb]));
+      if (combinedOwnedIds.length > 0) {
+        setOwnedCampIds(new Set(combinedOwnedIds));
+      }
+
+      // ⛺ 3. 既存の所有キャンプで user_id が未設定の場合、安全に自分のIDを刻印（マイグレーション）
+      if (userId) {
+        const campsToMigrate = allCamps.filter(
+          (c) => savedOwnedIds.includes(c.id) && (!c.user_id || c.user_id !== userId)
+        );
+        for (const camp of campsToMigrate) {
+          await supabase.from('camps').update({ user_id: userId }).eq('id', camp.id);
+        }
+      }
+
+      // 🎯 4. 【最優先】URLに ?camp=ID がある場合は、複製直後でも共有でも必ずそのキャンプを開く
       if (urlCampId) {
         const matched = allCamps.find((c) => c.id === urlCampId);
         if (matched) {
@@ -167,8 +200,8 @@ function CampHomeContent() {
         }
       }
 
-      // 2. この端末で過去に作成したキャンプがある場合、その最新を開く
-      const myCamps = allCamps.filter((c) => savedOwnedIds.includes(c.id));
+      // 5. この端末で過去に作成したキャンプがある場合、その最新を開く
+      const myCamps = allCamps.filter((c) => combinedOwnedIds.includes(c.id));
       if (myCamps.length > 0) {
         setSelectedCampId(myCamps[0].id);
         updateUrlWithCamp(myCamps[0].id);
@@ -176,10 +209,10 @@ function CampHomeContent() {
         return;
       }
 
-      // 3. 初見アクセス：初期キャンプを新規作成
+      // 6. 初見アクセス：初期キャンプを新規作成
       const { data: newCamp, error: createErr } = await supabase
         .from('camps')
-        .insert([{ title: 'マイ・ファーストキャンプ', is_public: false }])
+        .insert([{ title: 'マイ・ファーストキャンプ', is_public: false, user_id: userId || undefined }])
         .select()
         .single();
 
@@ -285,7 +318,7 @@ function CampHomeContent() {
 
     const { data: newCamp, error: createErr } = await supabase
       .from('camps')
-      .insert([{ title: newCampTitle.trim(), is_public: false }])
+      .insert([{ title: newCampTitle.trim(), is_public: false, user_id: currentUserId || undefined }])
       .select()
       .single();
 
@@ -313,6 +346,7 @@ function CampHomeContent() {
       if (sourceGears && sourceGears.length > 0) {
         const clonedGears = sourceGears.map((g) => ({
           camp_id: newCamp.id,
+          user_id: currentUserId || undefined,
           name: g.name,
           brand: g.brand || '',
           model_number: g.model_number || '',
@@ -355,7 +389,7 @@ function CampHomeContent() {
     const title = `${currentSelectedCamp.title}（マイコピー）`;
     const { data: newCamp, error: createErr } = await supabase
       .from('camps')
-      .insert([{ title, is_public: false }])
+      .insert([{ title, is_public: false, user_id: currentUserId || undefined }])
       .select()
       .single();
 
@@ -370,6 +404,7 @@ function CampHomeContent() {
     if (gears.length > 0) {
       const clonedGears = gears.map((g) => ({
         camp_id: newCamp.id,
+        user_id: currentUserId || undefined,
         name: g.name,
         brand: g.brand || '',
         model_number: g.model_number || '',
@@ -526,6 +561,7 @@ function CampHomeContent() {
 
     const newGearData = {
       camp_id: selectedCampId,
+      user_id: currentUserId || undefined,
       name: fullName || rawName || '新しいギア',
       brand: rawBrand,
       model_number: rawModel,

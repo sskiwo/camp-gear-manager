@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ShoppingBag, ExternalLink, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { getOrCreateAnonymousUser } from '@/lib/auth';
+import { buildAmazonUrl } from '@/utils/affiliate';
 import Footer from '@/components/Footer';
 
 type Gear = {
@@ -182,9 +184,11 @@ function CommunityContent() {
 
     if (!confirmed) return;
 
+    const userId = await getOrCreateAnonymousUser();
+
     const { data: newCamp, error: createCampErr } = await supabase
       .from('camps')
-      .insert([{ title: `[コピー] ${camp.title}`, is_public: false }])
+      .insert([{ title: `[コピー] ${camp.title}`, is_public: false, user_id: userId || undefined }])
       .select()
       .single();
 
@@ -205,6 +209,7 @@ function CommunityContent() {
     if (camp.gears.length > 0) {
       const clonedGears = camp.gears.map((g) => ({
         camp_id: newCamp.id,
+        user_id: userId || undefined,
         name: g.name,
         brand: g.brand || '',
         product_name: g.name,
@@ -233,12 +238,14 @@ function CommunityContent() {
   const handleAddSingleGear = async () => {
     if (!addingGear || !selectedAddCampId) return;
 
+    const userId = await getOrCreateAnonymousUser();
     const cat = addingGear.category || 'ベースギア';
     const isConsumable = cat === '食料・消耗品';
 
     const { error } = await supabase.from('gears').insert([
       {
         camp_id: selectedAddCampId,
+        user_id: userId || undefined,
         name: addingGear.name,
         brand: addingGear.brand || '',
         product_name: addingGear.name,
@@ -264,8 +271,7 @@ function CommunityContent() {
   };
 
   const getAmazonSearchUrl = (brand?: string, name?: string) => {
-    const query = `${brand || ''} ${name || ''}`.trim();
-    return `https://www.amazon.co.jp/s?k=${encodeURIComponent(query)}&tag=campgearmanager-22`;
+    return buildAmazonUrl(name || '', brand);
   };
 
   const getFilteredRanking = (): PopularGear[] => {

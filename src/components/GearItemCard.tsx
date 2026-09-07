@@ -27,6 +27,7 @@ export type GearItem = {
   total_used_count?: number;
   is_emergency_gear?: boolean;
   is_weight_estimated?: boolean;
+  user_id?: string;
 };
 
 type Props = {
