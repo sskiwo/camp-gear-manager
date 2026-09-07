@@ -3,9 +3,9 @@
 import { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ShoppingBag, ExternalLink, ArrowLeft } from 'lucide-react';
+import { ShoppingBag, ExternalLink, ArrowLeft, Lock, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { getOrCreateAnonymousUser } from '@/lib/auth';
+import { getOrCreateAnonymousUser, getCurrentUserId } from '@/lib/auth';
 import { buildAmazonUrl } from '@/utils/affiliate';
 import Footer from '@/components/Footer';
 
@@ -26,6 +26,7 @@ type PublicCamp = {
   title: string;
   created_at: string;
   gears: Gear[];
+  user_id?: string;
 };
 
 type PopularGear = {
@@ -73,6 +74,7 @@ function CommunityContent() {
   const [publicCamps, setPublicCamps] = useState<PublicCamp[]>([]);
   const [allGearsList, setAllGearsList] = useState<Gear[]>([]);
   const [myCamps, setMyCamps] = useState<CampOption[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [selectedAddCampId, setSelectedAddCampId] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [expandedCampId, setExpandedCampId] = useState<string | null>(null);
@@ -89,25 +91,37 @@ function CommunityContent() {
 
   const fetchMyCamps = async () => {
     try {
+      const uid = await getCurrentUserId();
+      setCurrentUserId(uid);
+
       let savedOwnedIds: string[] = [];
       const savedOwned = localStorage.getItem(STORAGE_KEY_OWNED_CAMPS);
       if (savedOwned) {
         savedOwnedIds = Object.keys(JSON.parse(savedOwned));
       }
 
-      if (savedOwnedIds.length === 0) {
-        setMyCamps([]);
-        return;
+      const combinedMap = new Map<string, { id: string; title: string }>();
+
+      if (savedOwnedIds.length > 0) {
+        const { data: localData } = await supabase
+          .from('camps')
+          .select('id, title')
+          .in('id', savedOwnedIds);
+        (localData || []).forEach((c) => combinedMap.set(c.id, c));
       }
 
-      const { data } = await supabase
-        .from('camps')
-        .select('id, title')
-        .in('id', savedOwnedIds)
-        .order('created_at', { ascending: false });
+      if (uid) {
+        const { data: userData } = await supabase
+          .from('camps')
+          .select('id, title')
+          .eq('user_id', uid);
+        (userData || []).forEach((c) => combinedMap.set(c.id, c));
+      }
 
-      if (data && data.length > 0) {
-        const mapped = data.map((c) => {
+      const combined = Array.from(combinedMap.values());
+
+      if (combined.length > 0) {
+        const mapped = combined.map((c) => {
           try {
             const cached = localStorage.getItem(`camp_meta_${c.id}`);
             if (cached) {
@@ -174,6 +188,7 @@ function CommunityContent() {
         title: c.title,
         created_at: c.created_at,
         gears: gearsByCamp[c.id] || [],
+        user_id: c.user_id,
       }));
 
       setPublicCamps(formatted);
@@ -246,6 +261,79 @@ function CommunityContent() {
 
     alert('🎉 自分のパッキングリストに複製しました！');
     window.location.href = `/?camp=${newCamp.id}`;
+  };
+
+  const isMyCamp = (camp: PublicCamp) => {
+    return (
+      myCamps.some((m) => m.id === camp.id) ||
+      Boolean(currentUserId && camp.user_id && camp.user_id === currentUserId)
+    );
+  };
+
+  const handleUnpublishCamp = async (campId: string) => {
+    const confirmed = window.confirm(
+      'このパッキングを「非公開」にしてギャラリーから取り下げますか？\n（ご自身のマイパッキング一覧にはそのまま残ります）'
+    );
+    if (!confirmed) return;
+
+    try {
+      const { error } = await supabase
+        .from('camps')
+        .update({ is_public: false })
+        .eq('id', campId);
+
+      if (error) {
+        alert(`非公開への変更に失敗しました:\n${error.message}`);
+        return;
+      }
+
+      try {
+        const cached = localStorage.getItem(`camp_meta_${campId}`);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          parsed.is_public = false;
+          localStorage.setItem(`camp_meta_${campId}`, JSON.stringify(parsed));
+        }
+      } catch {}
+
+      setPublicCamps((prev) => prev.filter((c) => c.id !== campId));
+      alert('🔒 ギャラリーから取り下げ（非公開に設定）しました！');
+    } catch (e: any) {
+      alert(`エラーが発生しました:\n${e?.message || e}`);
+    }
+  };
+
+  const handleDeleteCamp = async (camp: PublicCamp) => {
+    const confirmed = window.confirm(
+      `「${camp.title}」を完全に削除しますか？\n※登録されているギアもすべて削除され、元に戻せません。`
+    );
+    if (!confirmed) return;
+
+    try {
+      await supabase.from('gears').delete().eq('camp_id', camp.id);
+      const { error } = await supabase.from('camps').delete().eq('id', camp.id);
+
+      if (error) {
+        alert(`削除に失敗しました:\n${error.message}`);
+        return;
+      }
+
+      try {
+        localStorage.removeItem(`camp_meta_${camp.id}`);
+        const owned = localStorage.getItem(STORAGE_KEY_OWNED_CAMPS);
+        if (owned) {
+          const parsed = JSON.parse(owned);
+          delete parsed[camp.id];
+          localStorage.setItem(STORAGE_KEY_OWNED_CAMPS, JSON.stringify(parsed));
+        }
+      } catch {}
+
+      setPublicCamps((prev) => prev.filter((c) => c.id !== camp.id));
+      setMyCamps((prev) => prev.filter((c) => c.id !== camp.id));
+      alert('🗑️ パッキングを完全に削除しました。');
+    } catch (e: any) {
+      alert(`エラーが発生しました:\n${e?.message || e}`);
+    }
   };
 
   const handleAddSingleGear = async () => {
@@ -484,6 +572,7 @@ function CommunityContent() {
                 const totalWeight = displayGears.reduce((sum, g) => sum + (g.weight || 0) * (g.quantity || 1), 0);
                 const totalPrice = displayGears.reduce((sum, g) => sum + (g.price || 0) * (g.quantity || 1), 0);
                 const isExpanded = expandedCampId === camp.id;
+                const isMine = isMyCamp(camp);
 
                 return (
                   <div
@@ -495,6 +584,11 @@ function CommunityContent() {
                         <h3 className="text-sm sm:text-base font-black text-white flex items-center gap-1.5 truncate">
                           <span>⛺</span>
                           <span className="truncate">{camp.title}</span>
+                          {isMine && (
+                            <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-1.5 py-0.5 rounded-md font-bold shrink-0">
+                              マイパッキング
+                            </span>
+                          )}
                         </h3>
                         <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px] sm:text-xs text-zinc-400 mt-1 font-bold">
                           <span>📦 {displayGears.length}点</span>
@@ -505,7 +599,7 @@ function CommunityContent() {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 self-end sm:self-auto flex-wrap sm:flex-nowrap justify-end">
                         <button
                           onClick={() => setExpandedCampId(isExpanded ? null : camp.id)}
                           className="bg-[#27272A] hover:bg-zinc-700 text-zinc-200 px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition border border-zinc-700 cursor-pointer whitespace-nowrap"
@@ -513,12 +607,36 @@ function CommunityContent() {
                           {isExpanded ? '▲ 閉じる' : '▼ 中身を見る'}
                         </button>
 
-                        <button
-                          onClick={() => handleCloneCamp(camp)}
-                          className="bg-[#FF5500] hover:bg-[#E04B00] text-white px-3 sm:px-3.5 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition shadow-md cursor-pointer active:scale-95 whitespace-nowrap"
-                        >
-                          📋 1タップで複製
-                        </button>
+                        {isMine ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => handleUnpublishCamp(camp.id)}
+                              className="bg-zinc-800 hover:bg-zinc-700 text-amber-300 hover:text-amber-200 px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition border border-amber-500/40 shadow-sm cursor-pointer active:scale-95 whitespace-nowrap flex items-center gap-1"
+                              title="ギャラリーから取り下げて非公開にする（マイリストには残ります）"
+                            >
+                              <Lock className="w-3.5 h-3.5 text-amber-400" />
+                              <span>非公開にする</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteCamp(camp)}
+                              className="bg-red-950/40 hover:bg-red-900/60 text-red-300 hover:text-red-200 px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition border border-red-500/40 shadow-sm cursor-pointer active:scale-95 whitespace-nowrap flex items-center gap-1"
+                              title="このパッキングを完全に消去する"
+                            >
+                              <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                              <span>削除</span>
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            onClick={() => handleCloneCamp(camp)}
+                            className="bg-[#FF5500] hover:bg-[#E04B00] text-white px-3 sm:px-3.5 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition shadow-md cursor-pointer active:scale-95 whitespace-nowrap"
+                          >
+                            📋 1タップで複製
+                          </button>
+                        )}
                       </div>
                     </div>
 
