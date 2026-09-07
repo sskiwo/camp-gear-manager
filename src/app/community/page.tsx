@@ -18,6 +18,7 @@ type Gear = {
   price: number;
   quantity?: number;
   product_url?: string;
+  is_selected?: boolean;
 };
 
 type PublicCamp = {
@@ -157,11 +158,13 @@ function CommunityContent() {
         console.error('Fetch Gears Error:', gearErr);
       }
 
-      const allGears = gearsData || [];
-      setAllGearsList(allGears);
+      const rawGears = (gearsData || []) as (Gear & { camp_id: string; is_selected?: boolean })[];
+      // ⛺ パッキングで実際に「持参する（チェックが入っている）」ギアのみを抽出
+      const selectedGears = rawGears.filter((g) => g.is_selected !== false);
+      setAllGearsList(selectedGears);
 
       const gearsByCamp: Record<string, Gear[]> = {};
-      allGears.forEach((g) => {
+      selectedGears.forEach((g) => {
         if (!gearsByCamp[g.camp_id]) gearsByCamp[g.camp_id] = [];
         gearsByCamp[g.camp_id].push(g);
       });

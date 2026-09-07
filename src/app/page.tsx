@@ -36,8 +36,36 @@ type CampMeta = {
   title?: string;
   location?: string;
   event_date?: string;
+  is_public?: boolean;
   updated_at?: number;
 };
+
+// ⛺ 日程と場所からスマートにキャンプ名を生成するアシスト関数
+function formatCampTitle(eventDate?: string, location?: string): string {
+  const cleanDate = (eventDate || '').trim();
+  const cleanLoc = (location || '').trim();
+
+  let formattedDate = '';
+  if (cleanDate) {
+    const parts = cleanDate.split('-');
+    if (parts.length === 3) {
+      formattedDate = `${parts[0]}/${parts[1]}/${parts[2]}`;
+    } else {
+      formattedDate = cleanDate;
+    }
+  }
+
+  if (formattedDate && cleanLoc) {
+    return `${formattedDate} ${cleanLoc} キャンプ`;
+  }
+  if (formattedDate) {
+    return `${formattedDate} キャンプ`;
+  }
+  if (cleanLoc) {
+    return `${cleanLoc} キャンプ`;
+  }
+  return '新しいキャンプ';
+}
 
 function getCampMeta(campId: string): CampMeta | null {
   try {
@@ -94,9 +122,26 @@ function CampHomeContent() {
 
   const [isAddCampOpen, setIsAddCampOpen] = useState(false);
   const [newCampTitle, setNewCampTitle] = useState('');
+  const [newCampDate, setNewCampDate] = useState('');
+  const [newCampLocation, setNewCampLocation] = useState('');
+  const [isCampTitleUserEdited, setIsCampTitleUserEdited] = useState(false);
   const [copyOption, setCopyOption] = useState<'latest' | 'select' | 'none'>('none');
   const [selectedSourceCampId, setSelectedSourceCampId] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleNewCampDateChange = (date: string) => {
+    setNewCampDate(date);
+    if (!isCampTitleUserEdited) {
+      setNewCampTitle(formatCampTitle(date, newCampLocation));
+    }
+  };
+
+  const handleNewCampLocationChange = (loc: string) => {
+    setNewCampLocation(loc);
+    if (!isCampTitleUserEdited) {
+      setNewCampTitle(formatCampTitle(newCampDate, loc));
+    }
+  };
 
   const [isEditCampOpen, setIsEditCampOpen] = useState(false);
   const [editCampTitle, setEditCampTitle] = useState('');
@@ -112,7 +157,6 @@ function CampHomeContent() {
 
   // ⛺ 縦長スクロール圧迫感を解消するスタッキング状態（カテゴリタブ & 下部ツール開閉）
   const [selectedCategoryTab, setSelectedCategoryTab] = useState<string>('すべて');
-  const [isShareOpen, setIsShareOpen] = useState<boolean>(false);
   const [isCsvOpen, setIsCsvOpen] = useState<boolean>(false);
 
   // ⛺ 閲覧専用判定: 自分のバッジ（user_id）が付いているか、または端末所有トークンがある場合は編集可能
@@ -217,6 +261,7 @@ function CampHomeContent() {
                     title: meta.title?.trim() ? meta.title.trim() : c.title,
                     location: meta.location !== undefined ? meta.location : (c.location || ''),
                     event_date: meta.event_date !== undefined ? meta.event_date : (c.event_date || ''),
+                    is_public: meta.is_public !== undefined ? meta.is_public : c.is_public,
                   };
                 }
                 return c;
@@ -243,6 +288,7 @@ function CampHomeContent() {
             title: meta.title?.trim() ? meta.title.trim() : c.title,
             location: meta.location !== undefined ? meta.location : (c.location || ''),
             event_date: meta.event_date !== undefined ? meta.event_date : (c.event_date || ''),
+            is_public: meta.is_public !== undefined ? meta.is_public : c.is_public,
           };
         }
         return c;
@@ -383,6 +429,7 @@ function CampHomeContent() {
                 title: meta.title?.trim() ? meta.title.trim() : c.title,
                 location: meta.location !== undefined ? meta.location : (c.location || ''),
                 event_date: meta.event_date !== undefined ? meta.event_date : (c.event_date || ''),
+                is_public: meta.is_public !== undefined ? meta.is_public : c.is_public,
               };
             }
             return c;
@@ -410,6 +457,9 @@ function CampHomeContent() {
 
   const handleOpenAddCampModal = () => {
     setNewCampTitle('');
+    setNewCampDate('');
+    setNewCampLocation('');
+    setIsCampTitleUserEdited(false);
     setCopyOption(myOwnedCamps.length > 0 ? 'latest' : 'none');
     if (myOwnedCamps.length > 0) {
       setSelectedSourceCampId(myOwnedCamps[0].id);
@@ -423,16 +473,26 @@ function CampHomeContent() {
   };
 
   const handleCreateCamp = async () => {
-    if (!newCampTitle.trim()) {
-      alert('キャンプ名を入力してください！');
-      return;
+    const finalDate = newCampDate.trim();
+    const finalLocation = newCampLocation.trim();
+    let finalTitle = newCampTitle.trim();
+    if (!finalTitle) {
+      finalTitle = formatCampTitle(finalDate, finalLocation);
     }
 
     setIsSubmitting(true);
 
+    const insertData: Record<string, any> = {
+      title: finalTitle,
+      is_public: false,
+      user_id: currentUserId || undefined,
+    };
+    if (finalDate) insertData.event_date = finalDate;
+    if (finalLocation) insertData.location = finalLocation;
+
     const { data: newCamp, error: createErr } = await supabase
       .from('camps')
-      .insert([{ title: newCampTitle.trim(), is_public: false, user_id: currentUserId || undefined }])
+      .insert([insertData])
       .select()
       .single();
 
@@ -489,12 +549,20 @@ function CampHomeContent() {
     setIsSubmitting(false);
     registerCampOwnership(newCamp.id);
     saveCampMeta(newCamp.id, {
-      title: newCamp.title,
-      location: '',
-      event_date: '',
+      title: finalTitle,
+      location: finalLocation,
+      event_date: finalDate,
+      is_public: false,
     });
+    const newCampObj = {
+      ...newCamp,
+      title: finalTitle,
+      location: finalLocation,
+      event_date: finalDate,
+      is_public: false,
+    };
     setCamps((prev) => {
-      const updated = [newCamp, ...prev];
+      const updated = [newCampObj, ...prev];
       try {
         localStorage.setItem(STORAGE_KEY_CAMPS_CACHE, JSON.stringify(updated));
       } catch {}
@@ -503,6 +571,9 @@ function CampHomeContent() {
     setSelectedCampId(newCamp.id);
     updateUrlWithCamp(newCamp.id);
     setNewCampTitle('');
+    setNewCampDate('');
+    setNewCampLocation('');
+    setIsCampTitleUserEdited(false);
     setIsAddCampOpen(false);
     setConnectionError(null);
     fetchGears();
@@ -661,19 +732,38 @@ function CampHomeContent() {
     if (!currentCamp) return;
 
     const newPublicStatus = !currentCamp.is_public;
-    const { error } = await supabase
-      .from('camps')
-      .update({ is_public: newPublicStatus })
-      .eq('id', selectedCampId);
 
-    if (error) {
-      alert(`公開設定の変更に失敗しました:\n${error.message}`);
-      return;
+    // 1. ローカルStateおよびキャッシュ一覧を即時更新
+    setCamps((prev) => {
+      const updated = prev.map((c) =>
+        c.id === selectedCampId ? { ...c, is_public: newPublicStatus } : c
+      );
+      try {
+        localStorage.setItem(STORAGE_KEY_CAMPS_CACHE, JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+
+    // 2. ローカルストレージ（フィールドノート）に永続保存（リフレッシュしても絶対に元に戻らない）
+    saveCampMeta(selectedCampId, { is_public: newPublicStatus });
+
+    // 3. Supabase（クラウド側）へ同期
+    try {
+      const updateData: Record<string, any> = { is_public: newPublicStatus };
+      if (currentUserId && !currentCamp.user_id) {
+        updateData.user_id = currentUserId;
+      }
+      const { error } = await supabase
+        .from('camps')
+        .update(updateData)
+        .eq('id', selectedCampId);
+
+      if (error) {
+        console.warn('Supabase public sync warning (saved locally):', error.message);
+      }
+    } catch (e) {
+      console.warn('Supabase public sync network error (saved locally):', e);
     }
-
-    setCamps((prev) =>
-      prev.map((c) => (c.id === selectedCampId ? { ...c, is_public: newPublicStatus } : c))
-    );
 
     alert(newPublicStatus ? '🌐 コミュニティに公開しました！' : '🔒 非公開に設定しました。');
   };
@@ -1072,7 +1162,21 @@ function CampHomeContent() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[12px] font-normal text-zinc-400 block">キャンプ名の変更</label>
+              <div className="flex items-center justify-between">
+                <label className="text-[12px] font-normal text-zinc-400 block">キャンプ名の変更</label>
+                {currentSelectedCamp && (currentSelectedCamp.event_date || currentSelectedCamp.location) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const autoTitle = formatCampTitle(currentSelectedCamp.event_date, currentSelectedCamp.location);
+                      setEditCampTitle(autoTitle);
+                    }}
+                    className="text-[11px] text-[#FF5500] hover:text-[#e04c00] flex items-center gap-1 cursor-pointer font-medium transition"
+                  >
+                    <span>✨ 日程・場所から自動入力</span>
+                  </button>
+                )}
+              </div>
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -1115,15 +1219,65 @@ function CampHomeContent() {
           <div className="bg-[#18181B] border border-[#FF5500]/50 p-5 rounded-2xl space-y-4 shadow-2xl animate-fade-in w-full">
             <h3 className="text-[14px] font-semibold text-white">新しいキャンプを追加</h3>
 
+            {/* 日程と場所（アシスト自動生成連動） */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-[12px] font-normal text-zinc-400 block">
+                  📅 キャンプ日程（任意）
+                </label>
+                <input
+                  type="date"
+                  value={newCampDate}
+                  onChange={(e) => handleNewCampDateChange(e.target.value)}
+                  className="w-full bg-[#27272A] border border-zinc-700 rounded-xl px-3 py-2 text-[12px] text-white focus:border-[#FF5500] focus:outline-none"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[12px] font-normal text-zinc-400 block">
+                  📍 キャンプ場・場所（任意）
+                </label>
+                <input
+                  type="text"
+                  placeholder="例: ふもとっぱら、立川市"
+                  value={newCampLocation}
+                  onChange={(e) => handleNewCampLocationChange(e.target.value)}
+                  className="w-full bg-[#27272A] border border-zinc-700 rounded-xl px-3 py-2 text-[12px] text-white focus:border-[#FF5500] focus:outline-none"
+                />
+              </div>
+            </div>
+
             <div className="space-y-1">
-              <label className="text-[12px] font-normal text-zinc-400 block">キャンプ名（必須）</label>
+              <div className="flex items-center justify-between">
+                <label className="text-[12px] font-normal text-zinc-400 block">
+                  キャンプ名（自動補完・自由編集OK）
+                </label>
+                {(newCampDate || newCampLocation) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNewCampTitle(formatCampTitle(newCampDate, newCampLocation));
+                      setIsCampTitleUserEdited(false);
+                    }}
+                    className="text-[11px] text-[#FF5500] hover:text-[#e04c00] flex items-center gap-1 cursor-pointer font-medium transition"
+                  >
+                    <span>✨ 日程・場所で再生成</span>
+                  </button>
+                )}
+              </div>
               <input
                 type="text"
-                placeholder="例: 2026年8月 ふもとっぱらソロキャン"
+                placeholder="例: 2026/09/15 ふもとっぱら キャンプ"
                 value={newCampTitle}
-                onChange={(e) => setNewCampTitle(e.target.value)}
+                onChange={(e) => {
+                  setNewCampTitle(e.target.value);
+                  setIsCampTitleUserEdited(true);
+                }}
                 className="w-full bg-[#27272A] border border-zinc-700 rounded-xl px-3 py-2 text-[12px] text-white focus:border-[#FF5500] focus:outline-none"
               />
+              <p className="text-[11px] text-zinc-500">
+                ※日程や場所を入力すると自動で名前が作られます。もちろん自由に書き換えてもOK！
+              </p>
             </div>
 
             <div className="space-y-2.5 pt-1 border-t border-zinc-800">
@@ -1263,76 +1417,43 @@ function CampHomeContent() {
           isReadOnly={isReadOnly}
         />
 
-        {/* ⛺ 下部ツールのスタッキング収納（共有 & CSV管理アコーディオン） */}
-        <div className="space-y-3 pt-2">
-          {/* 🔗 パッキング共有カード（アコーディオン） */}
+        {/* 🔗 パッキング共有カード（常時表示で素早く共有） */}
+        <ShareAppCard campId={selectedCampId} isReadOnly={isReadOnly} />
+
+        {/* 📂 CSVデータ管理・バックアップ（アコーディオン格納） */}
+        {!isReadOnly && (
           <div className="bg-[#18181B] border border-zinc-800 rounded-2xl overflow-hidden shadow-md transition-all">
             <button
               type="button"
-              onClick={() => setIsShareOpen((prev) => !prev)}
+              onClick={() => setIsCsvOpen((prev) => !prev)}
               className="w-full px-4 py-3 sm:px-5 sm:py-3.5 flex items-center justify-between hover:bg-zinc-800/40 transition cursor-pointer text-left"
             >
               <div className="flex items-center gap-2.5 min-w-0">
-                <span className="text-base sm:text-lg">🔗</span>
+                <span className="text-base sm:text-lg">📂</span>
                 <div>
                   <span className="text-[13px] sm:text-[14px] font-bold text-white block">
-                    このパッキングを共有する
+                    CSVデータ管理・バックアップ
                   </span>
                   <span className="text-[11px] text-zinc-400 block font-normal">
-                    LINEやSNSで仲間・家族と持ち物リストを共有
+                    エクセルでの一括編集やバックアップ・復元
                   </span>
                 </div>
               </div>
               <div className="flex items-center gap-1.5 text-[11px] text-zinc-400 shrink-0 font-medium">
-                <span>{isShareOpen ? '閉じる' : '開く'}</span>
-                <span className={`transform transition-transform duration-200 ${isShareOpen ? 'rotate-180' : ''}`}>
+                <span>{isCsvOpen ? '閉じる' : '開く'}</span>
+                <span className={`transform transition-transform duration-200 ${isCsvOpen ? 'rotate-180' : ''}`}>
                   ▼
                 </span>
               </div>
             </button>
 
-            {isShareOpen && (
+            {isCsvOpen && (
               <div className="p-4 sm:p-5 pt-2 border-t border-zinc-800/60 animate-fade-in">
-                <ShareAppCard campId={selectedCampId} isReadOnly={isReadOnly} />
+                <CsvManager gears={gears} selectedCampId={selectedCampId} onGearsUpdated={fetchGears} />
               </div>
             )}
           </div>
-
-          {/* 📂 CSVデータ管理・バックアップ（アコーディオン） */}
-          {!isReadOnly && (
-            <div className="bg-[#18181B] border border-zinc-800 rounded-2xl overflow-hidden shadow-md transition-all">
-              <button
-                type="button"
-                onClick={() => setIsCsvOpen((prev) => !prev)}
-                className="w-full px-4 py-3 sm:px-5 sm:py-3.5 flex items-center justify-between hover:bg-zinc-800/40 transition cursor-pointer text-left"
-              >
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <span className="text-base sm:text-lg">📂</span>
-                  <div>
-                    <span className="text-[13px] sm:text-[14px] font-bold text-white block">
-                      CSVデータ管理・バックアップ
-                    </span>
-                    <span className="text-[11px] text-zinc-400 block font-normal">
-                      エクセルでの一括編集やバックアップ・復元
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1.5 text-[11px] text-zinc-400 shrink-0 font-medium">
-                  <span>{isCsvOpen ? '閉じる' : '開く'}</span>
-                  <span className={`transform transition-transform duration-200 ${isCsvOpen ? 'rotate-180' : ''}`}>
-                    ▼
-                  </span>
-                </div>
-              </button>
-
-              {isCsvOpen && (
-                <div className="p-4 sm:p-5 pt-2 border-t border-zinc-800/60 animate-fade-in">
-                  <CsvManager gears={gears} selectedCampId={selectedCampId} onGearsUpdated={fetchGears} />
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+        )}
 
         <HelpGuideModal
           isOpen={isHelpOpen}
