@@ -67,11 +67,13 @@ function CommunityContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const fromCampId = searchParams.get('from');
+  const isCleanupMode = searchParams.get('mode') === 'cleanup';
 
   const [activeTab, setActiveTab] = useState<'camps' | 'ranking'>('camps');
   const [selectedCategory, setSelectedCategory] = useState<string>('すべて');
 
   const [publicCamps, setPublicCamps] = useState<PublicCamp[]>([]);
+  const [selectedCampsToDelete, setSelectedCampsToDelete] = useState<string[]>([]);
   const [allGearsList, setAllGearsList] = useState<Gear[]>([]);
   const [myCamps, setMyCamps] = useState<CampOption[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -336,6 +338,72 @@ function CommunityContent() {
     }
   };
 
+  const toggleSelectCamp = (id: string) => {
+    setSelectedCampsToDelete((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedCampsToDelete.length === publicCamps.length && publicCamps.length > 0) {
+      setSelectedCampsToDelete([]);
+    } else {
+      setSelectedCampsToDelete(publicCamps.map((c) => c.id));
+    }
+  };
+
+  const handleBatchDelete = async () => {
+    if (selectedCampsToDelete.length === 0) return;
+    const count = selectedCampsToDelete.length;
+    const confirmed = window.confirm(
+      `選択した ${count} 件のパッキングを完全に削除しますか？\n※登録されているギアもすべて削除され、元に戻せません。`
+    );
+    if (!confirmed) return;
+
+    try {
+      await supabase.from('gears').delete().in('camp_id', selectedCampsToDelete);
+      const { error } = await supabase.from('camps').delete().in('id', selectedCampsToDelete);
+
+      if (error) {
+        alert(
+          `削除に失敗しました（Supabaseのセキュリティ保護が有効な可能性があります）:\n${error.message}\n\n※この場合はSupabase管理画面のTable Editorから直接削除を行ってください。`
+        );
+        return;
+      }
+
+      setPublicCamps((prev) => prev.filter((c) => !selectedCampsToDelete.includes(c.id)));
+      setSelectedCampsToDelete([]);
+      alert(`🎉 選択した ${count} 件のパッキングを一括削除しました！`);
+    } catch (e: any) {
+      alert(`エラーが発生しました:\n${e?.message || e}`);
+    }
+  };
+
+  const handleForceDeleteCamp = async (camp: PublicCamp) => {
+    const confirmed = window.confirm(
+      `「${camp.title}」を強制削除しますか？\n※元に戻せません。`
+    );
+    if (!confirmed) return;
+
+    try {
+      await supabase.from('gears').delete().eq('camp_id', camp.id);
+      const { error } = await supabase.from('camps').delete().eq('id', camp.id);
+
+      if (error) {
+        alert(
+          `削除に失敗しました（Supabaseのセキュリティ保護が有効な可能性があります）:\n${error.message}\n\n※この場合はSupabase管理画面のTable Editorから直接削除を行ってください。`
+        );
+        return;
+      }
+
+      setPublicCamps((prev) => prev.filter((c) => c.id !== camp.id));
+      setSelectedCampsToDelete((prev) => prev.filter((id) => id !== camp.id));
+      alert('🗑️ 削除しました！');
+    } catch (e: any) {
+      alert(`エラーが発生しました:\n${e?.message || e}`);
+    }
+  };
+
   const handleAddSingleGear = async () => {
     if (!addingGear || !selectedAddCampId) return;
 
@@ -435,6 +503,49 @@ function CommunityContent() {
             <span>戻る</span>
           </button>
         </header>
+
+        {/* 管理者お掃除モードバナー */}
+        {isCleanupMode && (
+          <div className="bg-amber-950/40 border border-amber-500/50 p-3 sm:p-4 rounded-2xl space-y-2.5 shadow-xl animate-fade-in">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+              <div>
+                <h2 className="text-xs sm:text-sm font-black text-amber-300 flex items-center gap-1.5">
+                  <span>🧹</span>
+                  <span>管理者お掃除モード有効中（過去テストデータの一括削除）</span>
+                </h2>
+                <p className="text-[11px] text-zinc-300 mt-0.5 leading-snug">
+                  別端末やシークレットウィンドウで作成した不要なテストパッキングにチェックを入れて一括削除できます。
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                <button
+                  type="button"
+                  onClick={toggleSelectAll}
+                  className="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-600 px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition cursor-pointer"
+                >
+                  {selectedCampsToDelete.length === publicCamps.length && publicCamps.length > 0
+                    ? '全解除'
+                    : 'すべて選択'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleBatchDelete}
+                  disabled={selectedCampsToDelete.length === 0}
+                  className={`px-3.5 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition shadow cursor-pointer whitespace-nowrap flex items-center gap-1 ${
+                    selectedCampsToDelete.length > 0
+                      ? 'bg-red-600 hover:bg-red-500 text-white active:scale-95'
+                      : 'bg-zinc-800/80 text-zinc-500 cursor-not-allowed border border-zinc-700'
+                  }`}
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>選択した {selectedCampsToDelete.length} 件を一括削除</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* タブ切り替え */}
         <div className="grid grid-cols-2 gap-1.5 bg-[#18181B] p-1.5 rounded-2xl border border-zinc-800 w-full">
@@ -580,22 +691,33 @@ function CommunityContent() {
                     className="bg-[#18181B] border border-zinc-800 hover:border-zinc-700 rounded-2xl p-3.5 sm:p-5 space-y-3 shadow-xl transition"
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3">
-                      <div className="min-w-0">
-                        <h3 className="text-sm sm:text-base font-black text-white flex items-center gap-1.5 truncate">
-                          <span>⛺</span>
-                          <span className="truncate">{camp.title}</span>
-                          {isMine && (
-                            <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-1.5 py-0.5 rounded-md font-bold shrink-0">
-                              マイパッキング
-                            </span>
-                          )}
-                        </h3>
-                        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px] sm:text-xs text-zinc-400 mt-1 font-bold">
-                          <span>📦 {displayGears.length}点</span>
-                          <span>⚖️ {(totalWeight / 1000).toFixed(2)}kg</span>
-                          {totalPrice > 0 && (
-                            <span>💰 ¥{totalPrice.toLocaleString()}<span className="text-[10px] text-zinc-500 font-normal font-sans ml-0.5">(参考総額)</span></span>
-                          )}
+                      <div className="min-w-0 flex items-center gap-2.5">
+                        {isCleanupMode && (
+                          <input
+                            type="checkbox"
+                            checked={selectedCampsToDelete.includes(camp.id)}
+                            onChange={() => toggleSelectCamp(camp.id)}
+                            className="w-4 h-4 sm:w-5 sm:h-5 accent-red-500 rounded cursor-pointer shrink-0"
+                            title="削除対象として選択"
+                          />
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <h3 className="text-sm sm:text-base font-black text-white flex items-center gap-1.5 truncate">
+                            <span>⛺</span>
+                            <span className="truncate">{camp.title}</span>
+                            {isMine && (
+                              <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-1.5 py-0.5 rounded-md font-bold shrink-0">
+                                マイパッキング
+                              </span>
+                            )}
+                          </h3>
+                          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px] sm:text-xs text-zinc-400 mt-1 font-bold">
+                            <span>📦 {displayGears.length}点</span>
+                            <span>⚖️ {(totalWeight / 1000).toFixed(2)}kg</span>
+                            {totalPrice > 0 && (
+                              <span>💰 ¥{totalPrice.toLocaleString()}<span className="text-[10px] text-zinc-500 font-normal font-sans ml-0.5">(参考総額)</span></span>
+                            )}
+                          </div>
                         </div>
                       </div>
 
@@ -607,7 +729,17 @@ function CommunityContent() {
                           {isExpanded ? '▲ 閉じる' : '▼ 中身を見る'}
                         </button>
 
-                        {isMine ? (
+                        {isCleanupMode ? (
+                          <button
+                            type="button"
+                            onClick={() => handleForceDeleteCamp(camp)}
+                            className="bg-red-950/60 hover:bg-red-900 text-red-300 hover:text-white px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition border border-red-500/50 shadow-sm cursor-pointer active:scale-95 whitespace-nowrap flex items-center gap-1"
+                            title="このパッキングを強制削除する"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                            <span>強制削除</span>
+                          </button>
+                        ) : isMine ? (
                           <>
                             <button
                               type="button"
