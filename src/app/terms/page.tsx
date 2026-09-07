@@ -1,4 +1,3 @@
-import { Suspense } from 'react';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import Footer from '@/components/Footer';
@@ -200,11 +199,8 @@ export default function TermsPage() {
         </div>
       </div>
 
-      {/* 🎯 FooterがuseSearchParams()を使用しているためSuspenseでラップして保護 */}
       <div className="max-w-3xl mx-auto w-full">
-        <Suspense fallback={<div className="h-16" />}>
-          <Footer />
-        </Suspense>
+        <Footer />
       </div>
     </main>
   );

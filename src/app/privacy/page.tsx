@@ -1,11 +1,14 @@
-'use client';
-
-import { Suspense } from 'react';
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import Footer from '@/components/Footer';
 
-function PrivacyContent() {
+export const metadata: Metadata = {
+  title: 'プライバシーポリシー | Camp Gear Manager',
+  description: 'Camp Gear Managerのプライバシーポリシー（個人情報の取扱いに関する方針）です。',
+};
+
+export default function PrivacyPage() {
   return (
     <main className="min-h-screen bg-[#09090B] text-zinc-100 p-4 sm:p-8 font-sans flex flex-col justify-between">
       <div className="max-w-3xl mx-auto space-y-6 w-full flex-1">
@@ -206,13 +209,5 @@ function PrivacyContent() {
         <Footer />
       </div>
     </main>
-  );
-}
-
-export default function PrivacyPage() {
-  return (
-    <Suspense fallback={<div className="min-h-screen bg-[#09090B] text-zinc-400 p-8 text-center text-xs">読み込み中...</div>}>
-      <PrivacyContent />
-    </Suspense>
   );
 }

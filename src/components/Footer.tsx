@@ -1,12 +1,13 @@
 'use client';
 
+import { Suspense } from 'react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { Users, FileText, Shield, Mail, Home } from 'lucide-react';
 
 const GOOGLE_FORM_URL = 'https://forms.gle/e5Lf5GT4MFiHSUwy7';
 
-export default function Footer() {
+function DynamicNavLinks() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const currentCampId = searchParams.get('camp');
@@ -22,27 +23,34 @@ export default function Footer() {
   const targetHomeCampId = fromCampId || currentCampId;
   const homeUrl = targetHomeCampId ? `/?camp=${targetHomeCampId}` : '/';
 
+  return isCommunityPage ? (
+    <Link
+      href={homeUrl}
+      className="hover:text-[#FF5500] transition flex items-center gap-1.5"
+    >
+      <Home className="w-3.5 h-3.5 text-[#FF5500]" />
+      <span>マイパッキングに戻る</span>
+    </Link>
+  ) : (
+    <Link
+      href={galleryUrl}
+      className="hover:text-[#00E5FF] transition flex items-center gap-1.5"
+    >
+      <Users className="w-3.5 h-3.5 text-[#00E5FF]" />
+      <span>みんなのギアギャラリー</span>
+    </Link>
+  );
+}
+
+export default function Footer() {
   return (
     <footer className="border-t border-zinc-800/80 pt-6 pb-10 mt-8 text-zinc-500 text-xs space-y-4">
       {/* ナビゲーションリンク */}
       <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 text-zinc-400 font-bold">
-        {isCommunityPage ? (
-          <Link
-            href={homeUrl}
-            className="hover:text-[#FF5500] transition flex items-center gap-1.5"
-          >
-            <Home className="w-3.5 h-3.5 text-[#FF5500]" />
-            <span>マイパッキングに戻る</span>
-          </Link>
-        ) : (
-          <Link
-            href={galleryUrl}
-            className="hover:text-[#00E5FF] transition flex items-center gap-1.5"
-          >
-            <Users className="w-3.5 h-3.5 text-[#00E5FF]" />
-            <span>みんなのギアギャラリー</span>
-          </Link>
-        )}
+        {/* 🎯 クエリパラメータが必要な動的リンク部分のみをSuspenseで保護 */}
+        <Suspense fallback={<span className="text-zinc-600">読み込み中...</span>}>
+          <DynamicNavLinks />
+        </Suspense>
 
         <Link
           href="/terms"
