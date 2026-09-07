@@ -817,7 +817,7 @@ function CampHomeContent() {
               <button
                 type="button"
                 onClick={() => setIsHelpOpen(true)}
-                className="h-8 w-8 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-amber-400 border border-zinc-700 flex items-center justify-center transition cursor-pointer shadow-sm active:scale-95 shrink-0"
+                className="h-8 w-8 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-zinc-700 flex items-center justify-center transition cursor-pointer shadow-sm active:scale-95 shrink-0"
                 title="使い方ガイド"
                 aria-label="使い方ガイド"
               >
