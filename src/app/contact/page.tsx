@@ -1,15 +1,14 @@
+'use client';
+
+import { Suspense } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Mail, ExternalLink, MessageSquare } from 'lucide-react';
 import Footer from '@/components/Footer';
 
-export const metadata = {
-  title: 'お問い合わせ | Camp Gear Manager',
-};
-
 // 🎯 設定したGoogleフォームのURL
 const GOOGLE_FORM_URL = 'https://forms.gle/e5Lf5GT4MFiHSUwy7';
 
-export default function ContactPage() {
+function ContactContent() {
   return (
     <main className="min-h-screen bg-[#09090B] text-zinc-100 p-4 sm:p-8 font-sans flex flex-col justify-between">
       <div className="max-w-2xl mx-auto space-y-6 w-full flex-1">
@@ -67,5 +66,13 @@ export default function ContactPage() {
         <Footer />
       </div>
     </main>
+  );
+}
+
+export default function ContactPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#09090B] text-zinc-400 p-8 text-center text-xs">読み込み中...</div>}>
+      <ContactContent />
+    </Suspense>
   );
 }
