@@ -152,8 +152,9 @@ export async function POST(request: Request) {
     const contents = [{ role: 'user', parts }];
 
     const candidateModels = [
-      'gemini-3.6-flash',
-      'gemini-flash-latest'
+      'gemini-flash-latest',       // ① 常に最新のFlashモデル（コード書き換え不要で自動更新）
+      'gemini-flash-lite-latest',  // ② 常に最新の軽量・爆速モデル（実測0.7秒、制限に強い）
+      'gemini-3.6-flash',          // ③ 安定版（上記が混雑した時の確実な保険）
     ];
 
     let response: any = null;
